@@ -1,0 +1,80 @@
+{
+  "name": "ts-image-viewer",
+  "version": "0.0.1",
+  "description": "browser image viewer with basic painting support",
+  "module": "dist/ts-image-viewer.esm.js",
+  "types": "dist/ts-image-viewer.d.ts",
+  "scripts": {
+    "test": "karma start",
+    "copycsstotsc": "copyfiles -f ./src/*.css ./tsc/src",
+    "copypngtotsc": "copyfiles -f ./src/assets/icons/*.png ./tsc/src/assets/icons && copyfiles -f ./src/assets/assets.d.ts ./tsc/src",
+    "buildts": "tsc && npm run copypngtotsc",
+    "buildru": "rollup -c",
+    "bundletypes": "dts-bundle-generator -o dist/ts-image-viewer.d.ts src/ts-image-viewer.ts",
+    "build": "npm run buildts && npm run buildru && npm run bundletypes",
+    "start": "npm run build && lite-server -c ls-config.json",
+    "mpublish": "npm version minor && npm publish",
+    "ppublish": "npm version patch && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yermolim/ts-image-viewer.git"
+  },
+  "keywords": [
+    "web",
+    "typescript",
+    "canvas",
+    "image",
+    "viewer",
+    "image-viewer",
+    "png",
+    "jpg",
+    "webp",
+    "drawing"
+  ],
+  "author": "Volodymyr Yermolenko <yermolim@gmail.com> (https://github.com/yermolim)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yermolim/ts-image-viewer/issues"
+  },
+  "homepage": "https://github.com/yermolim/ts-image-viewer#readme",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-image": "^2.0.6",
+    "@rollup/plugin-multi-entry": "^4.0.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "@rollup/plugin-replace": "^2.4.1",
+    "@rollup/plugin-strip": "^2.0.0",
+    "@rollup/plugin-typescript": "^8.2.0",
+    "@types/jasmine": "^3.6.7",
+    "@types/resize-observer-browser": "^0.1.5",
+    "@types/uuid": "^8.3.0",
+    "@typescript-eslint/eslint-plugin": "^4.19.0",
+    "@typescript-eslint/eslint-plugin-tslint": "^4.19.0",
+    "@typescript-eslint/parser": "^4.19.0",
+    "copyfiles": "^2.4.1",
+    "dts-bundle-generator": "^5.8.0",
+    "eslint": "^7.22.0",
+    "eslint-plugin-import": "^2.22.1",
+    "jasmine-core": "^3.7.1",
+    "jasmine-spec-reporter": "^6.0.0",
+    "karma": "^6.3.0",
+    "karma-chrome-launcher": "^3.1.0",
+    "karma-cli": "^2.0.0",
+    "karma-coverage-istanbul-reporter": "^3.0.3",
+    "karma-jasmine": "^4.0.1",
+    "karma-typescript": "^5.5.0",
+    "lite-server": "^2.6.1",
+    "puppeteer": "^8.0.0",
+    "rollup": "^2.42.4",
+    "rollup-plugin-css-porter": "^1.0.2",
+    "rollup-plugin-license": "^2.3.0",
+    "rollup-plugin-node-externals": "^2.2.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "tslib": "^2.1.0",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "uuid": "^8.3.2"
+  }
+}
