@@ -580,58 +580,73 @@ export class TsImageViewer {
     cursorPosition ||= this.getViewerCenterPosition();
 
     let imageUnderCursor: boolean;
-    let xPageRatio: number;
-    let yPageRatio: number;
+    let xImageRatio: number;
+    let yImageRatio: number;
     
-    const {x: x, y: y} = cursorPosition;
-    const {x: pX, y: pY, width: pWidth, height: pHeight} = 
-    image.viewContainer.getBoundingClientRect();
+    const {x, y} = cursorPosition;
+    const {x: imageX, y: imageY, width: imageWidth, height: imageHeight} = 
+      image.viewContainer.getBoundingClientRect();
     // check if the image is under the cursor
-    if (pX <= x 
-      && pX + pWidth >= x
-      && pY <= y
-      && pY + pHeight >= y) {          
+    if (imageX <= x 
+      && imageX + imageWidth >= x
+      && imageY <= y
+      && imageY + imageHeight >= y) {          
       // get cursor position relative to image dimensions before scaling
       imageUnderCursor = true;
-      xPageRatio = (x - pX) / pWidth;
-      yPageRatio = (y - pY) / pHeight;
+      xImageRatio = (x - imageX) / imageWidth;
+      yImageRatio = (y - imageY) / imageHeight;
     }
 
     this._contextMenu.hide();
-    this._scale = scale;
+    this._scale = scale;    
     image.scale = scale;
-    
-    if (imageUnderCursor 
-      && // check if image has scrollbars
-      (this._viewer.scrollHeight > this._viewer.clientHeight
-      || this._viewer.scrollWidth > this._viewer.clientWidth)) {
-      // get the position of the point under cursor after scaling   
-      const {x: initialX, y: initialY} = cursorPosition;
-      const resultX = pX + (pWidth * xPageRatio);
-      const resultY = pY + (pHeight * yPageRatio);
-
-      // scroll image to move the point to its initial position in the viewport
-      let scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
-      let scrollTop = this._viewer.scrollTop + (resultY - initialY);
-      scrollLeft = scrollLeft < 0 
-        ? 0 
-        : scrollLeft;
-      scrollTop = scrollTop < 0
-        ? 0
-        : scrollTop;
-
-      if (scrollTop !== this._viewer.scrollTop
-        || scrollLeft !== this._viewer.scrollLeft) {          
-        this._viewer.scrollTo(scrollLeft, scrollTop);
-        // render will be called from the scroll event handler so no need to call it from here
-        return;
-      }
-    }
-
     // refresh annotator scale
     if (this._annotator) {
       this._annotator.scale = scale;
-    }    
+    }   
+    
+    if (imageUnderCursor) {
+      
+      const {x: imageScaledX, y: imageScaledY, width: imageScaledWidth, height: imageScaledHeight} = 
+        image.viewContainer.getBoundingClientRect();
+        
+      let scrollLeft: number;
+      let scrollTop: number;
+
+      if (imageScaledWidth > this._viewer.clientHeight 
+        || imageScaledHeight > this._viewer.clientWidth) {
+        // the viewer has scrollbars   
+
+        // get the position of the point under cursor after scaling   
+        const {x: initialX, y: initialY} = cursorPosition;
+        const resultX = imageScaledX + (imageScaledWidth * xImageRatio);
+        const resultY = imageScaledY + (imageScaledHeight * yImageRatio);
+  
+        // scroll image to move the point to its initial position in the viewport
+        scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
+        scrollTop = this._viewer.scrollTop + (resultY - initialY);
+        scrollLeft = scrollLeft < 0 
+          ? 0 
+          : scrollLeft;
+        scrollTop = scrollTop < 0
+          ? 0
+          : scrollTop;
+      } else {
+        // the viewer shouldn't have scrollbars, 
+        // reset scroll offsets to be sure that no scrollbars will remain
+        scrollLeft = 0;
+        scrollTop = 0;
+      }
+
+      if (scrollTop !== this._viewer.scrollTop
+        || scrollLeft !== this._viewer.scrollLeft) {      
+        // scroll need to change
+        this._viewer.scrollTo(scrollLeft, scrollTop);
+        // render will be called from the scroll event handler so no need to call it from here
+        return;
+      }   
+    }
+ 
     // use timeout to let browser update image layout
     setTimeout(() => this._viewerData.currentImageView.renderView(), 0);
   }
@@ -798,12 +813,12 @@ export class TsImageViewer {
     const images = this._viewerData.imageViews;
     const visiblePreviewNumbers = this.getVisiblePreviewImages(this._previewer, images);
     
-    const minPageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPreviews, 0);
-    const maxPageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPreviews, images.length - 1);
+    const minImageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPreviews, 0);
+    const maxImageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPreviews, images.length - 1);
 
     for (let i = 0; i < images.length; i++) {
       const image = images[i];
-      if (i >= minPageNumber && i <= maxPageNumber) {
+      if (i >= minImageNumber && i <= maxImageNumber) {
         image.renderPreview();
       }
     }
@@ -887,6 +902,7 @@ export class TsImageViewer {
       case "pen":
         this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
         this._annotator = new PenAnnotator(this._viewer, this._viewerData.currentImageView);
+        this._annotator.scale = this._scale;
         this.initContextPenColorPicker();
         break;
       default:
@@ -952,6 +968,7 @@ export class TsImageViewer {
         this._contextMenu.hide();
         this._annotator?.destroy();
         this._annotator = new PenAnnotator(this._viewer, this._viewerData.currentImageView, x);
+        this._annotator.scale = this._scale;
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
