@@ -119,7 +119,7 @@ export class ImageView {
     if (!force && this.viewValid) {
       return;
     }
-    
+
     const scale = this._scale;
 
     // create a new canvas of the needed size and fill it with a rendered image
@@ -155,6 +155,28 @@ export class ImageView {
     
     this._viewCanvas?.remove();
     this._viewRendered = false;
+  }
+
+  async bakeAnnotationsAsync(): Promise<Blob>  {
+    const tempCanvas = document.createElement("canvas");
+    const {x, y} = this.imageInfo.dimensions;
+    tempCanvas.width = x;
+    tempCanvas.height = y;
+    const tempCtx = tempCanvas.getContext("2d");
+    tempCtx.drawImage(this.imageInfo.image, 0, 0, x, y, 0, 0, x, y);
+
+    if (this._annotationView) {
+      const annotationsImage = await this._annotationView.toImageAsync();
+      tempCtx.drawImage(annotationsImage, 0, 0);
+    }
+
+    const result = await new Promise<Blob>((resolve, reject) => {
+      tempCanvas.toBlob((blob: Blob) => {
+        resolve(blob);
+      }, "image/png", 0.7);
+    });
+
+    return result;
   }
   
   private createPreviewCanvas(): HTMLCanvasElement {

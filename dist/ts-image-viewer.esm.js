@@ -2198,6 +2198,15 @@ class ImageInfo {
     }
 }
 
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ImageAnnotationView {
     constructor(imageInfo) {
         this._rendered = new Set();
@@ -2219,6 +2228,7 @@ class ImageAnnotationView {
         this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this._svg.classList.add("stretch");
         this._svg.setAttribute("data-image-id", this._imageInfo.uuid + "");
+        this._svg.setAttribute("fill", "none");
         const { x, y } = this._imageInfo.dimensions;
         this._svg.setAttribute("viewBox", `0 0 ${x} ${y}`);
         this._svg.addEventListener("pointerdown", () => {
@@ -2246,6 +2256,26 @@ class ImageAnnotationView {
         this.renderAnnotations();
         parent.append(this._container);
         document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+    }
+    toImageAsync() {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            const svgSerialized = new XMLSerializer().serializeToString(this._svg);
+            const svgBlob = new Blob([svgSerialized], { type: "image/svg+xml;charset=utf-8" });
+            const svgUrl = URL.createObjectURL(svgBlob);
+            const result = yield new Promise((resolve, reject) => {
+                const image = new Image();
+                image.onerror = (e) => {
+                    console.log(`Error while loading image: ${e}`);
+                    resolve(null);
+                };
+                image.onload = () => {
+                    resolve(image);
+                };
+                image.src = svgUrl;
+            });
+            URL.revokeObjectURL(svgUrl);
+            return result;
+        });
     }
     renderAnnotations() {
         this.clear();
@@ -2279,6 +2309,15 @@ class ImageAnnotationView {
     }
 }
 
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ImageView {
     constructor(imageInfo, index, previewWidth) {
         if (!imageInfo) {
@@ -2384,6 +2423,26 @@ class ImageView {
         this._annotationView = null;
         (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
         this._viewRendered = false;
+    }
+    bakeAnnotationsAsync() {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            const tempCanvas = document.createElement("canvas");
+            const { x, y } = this.imageInfo.dimensions;
+            tempCanvas.width = x;
+            tempCanvas.height = y;
+            const tempCtx = tempCanvas.getContext("2d");
+            tempCtx.drawImage(this.imageInfo.image, 0, 0, x, y, 0, 0, x, y);
+            if (this._annotationView) {
+                const annotationsImage = yield this._annotationView.toImageAsync();
+                tempCtx.drawImage(annotationsImage, 0, 0);
+            }
+            const result = yield new Promise((resolve, reject) => {
+                tempCanvas.toBlob((blob) => {
+                    resolve(blob);
+                }, "image/png", 0.7);
+            });
+            return result;
+        });
     }
     createPreviewCanvas() {
         const canvas = document.createElement("canvas");
@@ -2661,8 +2720,17 @@ class ViewerData {
         }
         return dtos;
     }
-    bakeAnnotations(imageUuid) {
-        return null;
+    bakeImageAnnotationsAsync(imageUuid) {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const imageView = imageUuid
+                ? this._imageViews.find(x => x.imageInfo.uuid === imageUuid)
+                : this._currentImageView;
+            if (!imageView) {
+                return null;
+            }
+            const blob = imageView.bakeAnnotationsAsync();
+            return blob;
+        });
     }
 }
 const imageChangeEvent = "tsimage-imagechange";
@@ -2724,12 +2792,13 @@ class TsImageViewer {
         this.onOpenFileButtonClick = () => {
             this._shadowRoot.getElementById("open-file-input").click();
         };
-        this.onSaveFileButtonClick = () => {
-            const blob = this._viewerData.bakeAnnotations();
+        this.onSaveFileButtonClick = () => __awaiter(this, void 0, void 0, function* () {
+            const blob = yield this._viewerData.bakeImageAnnotationsAsync();
             if (!blob) {
                 return;
             }
-        };
+            TsImageViewer.downloadFile(blob, `img_${new Date().toISOString()}.png`);
+        });
         this.onCloseFileButtonClick = () => {
             this.closeImages();
         };

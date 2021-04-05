@@ -314,13 +314,13 @@ export class TsImageViewer {
     this._shadowRoot.getElementById("open-file-input").click();
   };
 
-  private onSaveFileButtonClick = () => {
-    const blob = this._viewerData.bakeAnnotations();
+  private onSaveFileButtonClick = async () => {
+    const blob = await this._viewerData.bakeImageAnnotationsAsync();
     if (!blob) {
       return;
     }
 
-    // TsImageViewer.downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
+    TsImageViewer.downloadFile(blob, `img_${new Date().toISOString()}.png`);
   };
   
   private onCloseFileButtonClick = () => {

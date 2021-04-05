@@ -293,11 +293,19 @@ export class ViewerData {
   /**
    * get image with baked annotations
    * @param imageUuid uuid of the image (the current image is used if uuid is not specified)
-   * @returns Blob of the image with baked annotations
+   * @returns Promise<Blob> of the image with baked annotations
    */
-  bakeAnnotations(imageUuid?: string): Blob {
-    // TODO: implement
-    return null;
+  async bakeImageAnnotationsAsync(imageUuid?: string): Promise<Blob> {
+    const imageView = imageUuid
+      ? this._imageViews.find(x => x.imageInfo.uuid === imageUuid)
+      : this._currentImageView;
+    
+    if (!imageView) {
+      return null;
+    }
+
+    const blob = imageView.bakeAnnotationsAsync();
+    return blob;
   }
 
   private onSelectionRequest = (e: AnnotSelectionRequestEvent) => {

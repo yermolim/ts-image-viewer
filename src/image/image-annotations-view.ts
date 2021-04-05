@@ -25,6 +25,7 @@ export class ImageAnnotationView {
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this._svg.classList.add("stretch");
     this._svg.setAttribute("data-image-id", this._imageInfo.uuid + "");
+    this._svg.setAttribute("fill", "none");
     const {x, y} = this._imageInfo.dimensions;
     this._svg.setAttribute("viewBox", `0 0 ${x} ${y}`);
     
@@ -58,6 +59,27 @@ export class ImageAnnotationView {
     this.renderAnnotations();
     parent.append(this._container);
     document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+  }
+
+  async toImageAsync(): Promise<HTMLImageElement> {
+    const svgSerialized = new XMLSerializer().serializeToString(this._svg);
+    const svgBlob = new Blob([svgSerialized], {type: "image/svg+xml;charset=utf-8"});
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    const result = await new Promise<HTMLImageElement>((resolve, reject) => {      
+      const image = new Image();
+      image.onerror = (e: string | Event) => {
+        console.log(`Error while loading image: ${e}`);
+        resolve(null);
+      };
+      image.onload = () => {
+        resolve(image);
+      };
+      image.src = svgUrl;
+    });
+    
+    URL.revokeObjectURL(svgUrl);
+    return result;
   }
 
   private renderAnnotations(): boolean {    
