@@ -152,7 +152,28 @@ export class PenAnnotation extends Annotation {
   protected renderContent(): RenderToSvgResult {   
     try {
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      // TODO: render
+      g.setAttribute("transform", `matrix(${this._matrix.toFloatShortArray().join(" ")})`);
+      g.setAttribute("fill", "none");
+      g.setAttribute("stroke", `rgba(${this._strokeColor.join(",")})`);
+      g.setAttribute("stroke-width", this._strokeWidth + "");
+      if (this._strokeDashGap) {
+        g.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
+      }
+
+      for (const pathCoords of this.pathList) {
+        if (!pathCoords?.length) {
+          continue;
+        }
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        let d = `M ${pathCoords[0]} ${pathCoords[1]}`;
+        for (let i = 2; i < pathCoords.length;) {
+          d += ` L ${pathCoords[i++]} ${pathCoords[i++]}`;
+        }
+        path.setAttribute("d", d);
+        g.append(path);
+      }
+      
       return {
         svg: g,
       };

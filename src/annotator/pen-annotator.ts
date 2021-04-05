@@ -16,7 +16,7 @@ export class PenAnnotator extends Annotator {
     super(parent, imageView);
     this.init();
 
-    this._color = color || PenAnnotator.lastColor || [0, 0, 0, 0.5];
+    this._color = color || PenAnnotator.lastColor || [0, 0, 0, 0.9];
     PenAnnotator.lastColor = this._color;
   }
 

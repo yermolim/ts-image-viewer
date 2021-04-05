@@ -1674,6 +1674,7 @@ class Annotator {
     }
     set scale(value) {
         this._scale = value;
+        this.refreshViewBox();
     }
     get overlayContainer() {
         return this._overlayContainer;
@@ -1737,8 +1738,7 @@ class Annotator {
         annotationOverlay.id = "annotation-overlay";
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.classList.add("abs-stretch", "no-margin", "no-padding");
-        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
-        svg.setAttribute("opacity", "0.5");
+        svg.setAttribute("opacity", "0.75");
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         svg.append(g);
         annotationOverlay.append(svg);
@@ -1771,7 +1771,7 @@ class Annotator {
         }
         return {
             imageX: (clientX - pxMin) / this._scale,
-            imageY: (pyMax - clientY) / this._scale,
+            imageY: (clientY - pyMin) / this._scale,
         };
     }
 }
@@ -1808,7 +1808,7 @@ class PenData {
         const [r, g, b, a] = this._options.color || [0, 0, 0, 1];
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("fill", "none");
-        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke", `rgba(${r},${g},${b},${a})`);
         path.setAttribute("stroke-width", this._options.strokeWidth + "");
         const pathString = "M" + startPosition.x + " " + startPosition.y;
         path.setAttribute("d", pathString);
@@ -1884,7 +1884,7 @@ class PenData {
 }
 PenData.defaultOptions = {
     bufferSize: 8,
-    strokeWidth: 2,
+    strokeWidth: 3,
     color: [0, 0, 0, 0.5],
 };
 
@@ -2013,6 +2013,25 @@ class PenAnnotation extends Annotation {
     renderContent() {
         try {
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("transform", `matrix(${this._matrix.toFloatShortArray().join(" ")})`);
+            g.setAttribute("fill", "none");
+            g.setAttribute("stroke", `rgba(${this._strokeColor.join(",")})`);
+            g.setAttribute("stroke-width", this._strokeWidth + "");
+            if (this._strokeDashGap) {
+                g.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+            }
+            for (const pathCoords of this.pathList) {
+                if (!(pathCoords === null || pathCoords === void 0 ? void 0 : pathCoords.length)) {
+                    continue;
+                }
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                let d = `M ${pathCoords[0]} ${pathCoords[1]}`;
+                for (let i = 2; i < pathCoords.length;) {
+                    d += ` L ${pathCoords[i++]} ${pathCoords[i++]}`;
+                }
+                path.setAttribute("d", d);
+                g.append(path);
+            }
             return {
                 svg: g,
             };
@@ -2080,7 +2099,7 @@ class PenAnnotator extends Annotator {
             this.emitPathCount();
         };
         this.init();
-        this._color = color || PenAnnotator.lastColor || [0, 0, 0, 0.5];
+        this._color = color || PenAnnotator.lastColor || [0, 0, 0, 0.9];
         PenAnnotator.lastColor = this._color;
     }
     destroy() {
@@ -2923,7 +2942,7 @@ class TsImageViewer {
                 this._annotChangeCallback(e.detail);
             }
             if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
-                (_a = this._viewerData.currentImageView) === null || _a === void 0 ? void 0 : _a.renderView();
+                (_a = this._viewerData.currentImageView) === null || _a === void 0 ? void 0 : _a.renderView(true);
             }
         };
         if (!options) {
@@ -3247,6 +3266,9 @@ class TsImageViewer {
                 return;
             }
         }
+        if (this._annotator) {
+            this._annotator.scale = scale;
+        }
         setTimeout(() => this._viewerData.currentImageView.renderView(), 0);
     }
     zoom(step, cursorPosition) {
@@ -3371,10 +3393,10 @@ class TsImageViewer {
     }
     initContextPenColorPicker() {
         const colors = [
-            [0, 0, 0, 0.5],
-            [0.804, 0, 0, 0.5],
-            [0, 0.804, 0, 0.5],
-            [0, 0, 0.804, 0.5],
+            [0, 0, 0, 0.9],
+            [205, 0, 0, 0.9],
+            [0, 205, 0, 0.9],
+            [0, 0, 205, 0.9],
         ];
         const contextMenuContent = document.createElement("div");
         contextMenuContent.classList.add("context-menu-content", "row");

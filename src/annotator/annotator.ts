@@ -15,6 +15,7 @@ export abstract class Annotator {
   }
   set scale(value: number) {
     this._scale = value;
+    this.refreshViewBox();
   }
   protected _lastScale: number;
   
@@ -109,8 +110,7 @@ export abstract class Annotator {
     
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.classList.add("abs-stretch", "no-margin", "no-padding");
-    svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
-    svg.setAttribute("opacity", "0.5");
+    svg.setAttribute("opacity", "0.75");
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     svg.append(g);
@@ -155,7 +155,7 @@ export abstract class Annotator {
     // point is inside the image
     return {
       imageX: (clientX - pxMin) / this._scale,
-      imageY: (pyMax - clientY) / this._scale,
+      imageY: (clientY - pyMin) / this._scale,
     };  
   }
 }

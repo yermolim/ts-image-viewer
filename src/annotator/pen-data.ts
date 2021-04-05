@@ -16,7 +16,7 @@ export interface PenDataOptions {
 export class PenData {
   static readonly defaultOptions: PenDataOptions = {
     bufferSize: 8, 
-    strokeWidth: 2,
+    strokeWidth: 3,
     color: [0, 0, 0, 0.5],
   };  
   private _options: PenDataOptions;
@@ -59,7 +59,7 @@ export class PenData {
     const [r, g, b, a] = this._options.color || [0, 0, 0, 1];
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("fill", "none");
-    path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+    path.setAttribute("stroke", `rgba(${r},${g},${b},${a})`);
     path.setAttribute("stroke-width", this._options.strokeWidth + "");
 
     const pathString = "M" + startPosition.x + " " + startPosition.y;

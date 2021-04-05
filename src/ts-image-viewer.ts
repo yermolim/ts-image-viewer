@@ -628,6 +628,10 @@ export class TsImageViewer {
       }
     }
 
+    // refresh annotator scale
+    if (this._annotator) {
+      this._annotator.scale = scale;
+    }    
     // use timeout to let browser update image layout
     setTimeout(() => this._viewerData.currentImageView.renderView(), 0);
   }
@@ -928,16 +932,16 @@ export class TsImageViewer {
 
     // rerender current images
     if (annotations?.length) {
-      this._viewerData.currentImageView?.renderView();
+      this._viewerData.currentImageView?.renderView(true);
     }
   };
 
   private initContextPenColorPicker() {
     const colors: Quadruple[] = [
-      [0, 0, 0, 0.5], // black
-      [0.804, 0, 0, 0.5], // red
-      [0, 0.804, 0, 0.5], // green
-      [0, 0, 0.804, 0.5], // blue
+      [0, 0, 0, 0.9], // black
+      [205, 0, 0, 0.9], // red
+      [0, 205, 0, 0.9], // green
+      [0, 0, 205, 0.9], // blue
     ];
     const contextMenuContent = document.createElement("div");
     contextMenuContent.classList.add("context-menu-content", "row");
