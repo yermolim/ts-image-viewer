@@ -2718,6 +2718,7 @@ class TsImageViewer {
                 };
                 imageLoadInfos.push(imageLoadInfo);
             }
+            this._fileInput.value = null;
             this.openImagesAsync(imageLoadInfos);
         };
         this.onOpenFileButtonClick = () => {
