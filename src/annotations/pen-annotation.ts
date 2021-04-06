@@ -49,15 +49,6 @@ export class PenAnnotation extends Annotation {
       });
       pathList.push(ink);
     });
-    const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(...positions);  
-    const w = data.strokeWidth; 
-    const rect: Quadruple = [
-      newRectMin.x - w / 2, 
-      newRectMin.y - w / 2, 
-      newRectMax.x + w / 2, 
-      newRectMax.y + w / 2,
-    ];
 
     const nowString = new Date().toISOString();
     const dto: PenAnnotationDto = {
@@ -68,11 +59,6 @@ export class PenAnnotation extends Annotation {
       dateCreated: nowString,
       dateModified: nowString,
       author: userName || "unknown",
-
-      rect,
-      bbox: null,
-      matrix: [1, 0, 0, 1, 0, 0],
-      html: null,
 
       pathList,
       strokeColor: data.color,
@@ -93,26 +79,48 @@ export class PenAnnotation extends Annotation {
       dateModified: this._dateModified.toISOString(),
       author: this._author,
 
-      rect: this._aabb,
-      bbox: this._bb,
-      matrix: <Hextuple><unknown>this._matrix.toFloatShortArray(),
-      html: this._svgContent?.innerHTML,
-
       pathList: this._pathList,
       strokeColor: this._strokeColor,
       strokeWidth: this._strokeWidth,
       strokeDashGap: this._strokeDashGap,
     };
   }
-    
-  protected applyCommonTransform(matrix: Mat3) {
-    // transform current InkList and Rect
+
+  protected updateAABB() {
     let x: number;
     let y: number;
     let xMin: number;
     let yMin: number;
     let xMax: number;
     let yMax: number;
+    this._pathList.forEach(list => {
+      for (let i = 0; i < list.length; i = i + 2) {
+        x = list[i];
+        y = list[i + 1];
+
+        if (!xMin || x < xMin) {
+          xMin = x;
+        }
+        if (!yMin || y < yMin) {
+          yMin = y;
+        }
+        if (!xMax || x > xMax) {
+          xMax = x;
+        }
+        if (!yMax || y > yMax) {
+          yMax = y;
+        }
+      }
+    });
+
+    this._aabb[0].set(xMin, yMin);
+    this._aabb[1].set(xMax, yMax);
+  } 
+    
+  protected applyCommonTransform(matrix: Mat3) {
+    // transform current InkList
+    let x: number;
+    let y: number;
     const vec = new Vec2();
     this._pathList.forEach(list => {
       for (let i = 0; i < list.length; i = i + 2) {
@@ -121,38 +129,17 @@ export class PenAnnotation extends Annotation {
         vec.set(x, y).applyMat3(matrix);
         list[i] = vec.x;
         list[i + 1] = vec.y;
-
-        if (!xMin || vec.x < xMin) {
-          xMin = vec.x;
-        }
-        if (!yMin || vec.y < yMin) {
-          yMin = vec.y;
-        }
-        if (!xMax || vec.x > xMax) {
-          xMax = vec.x;
-        }
-        if (!yMax || vec.y > yMax) {
-          yMax = vec.y;
-        }
       }
-    });
-    this._aabb = [xMin, yMin, xMax, yMax];
-    // update calculated bBox if present
-    if (this._bb) {
-      const bBox =  this.getLocalBB();
-      bBox.ll.set(xMin, yMin);
-      bBox.lr.set(xMax, yMin);
-      bBox.ur.set(xMax, yMax);
-      bBox.ul.set(xMin, yMax);
-    }
+    });    
 
-    this._dateModified = new Date();
+    this._dateModified = new Date();    
+
+    this.updateRender();
   }
 
   protected renderContent(): RenderToSvgResult {   
     try {
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("transform", `matrix(${this._matrix.toFloatShortArray().join(" ")})`);
       g.setAttribute("fill", "none");
       g.setAttribute("stroke", `rgba(${this._strokeColor.join(",")})`);
       g.setAttribute("stroke-width", this._strokeWidth + "");

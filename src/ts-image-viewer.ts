@@ -927,6 +927,7 @@ export class TsImageViewer {
     }
 
     const annotations = e.detail.annotations;
+    
     switch(e.detail.type) {
       case "select":      
         if (annotations?.length) {

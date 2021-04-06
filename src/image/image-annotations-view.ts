@@ -30,10 +30,12 @@ export class ImageAnnotationView {
     this._svg.setAttribute("viewBox", `0 0 ${x} ${y}`);
     
     // handle annotation selection
-    this._svg.addEventListener("pointerdown", () => {      
-      document.dispatchEvent(new AnnotSelectionRequestEvent({
-        annotation: null,
-      }));
+    this._svg.addEventListener("pointerdown", (e: PointerEvent) => {  
+      if (e.target === this._svg) {
+        document.dispatchEvent(new AnnotSelectionRequestEvent({
+          annotation: null,
+        }));
+      }    
     });
     
     this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");

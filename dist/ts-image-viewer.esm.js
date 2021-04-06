@@ -1139,11 +1139,6 @@ class Mat3 {
         }
     }
 }
-function vecMinMax(...values) {
-    const min = new Vec2(Math.min(...values.map(x => x.x)), Math.min(...values.map(x => x.y)));
-    const max = new Vec2(Math.max(...values.map(x => x.x)), Math.max(...values.map(x => x.y)));
-    return { min, max };
-}
 
 class ContextMenu {
     constructor() {
@@ -1218,9 +1213,9 @@ class ContextMenu {
 class Annotation {
     constructor(dto) {
         this._imageDimensions = new Vec2();
+        this._aabb = [new Vec2(), new Vec2()];
         this._transformationMatrix = new Mat3();
         this._transformationPoint = new Vec2();
-        this._currentAngle = 0;
         this._boxX = new Vec2();
         this._boxY = new Vec2();
         this._svgId = getRandomUuid();
@@ -1262,7 +1257,6 @@ class Annotation {
             this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
             this.applyCommonTransform(this._transformationMatrix);
             this._transformationMatrix.reset();
-            this.updateRender();
         };
         this.onRotationHandlePointerDown = (e) => {
             if (!e.isPrimary) {
@@ -1281,15 +1275,14 @@ class Annotation {
             if (!e.isPrimary) {
                 return;
             }
-            const centerX = (this._aabb[0] + this._aabb[2]) / 2;
-            const centerY = (this._aabb[1] + this._aabb[3]) / 2;
+            const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
+            const centerX = (xmin + xmax) / 2;
+            const centerY = (ymin + ymax) / 2;
             const clientCenter = this.convertImageCoordsToClient(centerX, centerY);
-            const currentRotation = this.getCurrentRotation();
-            const angle = Math.atan2(e.clientY - clientCenter.y, e.clientX - clientCenter.x) + Math.PI / 2 - currentRotation;
-            this._currentAngle = angle;
+            const angle = Math.atan2(e.clientY - clientCenter.y, e.clientX - clientCenter.x) - Math.PI / 2;
             this._transformationMatrix.reset()
                 .applyTranslation(-centerX, -centerY)
-                .applyRotation(angle)
+                .applyRotation(-angle)
                 .applyTranslation(centerX, centerY);
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
         };
@@ -1309,7 +1302,6 @@ class Annotation {
             this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
             this.applyCommonTransform(this._transformationMatrix);
             this._transformationMatrix.reset();
-            this.updateRender();
         };
         this.onScaleHandlePointerDown = (e) => {
             if (!e.isPrimary) {
@@ -1318,7 +1310,11 @@ class Annotation {
             document.addEventListener("pointerup", this.onScaleHandlePointerUp);
             document.addEventListener("pointerout", this.onScaleHandlePointerUp);
             const target = e.target;
-            const { ll, lr, ur, ul } = this.getLocalBB();
+            const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
+            const ul = new Vec2(xmin, ymin);
+            const ll = new Vec2(xmin, ymax);
+            const lr = new Vec2(xmax, ymax);
+            const ur = new Vec2(xmax, ymin);
             const handleName = target.dataset["handleName"];
             switch (handleName) {
                 case "ll":
@@ -1365,14 +1361,12 @@ class Annotation {
             const pYLength = Math.sqrt(currentLength * currentLength - pXLength * pXLength);
             const scaleX = pXLength / this._boxXLength;
             const scaleY = pYLength / this._boxYLength;
-            const centerX = (this._aabb[0] + this._aabb[2]) / 2;
-            const centerY = (this._aabb[1] + this._aabb[3]) / 2;
-            const currentRotation = this.getCurrentRotation();
+            const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
+            const centerX = (xmin + xmax) / 2;
+            const centerY = (ymin + ymax) / 2;
             this._transformationMatrix.reset()
                 .applyTranslation(-centerX, -centerY)
-                .applyRotation(-currentRotation)
                 .applyScaling(scaleX, scaleY)
-                .applyRotation(currentRotation)
                 .applyTranslation(centerX, centerY);
             const translation = this._transformationPoint.clone().substract(this._transformationPoint.clone().applyMat3(this._transformationMatrix));
             this._transformationMatrix.applyTranslation(translation.x, translation.y);
@@ -1394,7 +1388,6 @@ class Annotation {
             this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
             this.applyCommonTransform(this._transformationMatrix);
             this._transformationMatrix.reset();
-            this.updateRender();
         };
         this.type = (dto === null || dto === void 0 ? void 0 : dto.annotationType) || "none";
         this.uuid = (dto === null || dto === void 0 ? void 0 : dto.uuid) || getRandomUuid();
@@ -1406,18 +1399,6 @@ class Annotation {
             ? new Date(dto.dateModified)
             : new Date();
         this._author = (dto === null || dto === void 0 ? void 0 : dto.author) || "unknown";
-        this._aabb = (dto === null || dto === void 0 ? void 0 : dto.rect) || [0, 0, 0, 0];
-        if (dto === null || dto === void 0 ? void 0 : dto.bbox) {
-            const [a, b, d, e, g, h] = dto.matrix;
-            this._matrix = new Mat3().set(a, b, 0, d, e, 0, g, h, 1);
-        }
-        if (dto === null || dto === void 0 ? void 0 : dto.matrix) {
-            const [a, b, d, e, g, h] = dto.matrix;
-            this._matrix = new Mat3().set(a, b, 0, d, e, 0, g, h, 1);
-        }
-        else {
-            this._matrix = new Mat3();
-        }
     }
     get imageUuid() {
         return this._imageUuid;
@@ -1472,15 +1453,15 @@ class Annotation {
         return renderResult;
     }
     moveTo(imageX, imageY) {
-        const width = this._bb[2] - this._bb[0];
-        const height = this._bb[3] - this._bb[1];
+        const aabb = this._aabb;
+        const width = aabb[1].x - aabb[0].x;
+        const height = aabb[1].y - aabb[0].y;
         const x = imageX - width / 2;
         const y = imageY - height / 2;
         const mat = Mat3.buildTranslate(x, y);
         this.applyCommonTransform(mat);
     }
     toDto() {
-        var _a;
         return {
             annotationType: this.type,
             uuid: this.uuid,
@@ -1488,93 +1469,38 @@ class Annotation {
             dateCreated: this.dateCreated.toISOString(),
             dateModified: this.dateModified.toISOString(),
             author: this.author,
-            rect: this._aabb,
-            bbox: this._bb,
-            matrix: this._matrix.toFloatShortArray(),
-            html: (_a = this._svgContent) === null || _a === void 0 ? void 0 : _a.innerHTML,
         };
-    }
-    getCurrentRotation() {
-        const matrix = this._matrix;
-        if (!matrix) {
-            return 0;
-        }
-        const { r } = matrix.getTRS();
-        return r;
-    }
-    getLocalBB() {
-        let bBoxLL;
-        let bBoxLR;
-        let bBoxUR;
-        let bBoxUL;
-        if (this._bb) {
-            bBoxLL = new Vec2(this._bb[0], this._bb[1]);
-            bBoxLR = new Vec2(this._bb[2], this._bb[3]);
-            bBoxUR = new Vec2(this._bb[4], this._bb[5]);
-            bBoxUL = new Vec2(this._bb[6], this._bb[7]);
-        }
-        else {
-            bBoxLL = new Vec2(this._aabb[0], this._aabb[1]);
-            bBoxLR = new Vec2(this._aabb[2], this._aabb[1]);
-            bBoxUR = new Vec2(this._aabb[2], this._aabb[3]);
-            bBoxUL = new Vec2(this._aabb[0], this._aabb[3]);
-        }
-        this._bb = [bBoxLL.x, bBoxLL.y, bBoxLR.x, bBoxLR.y, bBoxUR.x, bBoxUR.y, bBoxUL.x, bBoxUL.y];
-        return {
-            ll: bBoxLL,
-            lr: bBoxLR,
-            ur: bBoxUR,
-            ul: bBoxUL,
-        };
-    }
-    applyRectTransform(matrix) {
-        const bBox = this.getLocalBB();
-        bBox.ll.applyMat3(matrix);
-        bBox.lr.applyMat3(matrix);
-        bBox.ur.applyMat3(matrix);
-        bBox.ul.applyMat3(matrix);
-        const { min: newRectMin, max: newRectMax } = vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-        this._aabb = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
-    }
-    applyCommonTransform(matrix) {
-        this.applyRectTransform(matrix);
-        this._dateModified = new Date();
     }
     convertClientCoordsToImage(clientX, clientY) {
         const { x, y, width, height } = this._svgBox.getBoundingClientRect();
         const rectMinScaled = new Vec2(x, y);
         const rectMaxScaled = new Vec2(x + width, y + height);
-        const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (this._aabb[2] - this._aabb[0]);
-        const imageLowerLeft = new Vec2(x - this._aabb[0] * imageScale, y + height + (this._aabb[1] * imageScale));
-        const position = new Vec2((clientX - imageLowerLeft.x) / imageScale, (imageLowerLeft.y - clientY) / imageScale);
+        const [{ x: xmin, y: ymin }, { x: xmax }] = this._aabb;
+        const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
+        const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
+        const position = new Vec2((clientX - imageTopLeft.x) / imageScale, (clientY - imageTopLeft.y) / imageScale);
         return position;
     }
     convertImageCoordsToClient(imageX, imageY) {
         const { x, y, width, height } = this._svgBox.getBoundingClientRect();
         const rectMinScaled = new Vec2(x, y);
         const rectMaxScaled = new Vec2(x + width, y + height);
-        const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (this._aabb[2] - this._aabb[0]);
-        const imageLowerLeft = new Vec2(x - this._aabb[0] * imageScale, y + height + (this._aabb[1] * imageScale));
-        const position = new Vec2(imageLowerLeft.x + (imageX * imageScale), imageLowerLeft.y - (imageY * imageScale));
+        const [{ x: xmin, y: ymin }, { x: xmax }] = this._aabb;
+        const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
+        const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
+        const position = new Vec2(imageTopLeft.x + (imageX * imageScale), imageTopLeft.y + (imageY * imageScale));
         return position;
     }
-    renderRect() {
+    renderBox() {
+        const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         rect.classList.add("svg-annot-rect");
         rect.setAttribute("data-annotation-name", this.uuid);
-        rect.setAttribute("x", this._aabb[0] + "");
-        rect.setAttribute("y", this._aabb[1] + "");
-        rect.setAttribute("width", this._aabb[2] - this._aabb[0] + "");
-        rect.setAttribute("height", this._aabb[3] - this._aabb[1] + "");
+        rect.setAttribute("x", xmin + "");
+        rect.setAttribute("y", ymin + "");
+        rect.setAttribute("width", xmax - xmin + "");
+        rect.setAttribute("height", ymax - ymin + "");
         return rect;
-    }
-    renderBox() {
-        const { ll, lr, ur, ul } = this.getLocalBB();
-        const boxPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        boxPath.classList.add("svg-annot-box");
-        boxPath.setAttribute("data-annotation-name", this.uuid);
-        boxPath.setAttribute("d", `M ${ll.x} ${ll.y} L ${lr.x} ${lr.y} L ${ur.x} ${ur.y} L ${ul.x} ${ul.y} Z`);
-        return boxPath;
     }
     renderMainElement() {
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -1603,7 +1529,13 @@ class Annotation {
         return { copy, use };
     }
     renderScaleHandles() {
-        const bBox = this.getLocalBB();
+        const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
+        const bBox = {
+            ul: new Vec2(xmin, ymin),
+            ll: new Vec2(xmin, ymax),
+            lr: new Vec2(xmax, ymax),
+            ur: new Vec2(xmax, ymin),
+        };
         const handles = [];
         ["ll", "lr", "ur", "ul"].forEach(x => {
             const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -1617,9 +1549,9 @@ class Annotation {
         return handles;
     }
     renderRotationHandle() {
-        const centerX = (this._aabb[0] + this._aabb[2]) / 2;
-        const centerY = (this._aabb[1] + this._aabb[3]) / 2;
-        const currentRotation = this.getCurrentRotation();
+        const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
+        const centerX = (xmin + xmax) / 2;
+        const centerY = (ymin + ymax) / 2;
         const rotationGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         rotationGroup.classList.add("svg-annot-rotation");
         rotationGroup.setAttribute("data-handle-name", "center");
@@ -1627,11 +1559,10 @@ class Annotation {
         rotationGroupCircle.classList.add("circle", "dashed");
         rotationGroupCircle.setAttribute("cx", centerX + "");
         rotationGroupCircle.setAttribute("cy", centerY + "");
-        const handleMatrix = new Mat3()
+        new Mat3()
             .applyTranslation(-centerX, -centerY + 35)
-            .applyRotation(currentRotation)
             .applyTranslation(centerX, centerY);
-        const handleCenter = new Vec2(centerX, centerY).applyMat3(handleMatrix);
+        const handleCenter = new Vec2(centerX, centerY);
         const rotationGroupLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
         rotationGroupLine.classList.add("dashed");
         rotationGroupLine.setAttribute("x1", centerX + "");
@@ -1652,6 +1583,7 @@ class Annotation {
     }
     updateRender() {
         this._svg.innerHTML = "";
+        this.updateAABB();
         const contentResult = this.renderContent();
         if (!contentResult) {
             this._svgBox = null;
@@ -1666,10 +1598,9 @@ class Annotation {
         content.classList.add("svg-annotation-content");
         content.setAttribute("data-annotation-name", this.uuid);
         const { copy, use } = this.renderContentCopy();
-        const rect = this.renderRect();
         const box = this.renderBox();
         const handles = this.renderHandles();
-        this._svg.append(rect, box, contentResult.svg, ...handles);
+        this._svg.append(box, contentResult.svg, ...handles);
         this._svgBox = box;
         this._svgContent = content;
         this._svgContentCopy = copy;
@@ -1948,24 +1879,14 @@ class PenAnnotation extends Annotation {
         return this._strokeDashGap;
     }
     static createFromPenData(data, userName) {
-        const positions = [];
         const pathList = [];
         data.paths.forEach(path => {
             const ink = [];
             path.positions.forEach(pos => {
-                positions.push(pos);
                 ink.push(pos.x, pos.y);
             });
             pathList.push(ink);
         });
-        const { min: newRectMin, max: newRectMax } = vecMinMax(...positions);
-        const w = data.strokeWidth;
-        const rect = [
-            newRectMin.x - w / 2,
-            newRectMin.y - w / 2,
-            newRectMax.x + w / 2,
-            newRectMax.y + w / 2,
-        ];
         const nowString = new Date().toISOString();
         const dto = {
             uuid: getRandomUuid(),
@@ -1974,10 +1895,6 @@ class PenAnnotation extends Annotation {
             dateCreated: nowString,
             dateModified: nowString,
             author: userName || "unknown",
-            rect,
-            bbox: null,
-            matrix: [1, 0, 0, 1, 0, 0],
-            html: null,
             pathList,
             strokeColor: data.color,
             strokeWidth: data.strokeWidth,
@@ -1986,7 +1903,6 @@ class PenAnnotation extends Annotation {
         return new PenAnnotation(dto);
     }
     toDto() {
-        var _a;
         return {
             annotationType: this.type,
             uuid: this.uuid,
@@ -1994,23 +1910,43 @@ class PenAnnotation extends Annotation {
             dateCreated: this._dateCreated.toISOString(),
             dateModified: this._dateModified.toISOString(),
             author: this._author,
-            rect: this._aabb,
-            bbox: this._bb,
-            matrix: this._matrix.toFloatShortArray(),
-            html: (_a = this._svgContent) === null || _a === void 0 ? void 0 : _a.innerHTML,
             pathList: this._pathList,
             strokeColor: this._strokeColor,
             strokeWidth: this._strokeWidth,
             strokeDashGap: this._strokeDashGap,
         };
     }
-    applyCommonTransform(matrix) {
+    updateAABB() {
         let x;
         let y;
         let xMin;
         let yMin;
         let xMax;
         let yMax;
+        this._pathList.forEach(list => {
+            for (let i = 0; i < list.length; i = i + 2) {
+                x = list[i];
+                y = list[i + 1];
+                if (!xMin || x < xMin) {
+                    xMin = x;
+                }
+                if (!yMin || y < yMin) {
+                    yMin = y;
+                }
+                if (!xMax || x > xMax) {
+                    xMax = x;
+                }
+                if (!yMax || y > yMax) {
+                    yMax = y;
+                }
+            }
+        });
+        this._aabb[0].set(xMin, yMin);
+        this._aabb[1].set(xMax, yMax);
+    }
+    applyCommonTransform(matrix) {
+        let x;
+        let y;
         const vec = new Vec2();
         this._pathList.forEach(list => {
             for (let i = 0; i < list.length; i = i + 2) {
@@ -2019,34 +1955,14 @@ class PenAnnotation extends Annotation {
                 vec.set(x, y).applyMat3(matrix);
                 list[i] = vec.x;
                 list[i + 1] = vec.y;
-                if (!xMin || vec.x < xMin) {
-                    xMin = vec.x;
-                }
-                if (!yMin || vec.y < yMin) {
-                    yMin = vec.y;
-                }
-                if (!xMax || vec.x > xMax) {
-                    xMax = vec.x;
-                }
-                if (!yMax || vec.y > yMax) {
-                    yMax = vec.y;
-                }
             }
         });
-        this._aabb = [xMin, yMin, xMax, yMax];
-        if (this._bb) {
-            const bBox = this.getLocalBB();
-            bBox.ll.set(xMin, yMin);
-            bBox.lr.set(xMax, yMin);
-            bBox.ur.set(xMax, yMax);
-            bBox.ul.set(xMin, yMax);
-        }
         this._dateModified = new Date();
+        this.updateRender();
     }
     renderContent() {
         try {
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            g.setAttribute("transform", `matrix(${this._matrix.toFloatShortArray().join(" ")})`);
             g.setAttribute("fill", "none");
             g.setAttribute("stroke", `rgba(${this._strokeColor.join(",")})`);
             g.setAttribute("stroke-width", this._strokeWidth + "");
@@ -2265,10 +2181,12 @@ class ImageAnnotationView {
         this._svg.setAttribute("fill", "none");
         const { x, y } = this._imageInfo.dimensions;
         this._svg.setAttribute("viewBox", `0 0 ${x} ${y}`);
-        this._svg.addEventListener("pointerdown", () => {
-            document.dispatchEvent(new AnnotSelectionRequestEvent({
-                annotation: null,
-            }));
+        this._svg.addEventListener("pointerdown", (e) => {
+            if (e.target === this._svg) {
+                document.dispatchEvent(new AnnotSelectionRequestEvent({
+                    annotation: null,
+                }));
+            }
         });
         this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
         this._container.append(this._svg);

@@ -1,5 +1,5 @@
-import { Mat3, Vec2, vecMinMax } from "../math";
-import { BBox, getRandomUuid, Octuple, Double, Quadruple, RenderToSvgResult, Hextuple } from "../common";
+import { Mat3, Vec2 } from "../math";
+import { BBox, getRandomUuid, RenderToSvgResult } from "../common";
 
 export abstract class Annotation {
   translationEnabled: boolean;
@@ -51,15 +51,12 @@ export abstract class Annotation {
     this.updateRender();
   }
 
-  protected _aabb: Quadruple;
-  protected _bb: Octuple;
-  protected _matrix: Mat3;
+  protected readonly _aabb: readonly [min: Vec2, min: Vec2] = [new Vec2(), new Vec2()];
 
   protected _transformationTimer: number; 
   protected _transformationMatrix = new Mat3(); 
   protected _transformationPoint = new Vec2();
 
-  protected _currentAngle = 0; 
   protected _boxX = new Vec2();
   protected _boxY = new Vec2();
   protected _boxXLength: number;
@@ -91,19 +88,6 @@ export abstract class Annotation {
       ? new Date(dto.dateModified) 
       : new Date();
     this._author = dto?.author || "unknown";
-    this._aabb = dto?.rect || [0, 0, 0, 0];
-    if (dto?.bbox) {
-      const [a, b, d, e, g, h] = dto.matrix;
-      this._matrix = new Mat3().set(a, b, 0, d, e, 0, g, h, 1);
-    } else {
-
-    }
-    if (dto?.matrix) {
-      const [a, b, d, e, g, h] = dto.matrix;
-      this._matrix = new Mat3().set(a, b, 0, d, e, 0, g, h, 1);
-    } else {
-      this._matrix = new Mat3();
-    }
   }
   
   render(): RenderToSvgResult {
@@ -124,8 +108,9 @@ export abstract class Annotation {
   } 
 
   moveTo(imageX: number, imageY: number) {
-    const width = this._bb[2] - this._bb[0];
-    const height = this._bb[3] - this._bb[1];
+    const aabb = this._aabb;
+    const width = aabb[1].x - aabb[0].x;
+    const height = aabb[1].y - aabb[0].y;
     const x = imageX - width / 2;
     const y = imageY - height / 2;
     const mat = Mat3.buildTranslate(x, y);
@@ -141,75 +126,12 @@ export abstract class Annotation {
       dateCreated: this.dateCreated.toISOString(),
       dateModified: this.dateModified.toISOString(),
       author: this.author,
-
-      rect: this._aabb,
-      bbox: this._bb,
-      matrix: <Hextuple><unknown>this._matrix.toFloatShortArray(),
-      html: this._svgContent?.innerHTML,
     };
   }
   
   //#region protected render methods
 
   //#region common methods used for rendering purposes
-  protected getCurrentRotation(): number {
-    // TODO: try to implement getting rotation without using AP (if possible)
-    const matrix = this._matrix;
-    if (!matrix) {
-      return 0;
-    }
-    const {r} = matrix.getTRS();
-    return r;
-  }
-
-  protected getLocalBB(): BBox {    
-    let bBoxLL: Vec2;
-    let bBoxLR: Vec2;
-    let bBoxUR: Vec2;
-    let bBoxUL: Vec2;
-    
-    if (this._bb) {
-      // use the saved bounding box if present
-      bBoxLL = new Vec2(this._bb[0], this._bb[1]);
-      bBoxLR = new Vec2(this._bb[2], this._bb[3]);
-      bBoxUR = new Vec2(this._bb[4], this._bb[5]);
-      bBoxUL = new Vec2(this._bb[6], this._bb[7]);
-    } else {  
-      // else use the aabb property data
-      bBoxLL = new Vec2(this._aabb[0], this._aabb[1]);
-      bBoxLR = new Vec2(this._aabb[2], this._aabb[1]);
-      bBoxUR = new Vec2(this._aabb[2], this._aabb[3]);
-      bBoxUL = new Vec2(this._aabb[0], this._aabb[3]);
-    } 
-    
-    this._bb = [bBoxLL.x, bBoxLL.y, bBoxLR.x, bBoxLR.y, bBoxUR.x, bBoxUR.y, bBoxUL.x, bBoxUL.y];
-
-    return {
-      ll: bBoxLL,
-      lr: bBoxLR,
-      ur: bBoxUR,
-      ul: bBoxUL,
-    }; 
-  }  
-
-  protected applyRectTransform(matrix: Mat3) {
-    // transform current bounding box (not axis-aligned)
-    const bBox = this.getLocalBB();
-    bBox.ll.applyMat3(matrix);
-    bBox.lr.applyMat3(matrix);
-    bBox.ur.applyMat3(matrix);
-    bBox.ul.applyMat3(matrix);
-
-    // get an axis-aligned bounding box and assign it to the Rect property
-    const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-    this._aabb = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
-  } 
-  
-  protected applyCommonTransform(matrix: Mat3) {
-    this.applyRectTransform(matrix);
-    this._dateModified = new Date();
-  }
 
   /**
    * get 2D vector with a position of the specified point in image coords 
@@ -217,34 +139,30 @@ export abstract class Annotation {
    * @param clientY 
    */
   protected convertClientCoordsToImage(clientX: number, clientY: number): Vec2 {
-    // html coords (0,0 is top-left corner)
     const {x, y, width, height} = this._svgBox.getBoundingClientRect();
     const rectMinScaled = new Vec2(x, y);
     const rectMaxScaled = new Vec2(x + width, y + height);
-    const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (this._aabb[2] - this._aabb[0]);
-    // the lower-left corner of the image. keep in mind that PDF Rect uses inversed coords
-    const imageLowerLeft = new Vec2(x - this._aabb[0] * imageScale, y + height + (this._aabb[1] * imageScale));
-    // invert Y coord
+    const [{x: xmin, y: ymin}, {x: xmax}] = this._aabb;
+    const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
+    const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
     const position = new Vec2(
-      (clientX - imageLowerLeft.x) / imageScale,
-      (imageLowerLeft.y - clientY) / imageScale,
+      (clientX - imageTopLeft.x) / imageScale,
+      (clientY - imageTopLeft.y) / imageScale,
     );
 
     return position;
   }
   
   protected convertImageCoordsToClient(imageX: number, imageY: number): Vec2 {
-    // html coords (0,0 is top-left corner)
     const {x, y, width, height} = this._svgBox.getBoundingClientRect();
     const rectMinScaled = new Vec2(x, y);
-    const rectMaxScaled = new Vec2(x + width, y + height);
-    const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (this._aabb[2] - this._aabb[0]);
-    // the lower-left corner of the image. keep in mind that PDF Rect uses inversed coords
-    const imageLowerLeft = new Vec2(x - this._aabb[0] * imageScale, y + height + (this._aabb[1] * imageScale));
-    // invert Y coord
+    const rectMaxScaled = new Vec2(x + width, y + height);    
+    const [{x: xmin, y: ymin}, {x: xmax}] = this._aabb;
+    const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
+    const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
     const position = new Vec2(
-      imageLowerLeft.x + (imageX * imageScale),
-      imageLowerLeft.y - (imageY * imageScale),
+      imageTopLeft.x + (imageX * imageScale),
+      imageTopLeft.y + (imageY * imageScale),
     );
 
     return position;
@@ -252,26 +170,18 @@ export abstract class Annotation {
   //#endregion
 
   //#region annotation container render
-  protected renderRect(): SVGGraphicsElement {
+  protected renderBox(): SVGGraphicsElement {
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
+
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.classList.add("svg-annot-rect");
     rect.setAttribute("data-annotation-name", this.uuid);
-    rect.setAttribute("x", this._aabb[0] + "");
-    rect.setAttribute("y", this._aabb[1] + "");
-    rect.setAttribute("width", this._aabb[2] - this._aabb[0] + "");
-    rect.setAttribute("height", this._aabb[3] - this._aabb[1] + "");
+    rect.setAttribute("x", xmin + "");
+    rect.setAttribute("y", ymin + "");     
+    rect.setAttribute("width", xmax - xmin + "");
+    rect.setAttribute("height", ymax - ymin + "");
 
     return rect;
-  }
-  
-  protected renderBox(): SVGGraphicsElement {
-    const {ll, lr, ur, ul} = this.getLocalBB();
-    const boxPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    boxPath.classList.add("svg-annot-box");
-    boxPath.setAttribute("data-annotation-name", this.uuid);
-    boxPath.setAttribute("d", `M ${ll.x} ${ll.y} L ${lr.x} ${lr.y} L ${ur.x} ${ur.y} L ${ul.x} ${ul.y} Z`);
-
-    return boxPath;
   }
 
   protected renderMainElement(): SVGGraphicsElement {    
@@ -318,7 +228,13 @@ export abstract class Annotation {
 
   //#region render of the annotation control handles 
   protected renderScaleHandles(): SVGGraphicsElement[] { 
-    const bBox = this.getLocalBB();
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
+    const bBox: BBox = {
+      ul: new Vec2(xmin, ymin),
+      ll: new Vec2(xmin, ymax),
+      lr: new Vec2(xmax, ymax),
+      ur: new Vec2(xmax, ymin),
+    };
 
     const handles: SVGGraphicsElement[] = [];
     ["ll", "lr", "ur", "ul"].forEach(x => {
@@ -335,9 +251,10 @@ export abstract class Annotation {
   } 
   
   protected renderRotationHandle(): SVGGraphicsElement { 
-    const centerX = (this._aabb[0] + this._aabb[2]) / 2;
-    const centerY = (this._aabb[1] + this._aabb[3]) / 2;
-    const currentRotation = this.getCurrentRotation();
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
+
+    const centerX = (xmin + xmax) / 2;
+    const centerY = (ymin + ymax) / 2;
 
     const rotationGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
     rotationGroup.classList.add("svg-annot-rotation");
@@ -350,9 +267,9 @@ export abstract class Annotation {
 
     const handleMatrix = new Mat3()
       .applyTranslation(-centerX, -centerY + 35)
-      .applyRotation(currentRotation)
+      // .applyRotation(currentRotation)
       .applyTranslation(centerX, centerY);
-    const handleCenter = new Vec2(centerX, centerY).applyMat3(handleMatrix);
+    const handleCenter = new Vec2(centerX, centerY);
     
     const rotationGroupLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
     rotationGroupLine.classList.add("dashed");
@@ -382,6 +299,8 @@ export abstract class Annotation {
 
   protected updateRender() {
     this._svg.innerHTML = "";
+    
+    this.updateAABB();
 
     const contentResult = this.renderContent();
     if (!contentResult) { 
@@ -398,11 +317,10 @@ export abstract class Annotation {
     content.setAttribute("data-annotation-name", this.uuid); 
     const {copy, use} = this.renderContentCopy(); 
     
-    const rect = this.renderRect();
     const box = this.renderBox();
     const handles = this.renderHandles(); 
 
-    this._svg.append(rect, box, contentResult.svg, ...handles);  
+    this._svg.append(box, contentResult.svg, ...handles);  
 
     this._svgBox = box;
     this._svgContent = content;
@@ -465,8 +383,6 @@ export abstract class Annotation {
 
     this.applyCommonTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
-
-    this.updateRender();
   };
   //#endregion
   
@@ -493,19 +409,18 @@ export abstract class Annotation {
     if (!e.isPrimary) {
       return;
     }
-
-    const centerX = (this._aabb[0] + this._aabb[2]) / 2;
-    const centerY = (this._aabb[1] + this._aabb[3]) / 2;
+  
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
+    const centerX = (xmin + xmax) / 2;
+    const centerY = (ymin + ymax) / 2;
     const clientCenter = this.convertImageCoordsToClient(centerX, centerY);
-    const currentRotation = this.getCurrentRotation();
     const angle = Math.atan2(
       e.clientY - clientCenter.y, 
       e.clientX - clientCenter.x
-    ) + Math.PI / 2 - currentRotation;
-    this._currentAngle = angle;
+    ) - Math.PI / 2;
     this._transformationMatrix.reset()
       .applyTranslation(-centerX, -centerY)
-      .applyRotation(angle)
+      .applyRotation(-angle)
       .applyTranslation(centerX, centerY);
     this._svgContentCopyUse.setAttribute("transform", 
       `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
@@ -531,8 +446,6 @@ export abstract class Annotation {
 
     this.applyCommonTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
-
-    this.updateRender();
   };
   //#endregion
   
@@ -547,7 +460,11 @@ export abstract class Annotation {
 
     const target = e.target as HTMLElement;
 
-    const {ll, lr, ur, ul} = this.getLocalBB();
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
+    const ul = new Vec2(xmin, ymin);
+    const ll = new Vec2(xmin, ymax);
+    const lr = new Vec2(xmax, ymax);
+    const ur = new Vec2(xmax, ymin);
     const handleName = target.dataset["handleName"];
     switch (handleName) {
       case "ll": 
@@ -577,7 +494,7 @@ export abstract class Annotation {
     this._boxXLength = this._boxX.getMagnitude();
     this._boxYLength = this._boxY.getMagnitude();
 
-    // set timeout to prevent an accidental annotation rotation
+    // set timeout to prevent an accidental annotation scaling
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;      
       this._svg.after(this._svgContentCopy);
@@ -603,15 +520,15 @@ export abstract class Annotation {
     const scaleX = pXLength / this._boxXLength;
     const scaleY = pYLength / this._boxYLength;
     
-    const centerX = (this._aabb[0] + this._aabb[2]) / 2;
-    const centerY = (this._aabb[1] + this._aabb[3]) / 2;
-    const currentRotation = this.getCurrentRotation();
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
+    const centerX = (xmin + xmax) / 2;
+    const centerY = (ymin + ymax) / 2;
 
     this._transformationMatrix.reset()
       .applyTranslation(-centerX, -centerY)
-      .applyRotation(-currentRotation)
+      // .applyRotation(-currentRotation)
       .applyScaling(scaleX, scaleY)
-      .applyRotation(currentRotation)
+      // .applyRotation(currentRotation)
       .applyTranslation(centerX, centerY);
     const translation = this._transformationPoint.clone().substract(
       this._transformationPoint.clone().applyMat3(this._transformationMatrix));
@@ -641,12 +558,14 @@ export abstract class Annotation {
 
     this.applyCommonTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
-
-    this.updateRender();
   };
   //#endregion
 
   //#endregion
+  
+  protected abstract updateAABB(): void;  
+  
+  protected abstract applyCommonTransform(matrix: Mat3): void;
 }
 
 export interface AnnotationDto {
@@ -657,11 +576,6 @@ export interface AnnotationDto {
   dateCreated: string;
   dateModified: string;
   author: string;
-
-  rect: Quadruple;
-  bbox: Octuple;
-  matrix: Hextuple;
-  html: string;
 }
 
 //#region custom events
