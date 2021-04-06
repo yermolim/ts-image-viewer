@@ -6,18 +6,28 @@ import { PenData } from "./pen-data";
 import { PathChangeEvent, PenAnnotation } from "../annotations/pen-annotation";
 import { ImageView } from "../image/image-view";
 
+export interface PenAnnotatorOptions {
+  strokeWidth?: number;  
+  color?: Quadruple;
+}
+
 export class PenAnnotator extends Annotator {
   protected static lastColor: Quadruple;
+  protected static lastStrokeWidth: number;
 
   protected _annotationPenData: PenData;  
   protected _color: Quadruple;
+  protected _strokeWidth: number;
 
-  constructor(parent: HTMLDivElement, imageView: ImageView, color?: Quadruple) {
+  constructor(parent: HTMLDivElement, imageView: ImageView, options?: PenAnnotatorOptions) {
     super(parent, imageView);
     this.init();
 
-    this._color = color || PenAnnotator.lastColor || [0, 0, 0, 0.9];
+    this._color = options?.color || PenAnnotator.lastColor || [0, 0, 0, 0.9];
     PenAnnotator.lastColor = this._color;
+
+    this._strokeWidth = options?.strokeWidth || PenAnnotator.lastStrokeWidth || 3;
+    PenAnnotator.lastStrokeWidth = this._strokeWidth;
   }
 
   destroy() {   
@@ -91,7 +101,11 @@ export class PenAnnotator extends Annotator {
 
   protected resetTempPenData(imageUuid: string) {    
     this.removeTempPenData();    
-    this._annotationPenData = new PenData({id: imageUuid, color: this._color});
+    this._annotationPenData = new PenData({
+      id: imageUuid,
+      color: this._color,
+      strokeWidth: this._strokeWidth,
+    });
     this._svgGroup.append(this._annotationPenData.group);
 
     // update pen group matrix to position the group properly
