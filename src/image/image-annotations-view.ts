@@ -1,11 +1,8 @@
-import { RenderToSvgResult } from "../common";
-import { Annotation, AnnotSelectionRequestEvent } from "../annotations/annotation";
+import { annotChangeEvent, AnnotEvent, AnnotSelectionRequestEvent } from "../annotations/annotation";
 import { ImageInfo } from "./image-info";
 
 export class ImageAnnotationView {
   private readonly _imageInfo: ImageInfo;
-
-  private _rendered = new Set<Annotation>();
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
@@ -50,7 +47,7 @@ export class ImageAnnotationView {
 
   remove() {    
     this._container?.remove();
-    document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+    document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }  
 
   append(parent: HTMLElement) {
@@ -60,7 +57,7 @@ export class ImageAnnotationView {
     
     this.renderAnnotations();
     parent.append(this._container);
-    document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+    document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }
 
   async toImageAsync(): Promise<HTMLImageElement> {
@@ -95,22 +92,14 @@ export class ImageAnnotationView {
         continue;
       }
 
-      let renderResult: RenderToSvgResult;
-      if (!this._rendered.has(annotation)) {
-        renderResult = annotation.render();
-      } else {
-        renderResult = annotation.lastRenderResult;
-      }   
-
+      const renderResult = annotation.render();
       if (!renderResult) {
         continue;
       }      
-      this._rendered.add(annotation);
+
       const {svg, clipPaths} = renderResult;
       this._svg.append(svg);
       clipPaths?.forEach(x => this._defs.append(x));
-      svg.addEventListener("pointerdown", 
-        () => document.dispatchEvent(new AnnotSelectionRequestEvent({annotation})));
     }
 
     this._svg.append(this._defs);
@@ -123,12 +112,13 @@ export class ImageAnnotationView {
     // this._rendered.clear();
   }
 
-  private onAnnotationSelectionChange = (e: Event) => {
-    const annotation: Annotation = e["detail"].annotation;
-    if (annotation) {
-      this._container.style.touchAction = "none";
-    } else {
-      this._container.style.touchAction = "";
+  private onAnnotationSelectionChange = (e: AnnotEvent) => {
+    if (e.detail.type === "select") {
+      if (e.detail.annotations?.length) {
+        this._container.style.touchAction = "none";
+      } else {
+        this._container.style.touchAction = "";
+      }
     }
   };
 }

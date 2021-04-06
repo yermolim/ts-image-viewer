@@ -651,16 +651,12 @@ const styles = `
   } 
   .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
   .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
-    r: 8;
     fill: var(--tsimage-color-primary-final);
     cursor: pointer;
   }
   .mode-annotation .svg-annotation.selected .svg-annot-rotation {
     fill: none;
     cursor: pointer;
-  }
-  .mode-annotation .svg-annotation.selected .svg-annot-rotation .circle {
-    r: 25;
   }
   .mode-annotation .svg-annotation.selected .svg-annot-rotation .dashed {
     stroke: var(--tsimage-color-secondary-tr-final);
@@ -1212,7 +1208,6 @@ class ContextMenu {
 
 class Annotation {
     constructor(dto) {
-        this._imageDimensions = new Vec2();
         this._aabb = [new Vec2(), new Vec2()];
         this._transformationMatrix = new Mat3();
         this._transformationPoint = new Vec2();
@@ -1220,6 +1215,7 @@ class Annotation {
         this._boxY = new Vec2();
         this._svgId = getRandomUuid();
         this.onRectPointerDown = (e) => {
+            document.dispatchEvent(new AnnotSelectionRequestEvent({ annotation: this }));
             if (!this.translationEnabled || !e.isPrimary) {
                 return;
             }
@@ -1423,26 +1419,20 @@ class Annotation {
     get author() {
         return this._author;
     }
-    get imageDimensions() {
-        return this._imageDimensions;
-    }
-    set imageDimensions(value) {
-        if (value) {
-            this._imageDimensions.setFromVec2(value);
-        }
-        else {
-            this.imageDimensions.set(0, 0);
-        }
-        this.updateRender();
-    }
     get lastRenderResult() {
         return this._lastRenderResult;
     }
-    render() {
+    render(forceRerender = false) {
         if (!this._svg) {
             this._svg = this.renderMainElement();
         }
-        this.updateRender();
+        if (this._lastRenderResult && !forceRerender) {
+            this.updateHandles();
+            return this._lastRenderResult;
+        }
+        else {
+            this.updateRender();
+        }
         const renderResult = {
             svg: this._svg,
             clipPaths: this._svgClipPaths,
@@ -1470,6 +1460,12 @@ class Annotation {
             dateModified: this.dateModified.toISOString(),
             author: this.author,
         };
+    }
+    getScale() {
+        const realWidth = +this._svgBox.getAttribute("width");
+        const { width: currentWidth } = this._svgBox.getBoundingClientRect();
+        const imageScale = currentWidth / realWidth;
+        return imageScale;
     }
     convertClientCoordsToImage(clientX, clientY) {
         const { x, y, width, height } = this._svgBox.getBoundingClientRect();
@@ -1503,14 +1499,11 @@ class Annotation {
         return rect;
     }
     renderMainElement() {
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        rect.classList.add("svg-annotation");
-        rect.setAttribute("data-annotation-name", this.uuid);
-        rect.addEventListener("pointerdown", this.onRectPointerDown);
-        return rect;
-    }
-    renderContent() {
-        return null;
+        const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        mainSvg.classList.add("svg-annotation");
+        mainSvg.setAttribute("data-annotation-name", this.uuid);
+        mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
+        return mainSvg;
     }
     renderContentCopy() {
         const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1519,7 +1512,6 @@ class Annotation {
         copySymbol.id = this._svgId + "_symbol";
         const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
         copySymbolUse.setAttribute("href", `#${this._svgId}`);
-        copySymbolUse.setAttribute("viewBox", `0 0 ${this._imageDimensions.x} ${this._imageDimensions.y}`);
         copySymbol.append(copySymbolUse);
         copyDefs.append(copySymbol);
         const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
@@ -1528,7 +1520,7 @@ class Annotation {
         copy.append(copyDefs, use);
         return { copy, use };
     }
-    renderScaleHandles() {
+    renderScaleHandles(scale = 1) {
         const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
         const bBox = {
             ul: new Vec2(xmin, ymin),
@@ -1543,12 +1535,13 @@ class Annotation {
             handle.setAttribute("data-handle-name", x);
             handle.setAttribute("cx", bBox[x].x + "");
             handle.setAttribute("cy", bBox[x].y + "");
+            handle.setAttribute("r", 8 / scale + "");
             handle.addEventListener("pointerdown", this.onScaleHandlePointerDown);
             handles.push(handle);
         });
         return handles;
     }
-    renderRotationHandle() {
+    renderRotationHandle(scale = 1) {
         const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
         const centerX = (xmin + xmax) / 2;
         const centerY = (ymin + ymax) / 2;
@@ -1556,13 +1549,14 @@ class Annotation {
         rotationGroup.classList.add("svg-annot-rotation");
         rotationGroup.setAttribute("data-handle-name", "center");
         const rotationGroupCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        rotationGroupCircle.classList.add("circle", "dashed");
+        rotationGroupCircle.classList.add("dashed");
         rotationGroupCircle.setAttribute("cx", centerX + "");
         rotationGroupCircle.setAttribute("cy", centerY + "");
-        new Mat3()
-            .applyTranslation(-centerX, -centerY + 35)
+        rotationGroupCircle.setAttribute("r", 25 / scale + "");
+        const handleMatrix = new Mat3()
+            .applyTranslation(-centerX, -centerY + 35 / scale)
             .applyTranslation(centerX, centerY);
-        const handleCenter = new Vec2(centerX, centerY);
+        const handleCenter = new Vec2(centerX, centerY).applyMat3(handleMatrix);
         const rotationGroupLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
         rotationGroupLine.classList.add("dashed");
         rotationGroupLine.setAttribute("x1", centerX + "");
@@ -1574,12 +1568,22 @@ class Annotation {
         centerRectHandle.setAttribute("data-handle-name", "center");
         centerRectHandle.setAttribute("cx", handleCenter.x + "");
         centerRectHandle.setAttribute("cy", handleCenter.y + "");
+        centerRectHandle.setAttribute("r", 8 / scale + "");
         centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
         rotationGroup.append(rotationGroupCircle, rotationGroupLine, centerRectHandle);
         return rotationGroup;
     }
     renderHandles() {
-        return [...this.renderScaleHandles(), this.renderRotationHandle()];
+        const scale = this.getScale();
+        return [...this.renderScaleHandles(scale), this.renderRotationHandle(scale)];
+    }
+    updateHandles() {
+        var _a;
+        (_a = this._svgHandles) === null || _a === void 0 ? void 0 : _a.forEach(x => x.remove());
+        setTimeout(() => {
+            this._svgHandles = this.renderHandles();
+            this._svg.append(...this._svgHandles);
+        }, 0);
     }
     updateRender() {
         this._svg.innerHTML = "";
@@ -1591,21 +1595,22 @@ class Annotation {
             this._svgContentCopy = null;
             this._svgContentCopyUse = null;
             this._svgClipPaths = null;
+            this._svgHandles = null;
             return;
         }
+        const box = this.renderBox();
         const content = contentResult.svg;
         content.id = this._svgId;
         content.classList.add("svg-annotation-content");
         content.setAttribute("data-annotation-name", this.uuid);
         const { copy, use } = this.renderContentCopy();
-        const box = this.renderBox();
-        const handles = this.renderHandles();
-        this._svg.append(box, contentResult.svg, ...handles);
+        this._svg.append(box, content);
         this._svgBox = box;
         this._svgContent = content;
         this._svgContentCopy = copy;
         this._svgContentCopyUse = use;
         this._svgClipPaths = contentResult.clipPaths;
+        this.updateHandles();
     }
 }
 const annotSelectionRequestEvent = "tsimage-annotselectionrequest";
@@ -2159,14 +2164,15 @@ var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class ImageAnnotationView {
     constructor(imageInfo) {
-        this._rendered = new Set();
         this.onAnnotationSelectionChange = (e) => {
-            const annotation = e["detail"].annotation;
-            if (annotation) {
-                this._container.style.touchAction = "none";
-            }
-            else {
-                this._container.style.touchAction = "";
+            var _a;
+            if (e.detail.type === "select") {
+                if ((_a = e.detail.annotations) === null || _a === void 0 ? void 0 : _a.length) {
+                    this._container.style.touchAction = "none";
+                }
+                else {
+                    this._container.style.touchAction = "";
+                }
             }
         };
         if (!imageInfo) {
@@ -2199,7 +2205,7 @@ class ImageAnnotationView {
     remove() {
         var _a;
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
-        document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+        document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
     append(parent) {
         if (this._destroyed) {
@@ -2207,7 +2213,7 @@ class ImageAnnotationView {
         }
         this.renderAnnotations();
         parent.append(this._container);
-        document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+        document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
     toImageAsync() {
         return __awaiter$3(this, void 0, void 0, function* () {
@@ -2237,21 +2243,13 @@ class ImageAnnotationView {
             if (annotation.deleted) {
                 continue;
             }
-            let renderResult;
-            if (!this._rendered.has(annotation)) {
-                renderResult = annotation.render();
-            }
-            else {
-                renderResult = annotation.lastRenderResult;
-            }
+            const renderResult = annotation.render();
             if (!renderResult) {
                 continue;
             }
-            this._rendered.add(annotation);
             const { svg, clipPaths } = renderResult;
             this._svg.append(svg);
             clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
-            svg.addEventListener("pointerdown", () => document.dispatchEvent(new AnnotSelectionRequestEvent({ annotation })));
         }
         this._svg.append(this._defs);
         return true;

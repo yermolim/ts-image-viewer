@@ -501,16 +501,12 @@ export const styles = /*html*/`
   } 
   .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
   .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
-    r: 8;
     fill: var(--tsimage-color-primary-final);
     cursor: pointer;
   }
   .mode-annotation .svg-annotation.selected .svg-annot-rotation {
     fill: none;
     cursor: pointer;
-  }
-  .mode-annotation .svg-annotation.selected .svg-annot-rotation .circle {
-    r: 25;
   }
   .mode-annotation .svg-annotation.selected .svg-annot-rotation .dashed {
     stroke: var(--tsimage-color-secondary-tr-final);

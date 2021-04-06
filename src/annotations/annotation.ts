@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import { Mat3, Vec2 } from "../math";
 import { BBox, getRandomUuid, RenderToSvgResult } from "../common";
 
@@ -38,19 +39,6 @@ export abstract class Annotation {
   }
 
   //#region edit-related properties
-  protected readonly _imageDimensions: Vec2 = new Vec2();
-  get imageDimensions(): Vec2 {
-    return this._imageDimensions;
-  }
-  set imageDimensions(value: Vec2) {
-    if (value) {
-      this._imageDimensions.setFromVec2(value);
-    } else {
-      this.imageDimensions.set(0, 0);
-    }
-    this.updateRender();
-  }
-
   protected readonly _aabb: readonly [min: Vec2, min: Vec2] = [new Vec2(), new Vec2()];
 
   protected _transformationTimer: number; 
@@ -65,12 +53,15 @@ export abstract class Annotation {
 
   //#region render-related properties
   protected readonly _svgId = getRandomUuid();
+
   protected _svg: SVGGraphicsElement;
   protected _svgBox: SVGGraphicsElement;
   protected _svgContentCopy: SVGGraphicsElement;
   protected _svgContentCopyUse: SVGUseElement;
   protected _svgContent: SVGGraphicsElement;
   protected _svgClipPaths: SVGClipPathElement[];
+  protected _svgHandles: SVGGraphicsElement[];
+
   protected _lastRenderResult: RenderToSvgResult;
   get lastRenderResult(): RenderToSvgResult {
     return this._lastRenderResult;
@@ -90,12 +81,17 @@ export abstract class Annotation {
     this._author = dto?.author || "unknown";
   }
   
-  render(): RenderToSvgResult {
+  render(forceRerender = false): RenderToSvgResult {
     if (!this._svg) {
       this._svg = this.renderMainElement();
     }
 
-    this.updateRender(); 
+    if (this._lastRenderResult && !forceRerender) {
+      this.updateHandles();
+      return this._lastRenderResult;
+    } else {
+      this.updateRender();
+    }
 
     const renderResult: RenderToSvgResult = {
       svg: this._svg,
@@ -132,7 +128,18 @@ export abstract class Annotation {
   //#region protected render methods
 
   //#region common methods used for rendering purposes
-
+  /**
+   * returns current image scale. 
+   * works correctly only when the annotation SVG is appended to the DOM
+   * @returns 
+   */
+  protected getScale(): number {    
+    const realWidth = +this._svgBox.getAttribute("width");
+    const {width: currentWidth} = this._svgBox.getBoundingClientRect();
+    const imageScale = currentWidth / realWidth;
+    return imageScale;
+  }
+  
   /**
    * get 2D vector with a position of the specified point in image coords 
    * @param clientX 
@@ -169,7 +176,7 @@ export abstract class Annotation {
   }
   //#endregion
 
-  //#region annotation container render
+  //#region annotation components render
   protected renderBox(): SVGGraphicsElement {
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
 
@@ -185,23 +192,13 @@ export abstract class Annotation {
   }
 
   protected renderMainElement(): SVGGraphicsElement {    
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    rect.classList.add("svg-annotation");
-    rect.setAttribute("data-annotation-name", this.uuid);    
-    rect.addEventListener("pointerdown", this.onRectPointerDown);
+    const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    mainSvg.classList.add("svg-annotation");
+    mainSvg.setAttribute("data-annotation-name", this.uuid);    
+    mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
 
-    return rect;
+    return mainSvg;
   }
-  //#endregion
-
-  //#region annotation content render
-
-  /**
-   * override in subclass to apply a custom annotation content renderer
-   */
-  protected renderContent(): RenderToSvgResult {
-    return null;
-  }   
 
   protected renderContentCopy(): {copy: SVGGraphicsElement; use: SVGUseElement} {
     const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -211,8 +208,6 @@ export abstract class Annotation {
     copySymbol.id = this._svgId + "_symbol";
     const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
     copySymbolUse.setAttribute("href", `#${this._svgId}`);
-    copySymbolUse.setAttribute("viewBox", 
-      `0 0 ${this._imageDimensions.x} ${this._imageDimensions.y}`);
     copySymbol.append(copySymbolUse);
     copyDefs.append(copySymbol);
 
@@ -227,7 +222,7 @@ export abstract class Annotation {
   //#endregion
 
   //#region render of the annotation control handles 
-  protected renderScaleHandles(): SVGGraphicsElement[] { 
+  protected renderScaleHandles(scale = 1): SVGGraphicsElement[] { 
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
     const bBox: BBox = {
       ul: new Vec2(xmin, ymin),
@@ -243,6 +238,7 @@ export abstract class Annotation {
       handle.setAttribute("data-handle-name", x);
       handle.setAttribute("cx", bBox[x].x + "");
       handle.setAttribute("cy", bBox[x].y + ""); 
+      handle.setAttribute("r", 8 / scale + ""); 
       handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); 
       handles.push(handle);   
     });
@@ -250,7 +246,7 @@ export abstract class Annotation {
     return handles;
   } 
   
-  protected renderRotationHandle(): SVGGraphicsElement { 
+  protected renderRotationHandle(scale = 1): SVGGraphicsElement { 
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
 
     const centerX = (xmin + xmax) / 2;
@@ -261,15 +257,16 @@ export abstract class Annotation {
     rotationGroup.setAttribute("data-handle-name", "center");  
      
     const rotationGroupCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    rotationGroupCircle.classList.add("circle", "dashed");
+    rotationGroupCircle.classList.add("dashed");
     rotationGroupCircle.setAttribute("cx", centerX + "");
     rotationGroupCircle.setAttribute("cy", centerY + "");
+    rotationGroupCircle.setAttribute("r", 25 / scale + "");
 
     const handleMatrix = new Mat3()
-      .applyTranslation(-centerX, -centerY + 35)
+      .applyTranslation(-centerX, -centerY + 35 / scale)
       // .applyRotation(currentRotation)
       .applyTranslation(centerX, centerY);
-    const handleCenter = new Vec2(centerX, centerY);
+    const handleCenter = new Vec2(centerX, centerY).applyMat3(handleMatrix);
     
     const rotationGroupLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
     rotationGroupLine.classList.add("dashed");
@@ -283,6 +280,7 @@ export abstract class Annotation {
     centerRectHandle.setAttribute("data-handle-name", "center");
     centerRectHandle.setAttribute("cx", handleCenter.x + "");
     centerRectHandle.setAttribute("cy", handleCenter.y + "");
+    centerRectHandle.setAttribute("r", 8 / scale + ""); 
     centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
 
     rotationGroup.append(rotationGroupCircle, rotationGroupLine, centerRectHandle);
@@ -292,9 +290,19 @@ export abstract class Annotation {
   /**
    * override in subclass to apply a custom annotation handles renderer
    */
-  protected renderHandles(): SVGGraphicsElement[] {   
-    return [...this.renderScaleHandles(), this.renderRotationHandle()];
+  protected renderHandles(): SVGGraphicsElement[] { 
+    const scale = this.getScale();
+    return [...this.renderScaleHandles(scale), this.renderRotationHandle(scale)];
   } 
+
+  protected updateHandles() {
+    this._svgHandles?.forEach(x => x.remove());
+    setTimeout(() => {
+      // wrapped in setTimeout to let element sizes refresh
+      this._svgHandles = this.renderHandles(); 
+      this._svg.append(...this._svgHandles); 
+    }, 0);
+  }
   //#endregion
 
   protected updateRender() {
@@ -309,31 +317,34 @@ export abstract class Annotation {
       this._svgContentCopy = null;
       this._svgContentCopyUse = null;
       this._svgClipPaths = null;
+      this._svgHandles = null;
       return;
     }  
+
+    const box = this.renderBox();
     const content = contentResult.svg;
     content.id = this._svgId;
     content.classList.add("svg-annotation-content");
     content.setAttribute("data-annotation-name", this.uuid); 
-    const {copy, use} = this.renderContentCopy(); 
-    
-    const box = this.renderBox();
-    const handles = this.renderHandles(); 
-
-    this._svg.append(box, contentResult.svg, ...handles);  
+    const {copy, use} = this.renderContentCopy();     
+    this._svg.append(box, content);
 
     this._svgBox = box;
     this._svgContent = content;
     this._svgContentCopy = copy;
     this._svgContentCopyUse = use; 
     this._svgClipPaths = contentResult.clipPaths;
+
+    this.updateHandles();
   }
   //#endregion
 
   //#region event handlers 
 
-  //#region translation handlers
+  //#region main svg handlers (selection + translation)
   protected onRectPointerDown = (e: PointerEvent) => { 
+    document.dispatchEvent(new AnnotSelectionRequestEvent({annotation: this}));
+
     if (!this.translationEnabled || !e.isPrimary) {
       return;
     }
@@ -562,6 +573,8 @@ export abstract class Annotation {
   //#endregion
 
   //#endregion
+  
+  protected abstract renderContent(): RenderToSvgResult;
   
   protected abstract updateAABB(): void;  
   
