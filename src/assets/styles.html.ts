@@ -349,14 +349,18 @@ export const styles = /*html*/`
     touch-action: none;
   }
 
-  .image {    
+  .image-wrapper {    
     position: relative;
-    display: flex;
-    flex-grow: 0;
-    flex-shrink: 0;
-    margin: 10px auto;
+    margin: auto;
     background-color: white;
     box-shadow: 0 0 10px var(--tsimage-color-shadow-final);
+  }
+  .image {    
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
   }
   .image-preview {   
     cursor: pointer; 

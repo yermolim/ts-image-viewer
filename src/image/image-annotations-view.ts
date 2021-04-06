@@ -50,7 +50,7 @@ export class ImageAnnotationView {
     document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }  
 
-  append(parent: HTMLElement) {
+  appendTo(parent: HTMLElement) {
     if (this._destroyed) {
       return;
     }

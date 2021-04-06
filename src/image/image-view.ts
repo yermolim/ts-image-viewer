@@ -22,6 +22,10 @@ export class ImageView {
   }
   private _previewRendered: boolean;
 
+  private _viewWrapper: HTMLDivElement; 
+  get viewWrapper(): HTMLDivElement {
+    return this._viewWrapper;
+  }  
   private _viewContainer: HTMLDivElement; 
   get viewContainer(): HTMLDivElement {
     return this._viewContainer;
@@ -50,13 +54,16 @@ export class ImageView {
     this._dimensions.scaledHeight = this._dimensions.height * this._scale;
     this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
     this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
+    
+    this._viewWrapper.style.width = this._dimensions.scaledDprWidth + "px";
+    this._viewWrapper.style.height = this._dimensions.scaledDprHeight + "px";
 
-    this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-    this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+    this._viewContainer.style.width = this._dimensions.scaledDprWidth + "px";
+    this._viewContainer.style.height = this._dimensions.scaledDprHeight + "px";
     
     if (this._viewCanvas) {
-      this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-      this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+      this._viewCanvas.style.width = this._dimensions.scaledDprWidth + "px";
+      this._viewCanvas.style.height = this._dimensions.scaledDprHeight + "px";
     }
 
     this._scaleIsValid = false;
@@ -92,12 +99,18 @@ export class ImageView {
     this._viewContainer = document.createElement("div");
     this._viewContainer.classList.add("image");
     this._viewContainer.setAttribute("data-image-index", this.index + "");
-    this.scale = 1;  
+
+    this._viewWrapper = document.createElement("div");
+    this._viewWrapper.classList.add("image-wrapper");
+    this._viewWrapper.setAttribute("data-image-index", this.index + "");
+    this._viewWrapper.append(this.viewContainer);    
+    
+    this.scale = 1;
   }
 
   destroy() {
     this._previewContainer.remove();
-    this._viewContainer.remove();
+    this._viewWrapper.remove();
   }  
 
   renderPreview(force = false) {    
@@ -137,7 +150,7 @@ export class ImageView {
     if (!this._annotationView) {
       this._annotationView = new ImageAnnotationView(this.imageInfo);
     }
-    this._annotationView.append(this.viewContainer);
+    this._annotationView.appendTo(this.viewContainer);
 
     // check if scale not changed during text render
     if (scale === this._scale) {
@@ -194,10 +207,10 @@ export class ImageView {
   private createViewCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
     canvas.classList.add("image-canvas"); 
-    canvas.style.width = this._dimensions.scaledWidth + "px";
-    canvas.style.height = this._dimensions.scaledHeight + "px";
-    canvas.width = this._dimensions.scaledDprWidth;
-    canvas.height = this._dimensions.scaledDprHeight;
+    canvas.style.width = this._dimensions.scaledDprWidth + "px";
+    canvas.style.height = this._dimensions.scaledDprHeight + "px";
+    canvas.width = this._dimensions.width;
+    canvas.height = this._dimensions.height;
     return canvas;
   }
 }

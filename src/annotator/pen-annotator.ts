@@ -79,13 +79,13 @@ export class PenAnnotator extends Annotator {
       // set scale to 0 to hide pen group if it's image is not rendered
       this._annotationPenData.setGroupMatrix(
         [0, 0, 0, 0, 0, 0]);
+      return;
     }
-    const {height: ph, top: ptop, left: px} = image.viewContainer.getBoundingClientRect();
-    const py = ptop + ph;
-    const {height: vh, top: vtop, left: vx} = this._overlay.getBoundingClientRect();
-    const vy = vtop + vh;
-    const offsetX = (px - vx) / this._scale;
-    const offsetY = (vy - py) / this._scale;
+
+    const {top: iy, left: ix} = image.viewContainer.getBoundingClientRect();
+    const {top: vy, left: vx} = this._overlay.getBoundingClientRect();
+    const offsetX = (ix - vx) / this._scale;
+    const offsetY = (iy - vy) / this._scale;
 
     this._annotationPenData.setGroupMatrix(
       [1, 0, 0, 1, offsetX, offsetY]);

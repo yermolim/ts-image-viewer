@@ -499,14 +499,18 @@ const styles = `
     touch-action: none;
   }
 
-  .image {    
+  .image-wrapper {    
     position: relative;
-    display: flex;
-    flex-grow: 0;
-    flex-shrink: 0;
-    margin: 10px auto;
+    margin: auto;
     background-color: white;
     box-shadow: 0 0 10px var(--tsimage-color-shadow-final);
+  }
+  .image {    
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
   }
   .image-preview {   
     cursor: pointer; 
@@ -2094,13 +2098,12 @@ class PenAnnotator extends Annotator {
         const image = this._imageView;
         if (!image) {
             this._annotationPenData.setGroupMatrix([0, 0, 0, 0, 0, 0]);
+            return;
         }
-        const { height: ph, top: ptop, left: px } = image.viewContainer.getBoundingClientRect();
-        const py = ptop + ph;
-        const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
-        const vy = vtop + vh;
-        const offsetX = (px - vx) / this._scale;
-        const offsetY = (vy - py) / this._scale;
+        const { top: iy, left: ix } = image.viewContainer.getBoundingClientRect();
+        const { top: vy, left: vx } = this._overlay.getBoundingClientRect();
+        const offsetX = (ix - vx) / this._scale;
+        const offsetY = (iy - vy) / this._scale;
         this._annotationPenData.setGroupMatrix([1, 0, 0, 1, offsetX, offsetY]);
     }
     removeTempPenData() {
@@ -2207,7 +2210,7 @@ class ImageAnnotationView {
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
         document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
-    append(parent) {
+    appendTo(parent) {
         if (this._destroyed) {
             return;
         }
@@ -2290,10 +2293,17 @@ class ImageView {
         this._viewContainer = document.createElement("div");
         this._viewContainer.classList.add("image");
         this._viewContainer.setAttribute("data-image-index", this.index + "");
+        this._viewWrapper = document.createElement("div");
+        this._viewWrapper.classList.add("image-wrapper");
+        this._viewWrapper.setAttribute("data-image-index", this.index + "");
+        this._viewWrapper.append(this.viewContainer);
         this.scale = 1;
     }
     get previewContainer() {
         return this._previewContainer;
+    }
+    get viewWrapper() {
+        return this._viewWrapper;
     }
     get viewContainer() {
         return this._viewContainer;
@@ -2315,11 +2325,13 @@ class ImageView {
         this._dimensions.scaledHeight = this._dimensions.height * this._scale;
         this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
         this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
-        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+        this._viewWrapper.style.width = this._dimensions.scaledDprWidth + "px";
+        this._viewWrapper.style.height = this._dimensions.scaledDprHeight + "px";
+        this._viewContainer.style.width = this._dimensions.scaledDprWidth + "px";
+        this._viewContainer.style.height = this._dimensions.scaledDprHeight + "px";
         if (this._viewCanvas) {
-            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+            this._viewCanvas.style.width = this._dimensions.scaledDprWidth + "px";
+            this._viewCanvas.style.height = this._dimensions.scaledDprHeight + "px";
         }
         this._scaleIsValid = false;
     }
@@ -2328,7 +2340,7 @@ class ImageView {
     }
     destroy() {
         this._previewContainer.remove();
-        this._viewContainer.remove();
+        this._viewWrapper.remove();
     }
     renderPreview(force = false) {
         if (!force && this._previewRendered) {
@@ -2359,7 +2371,7 @@ class ImageView {
         if (!this._annotationView) {
             this._annotationView = new ImageAnnotationView(this.imageInfo);
         }
-        this._annotationView.append(this.viewContainer);
+        this._annotationView.appendTo(this.viewContainer);
         if (scale === this._scale) {
             this._scaleIsValid = true;
         }
@@ -2408,10 +2420,10 @@ class ImageView {
     createViewCanvas() {
         const canvas = document.createElement("canvas");
         canvas.classList.add("image-canvas");
-        canvas.style.width = this._dimensions.scaledWidth + "px";
-        canvas.style.height = this._dimensions.scaledHeight + "px";
-        canvas.width = this._dimensions.scaledDprWidth;
-        canvas.height = this._dimensions.scaledDprHeight;
+        canvas.style.width = this._dimensions.scaledDprWidth + "px";
+        canvas.style.height = this._dimensions.scaledDprHeight + "px";
+        canvas.width = this._dimensions.width;
+        canvas.height = this._dimensions.height;
         return canvas;
     }
 }
@@ -2933,7 +2945,7 @@ class TsImageViewer {
                 selectedImage.renderView();
                 this.scrollToCurrentPreview();
                 this._viewer.innerHTML = "";
-                this._viewer.append(selectedImage.viewContainer);
+                this._viewer.append(selectedImage.viewWrapper);
                 this.zoomFitImage();
                 this.setAnnotationMode(this._annotatorMode, true);
             }
@@ -3202,7 +3214,7 @@ class TsImageViewer {
             this._previewer.append(imageView.previewContainer);
         }
         this._viewer.innerHTML = "";
-        this._viewer.append((_a = this._viewerData.currentImageView) === null || _a === void 0 ? void 0 : _a.viewContainer);
+        this._viewer.append((_a = this._viewerData.currentImageView) === null || _a === void 0 ? void 0 : _a.viewWrapper);
     }
     scrollToCurrentPreview() {
         const { top: cTop, height: cHeight } = this._previewer.getBoundingClientRect();

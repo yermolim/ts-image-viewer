@@ -398,7 +398,7 @@ export class TsImageViewer {
     // remove old image container    
     this._viewer.innerHTML = "";
     // add current image container
-    this._viewer.append(this._viewerData.currentImageView?.viewContainer);
+    this._viewer.append(this._viewerData.currentImageView?.viewWrapper);
   }
   //#endregion
   
@@ -607,8 +607,7 @@ export class TsImageViewer {
       this._annotator.scale = scale;
     }   
     
-    if (imageUnderCursor) {
-      
+    if (imageUnderCursor) {      
       const {x: imageScaledX, y: imageScaledY, width: imageScaledWidth, height: imageScaledHeight} = 
         image.viewContainer.getBoundingClientRect();
         
@@ -858,7 +857,7 @@ export class TsImageViewer {
       selectedImage.renderView();
       this.scrollToCurrentPreview();
       this._viewer.innerHTML = "";
-      this._viewer.append(selectedImage.viewContainer);
+      this._viewer.append(selectedImage.viewWrapper);
       this.zoomFitImage();
 
       // reset annotator
@@ -927,7 +926,7 @@ export class TsImageViewer {
     }
 
     const annotations = e.detail.annotations;
-    
+
     switch(e.detail.type) {
       case "select":      
         if (annotations?.length) {
