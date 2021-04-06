@@ -223,28 +223,6 @@ export const styles = /*html*/`
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }
 
-  #paginator {  
-    user-select: none;
-    font-family: sans-serif;
-    font-size: 16px;
-    color: var(--tsimage-color-fg-primary-final);
-  }
-  #paginator-input {
-    text-align: center; 
-    font-size: 16px;
-    width: 30px;
-    height: 30px;
-    margin: 2px;
-    padding: 0;
-    outline: none;
-    border: none;
-    color: var(--tsimage-color-fg-primary-final);
-    background-color: var(--tsimage-color-primary-final);
-  }
-  #paginator-total {
-    margin: 4px;
-  }
-
   #toggle-previewer {
     margin: 4px;
   }
@@ -326,7 +304,7 @@ export const styles = /*html*/`
     transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
   }
   
-  #annotation-overlay-container {
+  #annotator-overlay-container {
     position: absolute;
     top: 0; 
     right: 0;
@@ -335,12 +313,12 @@ export const styles = /*html*/`
     margin-top: 0;
     transition: margin-top 0.25s ease-out 0.1s;
   }
-  .hide-panels #annotation-overlay-container {
+  .hide-panels #annotator-overlay-container {
     margin-top: 50px;
     transition: margin-top 0.25s ease-in 0.2s;
   }
   
-  #annotation-overlay {
+  #annotator-overlay {
     position: absolute;
     margin: 0;
     padding: 0;
@@ -360,7 +338,8 @@ export const styles = /*html*/`
     top: 0;
     right: 0;
     bottom: 0;
-    left: 0;
+    left: 0;    
+    transform-origin: left top;
   }
   .image-preview {   
     cursor: pointer; 
@@ -487,7 +466,7 @@ export const styles = /*html*/`
 
   .svg-annotation {
     cursor: pointer;
-  }     
+  }
   .out .svg-annotation {
     cursor: not-allowed;
   }

@@ -102,17 +102,17 @@ export declare class TsImageViewer {
 	private onZoomInClick;
 	private onZoomFitViewerClick;
 	private onZoomFitImageClick;
+	private onRotateCounterClockwiseClick;
+	private onRotateClockwiseClick;
 	private getVisiblePreviewImages;
 	private renderVisiblePreviews;
-	private onPaginatorInput;
-	private onPaginatorChange;
 	private onPaginatorPrevClick;
 	private onPaginatorNextClick;
 	private onImageChange;
 	private onAnnotationDeleteButtonClick;
-	private setAnnotationMode;
-	private onAnnotationSelectModeButtonClick;
-	private onAnnotationPenModeButtonClick;
+	private setAnnotatorMode;
+	private onAnnotatorSelectModeButtonClick;
+	private onAnnotatorPenModeButtonClick;
 	private onAnnotationChange;
 	private initContextPenColorPicker;
 }

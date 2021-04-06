@@ -103,13 +103,13 @@ export abstract class Annotator {
   
   protected init() {
     const annotationOverlayContainer = document.createElement("div");
-    annotationOverlayContainer.id = "annotation-overlay-container";
+    annotationOverlayContainer.id = "annotator-overlay-container";
     
     const annotationOverlay = document.createElement("div");
-    annotationOverlay.id = "annotation-overlay";
+    annotationOverlay.id = "annotator-overlay";
     
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.classList.add("abs-stretch", "no-margin", "no-padding");
+    svg.classList.add("annotator-svg", "abs-stretch", "no-margin", "no-padding");
     svg.setAttribute("opacity", "0.75");
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -133,9 +133,9 @@ export abstract class Annotator {
   protected updateImageCoords(clientX: number, clientY: number) {
     const imageCoords = this.getImageCoordsUnderPointer(clientX, clientY);
     if (!imageCoords) {
-      this._svgGroup.classList.add("out");
+      this._svgWrapper.classList.add("out");
     } else {      
-      this._svgGroup.classList.remove("out");
+      this._svgWrapper.classList.remove("out");
     }
 
     this._imageCoords = imageCoords;

@@ -171,7 +171,7 @@ export class TsImageViewer {
     
     this._mainContainer.classList.add("disabled");
     this.setViewerMode("hand");
-    this.setAnnotationMode("select");  
+    this.setAnnotatorMode("select");  
 
     this.refreshImages();
   }
@@ -233,14 +233,16 @@ export class TsImageViewer {
     });
   }
   
-  private initViewControls() {
-    const paginatorInput = this._shadowRoot.getElementById("paginator-input") as HTMLInputElement;
-    paginatorInput.addEventListener("input", this.onPaginatorInput);
-    paginatorInput.addEventListener("change", this.onPaginatorChange);    
+  private initViewControls() { 
     this._shadowRoot.querySelector("#paginator-prev")
       .addEventListener("click", this.onPaginatorPrevClick);
     this._shadowRoot.querySelector("#paginator-next")
       .addEventListener("click", this.onPaginatorNextClick);
+      
+    this._shadowRoot.querySelector("#rotate-counterclockwise")
+      .addEventListener("click", this.onRotateCounterClockwiseClick);
+    this._shadowRoot.querySelector("#rotate-clockwise")
+      .addEventListener("click", this.onRotateClockwiseClick);
 
     this._shadowRoot.querySelector("#zoom-out")
       .addEventListener("click", this.onZoomOutClick);
@@ -339,9 +341,9 @@ export class TsImageViewer {
   private initAnnotationButtons() {
     // mode buttons
     this._shadowRoot.querySelector("#button-annotation-mode-select")
-      .addEventListener("click", this.onAnnotationSelectModeButtonClick);
+      .addEventListener("click", this.onAnnotatorSelectModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-pen")
-      .addEventListener("click", this.onAnnotationPenModeButtonClick);
+      .addEventListener("click", this.onAnnotatorPenModeButtonClick);
 
     // select buttons
     this._shadowRoot.querySelector("#button-annotation-delete")
@@ -381,7 +383,6 @@ export class TsImageViewer {
   //#region open/close private
   private refreshImages(): void {
     const imageCount = this._viewerData.imageCount;
-    this._shadowRoot.getElementById("paginator-total").innerHTML = imageCount + "";
     if (!imageCount) {
       return;
     }
@@ -517,7 +518,7 @@ export class TsImageViewer {
       case "annotation":
         this._mainContainer.classList.remove("mode-annotation");
         this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
-        this.setAnnotationMode("select");
+        this.setAnnotatorMode("select");
         break;
       default:
         // mode hasn't been set yet. do nothing
@@ -574,8 +575,8 @@ export class TsImageViewer {
 
   //#region viewer zoom
   private setScale(scale: number, cursorPosition?: Vec2) {
-    const image = this?._viewerData?.currentImageView;
-    if (!scale || scale === this._scale || !image) {
+    const imageView = this?._viewerData?.currentImageView;
+    if (!scale || scale === this._scale || !imageView) {
       return;
     }
 
@@ -587,7 +588,7 @@ export class TsImageViewer {
     
     const {x, y} = cursorPosition;
     const {x: imageX, y: imageY, width: imageWidth, height: imageHeight} = 
-      image.viewContainer.getBoundingClientRect();
+      imageView.viewContainer.getBoundingClientRect();
     // check if the image is under the cursor
     if (imageX <= x 
       && imageX + imageWidth >= x
@@ -601,7 +602,7 @@ export class TsImageViewer {
 
     this._contextMenu.hide();
     this._scale = scale;    
-    image.scale = scale;
+    imageView.scale = scale;
     // refresh annotator scale
     if (this._annotator) {
       this._annotator.scale = scale;
@@ -609,7 +610,7 @@ export class TsImageViewer {
     
     if (imageUnderCursor) {      
       const {x: imageScaledX, y: imageScaledY, width: imageScaledWidth, height: imageScaledHeight} = 
-        image.viewContainer.getBoundingClientRect();
+        imageView.viewContainer.getBoundingClientRect();
         
       let scrollLeft: number;
       let scrollTop: number;
@@ -683,15 +684,18 @@ export class TsImageViewer {
     this.zoom(step, cursorPosition);
   }
 
-  private zoomFitViewer() {
+  private zoomFitViewer() {  
     const cWidth = this._viewer.getBoundingClientRect().width;
     const iWidth = this._viewerData.currentImageView
       .viewContainer.getBoundingClientRect().width;
     const scale = clamp((cWidth  - 20) / iWidth * this._scale, this._minScale, this._maxScale);
+
+    console.log(scale);
+
     this.setScale(scale);
   }
 
-  private zoomFitImage() {
+  private zoomFitImage() { 
     const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
     const { width: pWidth, height: pHeight } = this._viewerData.currentImageView
       .viewContainer.getBoundingClientRect();
@@ -777,9 +781,21 @@ export class TsImageViewer {
   };
   //#endregion
 
-  //#endregion
-    
+  //#region viewer rotation
+  private onRotateCounterClockwiseClick = () => {
+    this._viewerData.currentImageView?.rotateCounterClockwise();
+    this.setAnnotatorMode(this._annotatorMode, true);
+  };
   
+  private onRotateClockwiseClick = () => {
+    this._viewerData.currentImageView?.rotateClockwise();
+    this.setAnnotatorMode(this._annotatorMode, true);
+  };
+  //#endregion
+
+  //#endregion
+
+
   //#region images and paginator
   private getVisiblePreviewImages(container: HTMLDivElement, images: ImageView[]): Set<number> {
     const imagesVisible = new Set<number>();
@@ -824,21 +840,6 @@ export class TsImageViewer {
       }
     }
   }
-
-  private onPaginatorInput = (event: Event) => {
-    if (event.target instanceof HTMLInputElement) {
-      event.target.value = event.target.value.replace(/[^\d]+/g, "");
-    }
-  };
-  
-  private onPaginatorChange = (event: Event) => {
-    if (event.target instanceof HTMLInputElement) {
-      const value = +event.target.value;
-      if (!isNaN(value)) {
-        this._viewerData.setImageAtIndexAsCurrent(value - 1);
-      }
-    }
-  };
   
   private onPaginatorPrevClick = () => {
     this._viewerData.setPreviousImageAsCurrent();
@@ -850,18 +851,16 @@ export class TsImageViewer {
 
   private onImageChange = (e: ImageEvent) => {
     if (e.detail.type === "select") {
-      const selectedImage = e.detail.imageViews[0];
-      (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input"))
-        .value = selectedImage.index + 1 + "";
-      selectedImage.scale = this._scale;
-      selectedImage.renderView();
+      const selectedImageView = e.detail.imageViews[0];
+      selectedImageView.scale = this._scale;
+      selectedImageView.renderView();
       this.scrollToCurrentPreview();
       this._viewer.innerHTML = "";
-      this._viewer.append(selectedImage.viewWrapper);
+      this._viewer.append(selectedImageView.viewWrapper);
       this.zoomFitImage();
 
       // reset annotator
-      this.setAnnotationMode(this._annotatorMode, true);
+      this.setAnnotatorMode(this._annotatorMode, true);
     }
   };
   //#endregion
@@ -872,7 +871,7 @@ export class TsImageViewer {
     this._viewerData.deleteSelectedAnnotation();
   };
 
-  private setAnnotationMode(mode: AnnotatorMode, forceReset = false) {
+  private setAnnotatorMode(mode: AnnotatorMode, forceReset = false) {
     if (!mode || ((mode === this._annotatorMode) && !forceReset)) {
       return;
     }
@@ -912,12 +911,12 @@ export class TsImageViewer {
     }
   }
   
-  private onAnnotationSelectModeButtonClick = () => {
-    this.setAnnotationMode("select");
+  private onAnnotatorSelectModeButtonClick = () => {
+    this.setAnnotatorMode("select");
   };
 
-  private onAnnotationPenModeButtonClick = () => {
-    this.setAnnotationMode("pen");
+  private onAnnotatorPenModeButtonClick = () => {
+    this.setAnnotatorMode("pen");
   };
 
   private onAnnotationChange = (e: AnnotEvent) => {

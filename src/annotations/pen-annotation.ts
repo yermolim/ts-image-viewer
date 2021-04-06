@@ -66,7 +66,9 @@ export class PenAnnotation extends Annotation {
       strokeDashGap: null,
     };
 
-    return new PenAnnotation(dto);
+    const annotation = new PenAnnotation(dto);
+    annotation.updateAABB();
+    return annotation;
   }
 
   toDto(): PenAnnotationDto {
@@ -84,6 +86,26 @@ export class PenAnnotation extends Annotation {
       strokeWidth: this._strokeWidth,
       strokeDashGap: this._strokeDashGap,
     };
+  }
+
+  applyCommonTransform(matrix: Mat3) {
+    // transform current InkList
+    let x: number;
+    let y: number;
+    const vec = new Vec2();
+    this._pathList.forEach(list => {
+      for (let i = 0; i < list.length; i = i + 2) {
+        x = list[i];
+        y = list[i + 1];
+        vec.set(x, y).applyMat3(matrix);
+        list[i] = vec.x;
+        list[i + 1] = vec.y;
+      }
+    });    
+
+    this._dateModified = new Date();    
+
+    this.updateRender();
   }
 
   protected updateAABB() {
@@ -116,26 +138,6 @@ export class PenAnnotation extends Annotation {
     this._aabb[0].set(xMin, yMin);
     this._aabb[1].set(xMax, yMax);
   } 
-    
-  protected applyCommonTransform(matrix: Mat3) {
-    // transform current InkList
-    let x: number;
-    let y: number;
-    const vec = new Vec2();
-    this._pathList.forEach(list => {
-      for (let i = 0; i < list.length; i = i + 2) {
-        x = list[i];
-        y = list[i + 1];
-        vec.set(x, y).applyMat3(matrix);
-        list[i] = vec.x;
-        list[i + 1] = vec.y;
-      }
-    });    
-
-    this._dateModified = new Date();    
-
-    this.updateRender();
-  }
 
   protected renderContent(): RenderToSvgResult {   
     try {

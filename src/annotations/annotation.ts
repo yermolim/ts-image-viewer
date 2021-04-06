@@ -40,6 +40,9 @@ export abstract class Annotation {
 
   //#region edit-related properties
   protected readonly _aabb: readonly [min: Vec2, min: Vec2] = [new Vec2(), new Vec2()];
+  get aabb(): readonly [min: Vec2, min: Vec2] {
+    return [this._aabb[0].clone(), this._aabb[1].clone()];
+  }
 
   protected _transformationTimer: number; 
   protected _transformationMatrix = new Mat3(); 
@@ -111,6 +114,20 @@ export abstract class Annotation {
     const y = imageY - height / 2;
     const mat = Mat3.buildTranslate(x, y);
     this.applyCommonTransform(mat);
+  }
+
+  rotate(degree: number) {
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
+    const halfWidth = (xmax - xmin) / 2;
+    const halfHeight = (ymax - ymin) / 2;
+    const x = xmin + halfWidth;
+    const y = ymin + halfHeight;
+    
+    this._transformationMatrix.reset()
+      .applyTranslation(-x, -y)
+      .applyRotation(degree / 180 * Math.PI)
+      .applyTranslation(x, y);
+    this.applyCommonTransform(this._transformationMatrix);
   }
 
   toDto(): AnnotationDto {
@@ -306,6 +323,11 @@ export abstract class Annotation {
   //#endregion
 
   protected updateRender() {
+    if (!this._svg) {
+      // not rendered yet. no svg to update
+      return;
+    }
+
     this._svg.innerHTML = "";
     
     this.updateAABB();
@@ -573,12 +595,12 @@ export abstract class Annotation {
   //#endregion
 
   //#endregion
+
+  abstract applyCommonTransform(matrix: Mat3): void;
   
   protected abstract renderContent(): RenderToSvgResult;
   
-  protected abstract updateAABB(): void;  
-  
-  protected abstract applyCommonTransform(matrix: Mat3): void;
+  protected abstract updateAABB(): void;
 }
 
 export interface AnnotationDto {

@@ -1,4 +1,4 @@
-import { Vec2 } from "../math";
+import { Mat3, Vec2 } from "../math";
 import { Quadruple } from "../common";
 
 import { Annotator } from "./annotator";
@@ -57,7 +57,40 @@ export class PenAnnotator extends Annotator {
 
     const imageUuid = this._annotationPenData.id;
     const annotation = PenAnnotation.createFromPenData(
-      this._annotationPenData, userName);
+      this._annotationPenData, userName);    
+    const rotation = this._imageView.rotation;
+    if (rotation) {
+      // TODO: implement correct translation depending on the image rotation
+      const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = annotation.aabb;
+      const centerX = (xmax + xmin) / 2;      
+      const centerY = (ymax + ymin) / 2;      
+      const {x: imageWidth, y: imageHeight} = this._imageView.imageInfo.dimensions;
+
+      let x: number;
+      let y: number;
+      switch(rotation) {
+        case 90:
+          x = centerY;
+          y = imageHeight - centerX;
+          break;
+        case 180:
+          x = imageWidth - centerX;
+          y = imageHeight - centerY;
+          break;
+        case 270:
+          x = imageWidth - centerY;
+          y = centerX;
+          break;
+        default:
+          throw new Error(`Invalid rotation image value: ${rotation}`);
+      }
+
+      const mat = new Mat3()
+        .applyTranslation(-centerX, -centerY)
+        .applyRotation(rotation / 180 * Math.PI)
+        .applyTranslation(x, y);
+      annotation.applyCommonTransform(mat);
+    }
     
     this.removeTempPenData();
     return {imageUuid, annotation};

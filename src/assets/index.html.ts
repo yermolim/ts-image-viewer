@@ -18,6 +18,8 @@ import icon_back from "./icons/back.png";
 import icon_delete from "./icons/delete.png";
 import icon_pointer from "./icons/pointer.png";
 import icon_pen from "./icons/pen.png";
+import icon_clockwise from "./icons/clockwise.png";
+import icon_counter_clockwise from "./icons/counter-clockwise.png";
 
 export const html = /*html*/`
   <div id="main-container" class="hide-previewer disabled" 
@@ -57,10 +59,16 @@ export const html = /*html*/`
         <div id="paginator-next" class="panel-button">
           <img src="${icon_arrow_right}"/>
         </div>
-        <input id="paginator-input" type="text">
-        <span>&nbsp/&nbsp</span>
-        <span id="paginator-total">0</span>
       </div>
+      <div class="panel-v-separator panel-item"></div>
+      <div id="rotator" class="subpanel panel-item">        
+        <div id="rotate-counterclockwise" class="panel-button">
+          <img src="${icon_counter_clockwise}"/>
+        </div>
+        <div id="rotate-clockwise" class="panel-button">
+          <img src="${icon_clockwise}"/>
+        </div>
+      </div>      
       <div class="panel-v-separator panel-item"></div>
       <div id="zoomer" class="subpanel panel-item">
         <div id="zoom-out" class="panel-button">

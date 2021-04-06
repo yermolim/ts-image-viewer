@@ -12,8 +12,6 @@ export class ImageView {
     previewHeight: number;
     scaledWidth?: number;
     scaledHeight?: number;
-    scaledDprWidth?: number;
-    scaledDprHeight?: number;
   };
 
   private _previewContainer: HTMLDivElement; 
@@ -30,13 +28,13 @@ export class ImageView {
   get viewContainer(): HTMLDivElement {
     return this._viewContainer;
   }  
-  private $viewRendered: boolean;
-  private set _viewRendered(value: boolean) {
-    this.$viewRendered = value;
+  private _viewRendered: boolean;
+  private set $viewRendered(value: boolean) {
+    this._viewRendered = value;
     this._viewContainer.setAttribute("data-loaded", value + "");
   } 
-  private get _viewRendered(): boolean {
-    return this.$viewRendered;
+  private get $viewRendered(): boolean {
+    return this._viewRendered;
   }
   private _viewCanvas: HTMLCanvasElement;
 
@@ -48,30 +46,27 @@ export class ImageView {
       return;
     }
     this._scale = value;
-    const dpr = window.devicePixelRatio;
-    
-    this._dimensions.scaledWidth = this._dimensions.width * this._scale;
-    this._dimensions.scaledHeight = this._dimensions.height * this._scale;
-    this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
-    this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
-    
-    this._viewWrapper.style.width = this._dimensions.scaledDprWidth + "px";
-    this._viewWrapper.style.height = this._dimensions.scaledDprHeight + "px";
-
-    this._viewContainer.style.width = this._dimensions.scaledDprWidth + "px";
-    this._viewContainer.style.height = this._dimensions.scaledDprHeight + "px";
-    
-    if (this._viewCanvas) {
-      this._viewCanvas.style.width = this._dimensions.scaledDprWidth + "px";
-      this._viewCanvas.style.height = this._dimensions.scaledDprHeight + "px";
+    this.updateDimensions();
+  }
+  get scale(): number {
+    return this._scale;
+  }
+  
+  private _rotation: number;
+  private set $rotation(value: number) {
+    if (this._rotation === value) {
+      return;
     }
-
-    this._scaleIsValid = false;
+    this._rotation = value;
+    this.updateDimensions();
   } 
+  get rotation(): number {
+    return this._rotation;
+  }
 
-  private _scaleIsValid: boolean;
+  private _dimensionsValid: boolean;
   get viewValid(): boolean {
-    return this._scaleIsValid && this._viewRendered;
+    return this._dimensionsValid && this.$viewRendered;
   }
 
   constructor(imageInfo: ImageInfo, index: number, previewWidth: number) {
@@ -105,7 +100,9 @@ export class ImageView {
     this._viewWrapper.setAttribute("data-image-index", this.index + "");
     this._viewWrapper.append(this.viewContainer);    
     
-    this.scale = 1;
+    this._scale = 1;
+    this._rotation = 0;
+    this.updateDimensions();
   }
 
   destroy() {
@@ -133,8 +130,6 @@ export class ImageView {
       return;
     }
 
-    const scale = this._scale;
-
     // create a new canvas of the needed size and fill it with a rendered image
     const canvas = this.createViewCanvas();
     const ctx = canvas.getContext("2d");
@@ -144,7 +139,7 @@ export class ImageView {
     this._viewCanvas?.remove();
     this._viewContainer.append(canvas);
     this._viewCanvas = canvas;
-    this._viewRendered = true;
+    this.$viewRendered = true;
 
     // add annotations div on top of canvas
     if (!this._annotationView) {
@@ -152,10 +147,7 @@ export class ImageView {
     }
     this._annotationView.appendTo(this.viewContainer);
 
-    // check if scale not changed during text render
-    if (scale === this._scale) {
-      this._scaleIsValid = true;
-    }  
+    this._dimensionsValid = true;
   }
   
   clearPreview() {
@@ -167,7 +159,23 @@ export class ImageView {
     this._annotationView = null;
     
     this._viewCanvas?.remove();
-    this._viewRendered = false;
+    this.$viewRendered = false;
+  }
+
+  rotateClockwise() {
+    if (this._rotation === 270) {
+      this.$rotation = 0;
+    } else {
+      this.$rotation = (this._rotation || 0) + 90;
+    }
+  }
+
+  rotateCounterClockwise() {
+    if (!this._rotation) {
+      this.$rotation = 270;
+    } else {
+      this.$rotation = this._rotation - 90;
+    }
   }
 
   async bakeAnnotationsAsync(): Promise<Blob>  {
@@ -207,10 +215,56 @@ export class ImageView {
   private createViewCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
     canvas.classList.add("image-canvas"); 
-    canvas.style.width = this._dimensions.scaledDprWidth + "px";
-    canvas.style.height = this._dimensions.scaledDprHeight + "px";
+    canvas.style.width = this._dimensions.scaledWidth + "px";
+    canvas.style.height = this._dimensions.scaledHeight + "px";
     canvas.width = this._dimensions.width;
     canvas.height = this._dimensions.height;
     return canvas;
+  }
+
+  private updateDimensions() {
+    const dpr = window.devicePixelRatio;
+
+    this._dimensions.scaledWidth = this._dimensions.width * this._scale;
+    this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+
+    const w = this._dimensions.scaledWidth;
+    const h = this._dimensions.scaledHeight;    
+    
+    if (this._viewCanvas) {
+      this._viewCanvas.style.width = w + "px";
+      this._viewCanvas.style.height = h + "px";
+    }
+
+    this._viewContainer.style.width = w + "px";
+    this._viewContainer.style.height = h + "px";
+
+    if (this._rotation) {      
+      switch (this._rotation) {
+        case 90:
+          this._viewWrapper.style.width = h + "px";
+          this._viewWrapper.style.height = w + "px";
+          this._viewContainer.style.transform = "rotate(90deg) translateY(-100%)";
+          break;
+        case 180:
+          this._viewWrapper.style.width = w + "px";
+          this._viewWrapper.style.height = h + "px";
+          this._viewContainer.style.transform = "rotate(180deg) translateX(-100%) translateY(-100%)";
+          break;
+        case 270:
+          this._viewWrapper.style.width = h + "px";
+          this._viewWrapper.style.height = w + "px";
+          this._viewContainer.style.transform = "rotate(270deg) translateX(-100%)";
+          break;
+        default:
+          throw new Error(`Invalid rotation degree: ${this._rotation}`);
+      }
+    } else {
+      this._viewWrapper.style.width = w + "px";
+      this._viewWrapper.style.height = h + "px";
+      this._viewContainer.style.transform = "";
+    }
+
+    this._dimensionsValid = false;
   }
 }
