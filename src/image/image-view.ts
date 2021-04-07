@@ -20,10 +20,12 @@ export class ImageView {
   }
   private _previewRendered: boolean;
 
-  private _viewWrapper: HTMLDivElement; 
+  private _viewWrapper: HTMLDivElement;
+  /**relatively positioned image view outer container */
   get viewWrapper(): HTMLDivElement {
     return this._viewWrapper;
   }  
+  /**absolutely positioned image view inner container */
   private _viewContainer: HTMLDivElement; 
   get viewContainer(): HTMLDivElement {
     return this._viewContainer;
@@ -65,6 +67,7 @@ export class ImageView {
   }
 
   private _dimensionsValid: boolean;
+  /**true if the view render is up to date */
   get viewValid(): boolean {
     return this._dimensionsValid && this.$viewRendered;
   }
@@ -91,6 +94,9 @@ export class ImageView {
     this._previewContainer.style.width = this._dimensions.previewWidth + "px";
     this._previewContainer.style.height = this._dimensions.previewHeight + "px";
 
+    // using a relatively positioned wrapper and an absolutely positioned inner element
+    // simplifies the image rotation implementation
+
     this._viewContainer = document.createElement("div");
     this._viewContainer.classList.add("image");
     this._viewContainer.setAttribute("data-image-index", this.index + "");
@@ -105,6 +111,7 @@ export class ImageView {
     this.updateDimensions();
   }
 
+  /**free the object resources to let GC clean them to avoid memory leak */
   destroy() {
     this._previewContainer.remove();
     this._viewWrapper.remove();
@@ -178,16 +185,23 @@ export class ImageView {
     }
   }
 
+  /**
+   * export the image as a PNG file with all its annotations drawn over 
+   * @returns PNG Blob
+   */
   async bakeAnnotationsAsync(): Promise<Blob>  {
     const tempCanvas = document.createElement("canvas");
     const {x, y} = this.imageInfo.dimensions;
     tempCanvas.width = x;
     tempCanvas.height = y;
     const tempCtx = tempCanvas.getContext("2d");
+
+    // draw the original image
     tempCtx.drawImage(this.imageInfo.image, 0, 0, x, y, 0, 0, x, y);
 
     if (this._annotationView) {
       const annotationsImage = await this._annotationView.toImageAsync();
+      // draw the annotations over the original image
       tempCtx.drawImage(annotationsImage, 0, 0);
     }
 
@@ -199,7 +213,7 @@ export class ImageView {
 
     return result;
   }
-  
+
   private createPreviewCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
     canvas.classList.add("image-canvas");  
@@ -223,8 +237,6 @@ export class ImageView {
   }
 
   private updateDimensions() {
-    const dpr = window.devicePixelRatio;
-
     this._dimensions.scaledWidth = this._dimensions.width * this._scale;
     this._dimensions.scaledHeight = this._dimensions.height * this._scale;
 
@@ -239,7 +251,8 @@ export class ImageView {
     this._viewContainer.style.width = w + "px";
     this._viewContainer.style.height = h + "px";
 
-    if (this._rotation) {      
+    if (this._rotation) {    
+      // transform the view container depending on the rotation angle 
       switch (this._rotation) {
         case 90:
           this._viewWrapper.style.width = h + "px";

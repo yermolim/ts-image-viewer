@@ -39,30 +39,43 @@ export abstract class Annotation {
   }
 
   //#region edit-related properties
+  /**axis-aligned bounding box */
   protected readonly _aabb: readonly [min: Vec2, min: Vec2] = [new Vec2(), new Vec2()];
+  /**axis-aligned bounding box */
   get aabb(): readonly [min: Vec2, min: Vec2] {
     return [this._aabb[0].clone(), this._aabb[1].clone()];
   }
 
   protected _transformationTimer: number; 
-  protected _transformationMatrix = new Mat3(); 
-  protected _transformationPoint = new Vec2();
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected _tempMatrix = new Mat3(); 
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected _tempPoint = new Vec2();
 
-  protected _boxX = new Vec2();
-  protected _boxY = new Vec2();
-  protected _boxXLength: number;
-  protected _boxYLength: number;
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected _tempVecA = new Vec2();
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected _tempVecB = new Vec2();
+  protected _tempX: number;
+  protected _tempY: number;
   //#endregion
 
   //#region render-related properties
   protected readonly _svgId = getRandomUuid();
 
+  /**outer svg container */
   protected _svg: SVGGraphicsElement;
+  /**rendered box showing the annotation dimensions */
   protected _svgBox: SVGGraphicsElement;
-  protected _svgContentCopy: SVGGraphicsElement;
-  protected _svgContentCopyUse: SVGUseElement;
+  /**rendered annotation content */
   protected _svgContent: SVGGraphicsElement;
+  /**copy of the rendered annotation content */
+  protected _svgContentCopy: SVGGraphicsElement;
+  /**use element attached to the copy of the rendered annotation content */
+  protected _svgContentCopyUse: SVGUseElement;
+  /**rendered svg clip paths */
   protected _svgClipPaths: SVGClipPathElement[];
+  /**rendered transformation handles */
   protected _svgHandles: SVGGraphicsElement[];
 
   protected _lastRenderResult: RenderToSvgResult;
@@ -84,6 +97,11 @@ export abstract class Annotation {
     this._author = dto?.author || "unknown";
   }
   
+  /**
+   * render current annotation to an svg element
+   * @param forceRerender 
+   * @returns 
+   */
   render(forceRerender = false): RenderToSvgResult {
     if (!this._svg) {
       this._svg = this.renderMainElement();
@@ -106,6 +124,11 @@ export abstract class Annotation {
     return renderResult;
   } 
 
+  /**
+   * move the annotation to the specified coords relative to the image
+   * @param imageX 
+   * @param imageY 
+   */
   moveTo(imageX: number, imageY: number) {
     const aabb = this._aabb;
     const width = aabb[1].x - aabb[0].x;
@@ -116,6 +139,10 @@ export abstract class Annotation {
     this.applyCommonTransform(mat);
   }
 
+  /**
+   * rotate the annotation around its own center
+   * @param degree 
+   */
   rotate(degree: number) {
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
     const halfWidth = (xmax - xmin) / 2;
@@ -123,13 +150,17 @@ export abstract class Annotation {
     const x = xmin + halfWidth;
     const y = ymin + halfHeight;
     
-    this._transformationMatrix.reset()
+    this._tempMatrix.reset()
       .applyTranslation(-x, -y)
       .applyRotation(degree / 180 * Math.PI)
       .applyTranslation(x, y);
-    this.applyCommonTransform(this._transformationMatrix);
+    this.applyCommonTransform(this._tempMatrix);
   }
 
+  /**
+   * serialize the annotation to a data transfer object
+   * @returns 
+   */
   toDto(): AnnotationDto {
     return {
       annotationType: this.type,
@@ -147,7 +178,7 @@ export abstract class Annotation {
   //#region common methods used for rendering purposes
   /**
    * returns current image scale. 
-   * works correctly only when the annotation SVG is appended to the DOM
+   * !works correctly only when the annotation SVG is appended to the DOM!
    * @returns 
    */
   protected getScale(): number {    
@@ -158,7 +189,7 @@ export abstract class Annotation {
   }
   
   /**
-   * get 2D vector with a position of the specified point in image coords 
+   * get a 2D vector with a position of the specified point in the image coords 
    * @param clientX 
    * @param clientY 
    */
@@ -177,6 +208,11 @@ export abstract class Annotation {
     return position;
   }
   
+  /**
+   * get a 2D vector with a position of the specified point in the client coords 
+   * @param imageX 
+   * @param imageY 
+   */
   protected convertImageCoordsToClient(imageX: number, imageY: number): Vec2 {
     const {x, y, width, height} = this._svgBox.getBoundingClientRect();
     const rectMinScaled = new Vec2(x, y);
@@ -363,11 +399,34 @@ export abstract class Annotation {
 
   //#region event handlers 
 
+  /**
+   * reset the svg element copy used for transformation purposes
+   */
+  protected applyTempTransform() {
+    if (this._transformationTimer) {
+      clearTimeout(this._transformationTimer);
+      this._transformationTimer = null;
+      return;
+    }
+    
+    // remove the copy from DOM
+    this._svgContentCopy.remove();
+    // reset the copy transform
+    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+
+    // transform the annotation
+    this.applyCommonTransform(this._tempMatrix);
+
+    // reset the temp matrix
+    this._tempMatrix.reset();
+  }
+
   //#region main svg handlers (selection + translation)
   protected onRectPointerDown = (e: PointerEvent) => { 
     document.dispatchEvent(new AnnotSelectionRequestEvent({annotation: this}));
 
     if (!this.translationEnabled || !e.isPrimary) {
+      // translation disabled or it's a secondary touch action
       return;
     }
 
@@ -376,28 +435,36 @@ export abstract class Annotation {
 
     // set timeout to prevent an accidental annotation translation
     this._transformationTimer = setTimeout(() => {
-      this._transformationTimer = null;      
+      this._transformationTimer = null;   
+      // append the svg element copy   
       this._svg.after(this._svgContentCopy);
-      this._transformationPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
+      // set the starting transformation point
+      this._tempPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
       document.addEventListener("pointermove", this.onRectPointerMove);
     }, 200);
   };
 
   protected onRectPointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
+      // it's a secondary touch action
       return;
     }
 
     const current = this.convertClientCoordsToImage(e.clientX, e.clientY);
-    this._transformationMatrix.reset()
-      .applyTranslation(current.x - this._transformationPoint.x, 
-        current.y - this._transformationPoint.y);
+
+    // update the temp transformation matrix
+    this._tempMatrix.reset()
+      .applyTranslation(current.x - this._tempPoint.x, 
+        current.y - this._tempPoint.y);
+
+    // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopyUse.setAttribute("transform", 
-      `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+      `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onRectPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
+      //it's a secondary touch action
       return;
     }
 
@@ -405,23 +472,15 @@ export abstract class Annotation {
     document.removeEventListener("pointerup", this.onRectPointerUp);
     document.removeEventListener("pointerout", this.onRectPointerUp);
 
-    if (this._transformationTimer) {
-      clearTimeout(this._transformationTimer);
-      this._transformationTimer = null;
-      return;
-    }
-    
-    this._svgContentCopy.remove();
-    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-
-    this.applyCommonTransform(this._transformationMatrix);
-    this._transformationMatrix.reset();
+    // transform the annotation
+    this.applyTempTransform();
   };
   //#endregion
   
   //#region rotation handlers
   protected onRotationHandlePointerDown = (e: PointerEvent) => {    
     if (!e.isPrimary) {
+      //it's a secondary touch action
       return;
     }
 
@@ -430,7 +489,8 @@ export abstract class Annotation {
 
     // set timeout to prevent an accidental annotation rotation
     this._transformationTimer = setTimeout(() => {
-      this._transformationTimer = null;      
+      this._transformationTimer = null;   
+      // append the svg element copy      
       this._svg.after(this._svgContentCopy);
       document.addEventListener("pointermove", this.onRotationHandlePointerMove);
     }, 200);
@@ -440,9 +500,11 @@ export abstract class Annotation {
 
   protected onRotationHandlePointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
+      //it's a secondary touch action
       return;
     }
   
+    // calculate current angle depending on the pointer position relative to the rotation center
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
     const centerX = (xmin + xmax) / 2;
     const centerY = (ymin + ymax) / 2;
@@ -451,16 +513,21 @@ export abstract class Annotation {
       e.clientY - clientCenter.y, 
       e.clientX - clientCenter.x
     ) - Math.PI / 2;
-    this._transformationMatrix.reset()
+
+    // update the temp transformation matrix
+    this._tempMatrix.reset()
       .applyTranslation(-centerX, -centerY)
       .applyRotation(-angle)
       .applyTranslation(centerX, centerY);
+
+    // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopyUse.setAttribute("transform", 
-      `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+      `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onRotationHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
+      //it's a secondary touch action
       return;
     }
 
@@ -468,23 +535,15 @@ export abstract class Annotation {
     document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
     document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
 
-    if (this._transformationTimer) {
-      clearTimeout(this._transformationTimer);
-      this._transformationTimer = null;
-      return;
-    }
-    
-    this._svgContentCopy.remove();
-    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-
-    this.applyCommonTransform(this._transformationMatrix);
-    this._transformationMatrix.reset();
+    // transform the annotation
+    this.applyTempTransform();
   };
   //#endregion
   
   //#region scale handlers
   protected onScaleHandlePointerDown = (e: PointerEvent) => { 
     if (!e.isPrimary) {
+      //it's a secondary touch action
       return;
     }
 
@@ -493,6 +552,7 @@ export abstract class Annotation {
 
     const target = e.target as HTMLElement;
 
+    // calculate the initial bounding box side vectors (from the further corner to the handle corner)
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
     const ul = new Vec2(xmin, ymin);
     const ll = new Vec2(xmin, ymax);
@@ -501,35 +561,36 @@ export abstract class Annotation {
     const handleName = target.dataset["handleName"];
     switch (handleName) {
       case "ll": 
-        this._transformationPoint.setFromVec2(ur);
-        this._boxX.setFromVec2(ul).substract(ur);
-        this._boxY.setFromVec2(lr).substract(ur);      
+        this._tempPoint.setFromVec2(ur);
+        this._tempVecA.setFromVec2(ul).substract(ur);
+        this._tempVecB.setFromVec2(lr).substract(ur);      
         break;
       case "lr":
-        this._transformationPoint.setFromVec2(ul);
-        this._boxX.setFromVec2(ur).substract(ul);
-        this._boxY.setFromVec2(ll).substract(ul); 
+        this._tempPoint.setFromVec2(ul);
+        this._tempVecA.setFromVec2(ur).substract(ul);
+        this._tempVecB.setFromVec2(ll).substract(ul); 
         break;
       case "ur":
-        this._transformationPoint.setFromVec2(ll); 
-        this._boxX.setFromVec2(lr).substract(ll);
-        this._boxY.setFromVec2(ul).substract(ll);
+        this._tempPoint.setFromVec2(ll); 
+        this._tempVecA.setFromVec2(lr).substract(ll);
+        this._tempVecB.setFromVec2(ul).substract(ll);
         break;
       case "ul":
-        this._transformationPoint.setFromVec2(lr); 
-        this._boxX.setFromVec2(ll).substract(lr);
-        this._boxY.setFromVec2(ur).substract(lr);
+        this._tempPoint.setFromVec2(lr); 
+        this._tempVecA.setFromVec2(ll).substract(lr);
+        this._tempVecB.setFromVec2(ur).substract(lr);
         break;
       default:
         // execution should not reach here
         throw new Error(`Invalid handle name: ${handleName}`);
     }
-    this._boxXLength = this._boxX.getMagnitude();
-    this._boxYLength = this._boxY.getMagnitude();
+    this._tempX = this._tempVecA.getMagnitude();
+    this._tempY = this._tempVecB.getMagnitude();
 
     // set timeout to prevent an accidental annotation scaling
     this._transformationTimer = setTimeout(() => {
-      this._transformationTimer = null;      
+      this._transformationTimer = null;    
+      // append the svg element copy     
       this._svg.after(this._svgContentCopy);
       document.addEventListener("pointermove", this.onScaleHandlePointerMove);
     }, 200);
@@ -539,40 +600,53 @@ export abstract class Annotation {
 
   protected onScaleHandlePointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
+      //it's a secondary touch action
       return;
     }
+    
+    // calculate scale change comparing bounding boxes vectors:
+    // first box - from the further corner to the handle corner (initial)
+    // second box - from the further corner to the current pointer position (current)
 
-    const current = this.convertClientCoordsToImage(e.clientX, e.clientY)
-      .substract(this._transformationPoint);
-    const currentLength = current.getMagnitude();
+    // calculate the current diagonal vector
+    const currentBoxDiagonal = this.convertClientCoordsToImage(e.clientX, e.clientY)
+      .substract(this._tempPoint);
+    const currentBoxDiagonalLength = currentBoxDiagonal.getMagnitude();
 
-    const cos = Math.abs(current.dotProduct(this._boxX)) / currentLength / this._boxXLength;
-    const pXLength = cos * currentLength;
-    const pYLength = Math.sqrt(currentLength * currentLength - pXLength * pXLength);    
+    // calculate the cosine of the angle between the current diagonal vector and the initial box side
+    const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecA)) 
+      / currentBoxDiagonalLength / this._tempX;
+    // calculate the current box side lengths
+    const currentXSideLength = cos * currentBoxDiagonalLength;
+    const currentYSideLength = Math.sqrt(currentBoxDiagonalLength * currentBoxDiagonalLength 
+      - currentXSideLength * currentXSideLength);    
 
-    const scaleX = pXLength / this._boxXLength;
-    const scaleY = pYLength / this._boxYLength;
+    const scaleX = currentXSideLength / this._tempX;
+    const scaleY = currentYSideLength / this._tempY;
     
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this._aabb;
-    const centerX = (xmin + xmax) / 2;
-    const centerY = (ymin + ymax) / 2;
+    const annotCenterX = (xmin + xmax) / 2;
+    const annotCenterY = (ymin + ymax) / 2;
 
-    this._transformationMatrix.reset()
-      .applyTranslation(-centerX, -centerY)
+    // update the temp transformation matrix
+    this._tempMatrix.reset()
+      .applyTranslation(-annotCenterX, -annotCenterY)
       // .applyRotation(-currentRotation)
       .applyScaling(scaleX, scaleY)
       // .applyRotation(currentRotation)
-      .applyTranslation(centerX, centerY);
-    const translation = this._transformationPoint.clone().substract(
-      this._transformationPoint.clone().applyMat3(this._transformationMatrix));
-    this._transformationMatrix.applyTranslation(translation.x, translation.y);
+      .applyTranslation(annotCenterX, annotCenterY);
+    const translation = this._tempPoint.clone().substract(
+      this._tempPoint.clone().applyMat3(this._tempMatrix));
+    this._tempMatrix.applyTranslation(translation.x, translation.y);
     
+    // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopyUse.setAttribute("transform", 
-      `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+      `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onScaleHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
+      //it's a secondary touch action
       return;
     }
 
@@ -580,22 +654,17 @@ export abstract class Annotation {
     document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
     document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
 
-    if (this._transformationTimer) {
-      clearTimeout(this._transformationTimer);
-      this._transformationTimer = null;
-      return;
-    }
-    
-    this._svgContentCopy.remove();
-    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-
-    this.applyCommonTransform(this._transformationMatrix);
-    this._transformationMatrix.reset();
+    // transform the annotation
+    this.applyTempTransform();
   };
   //#endregion
 
   //#endregion
 
+  /**
+   * transform the annotation using a 3x3 matrix
+   * @param matrix 
+   */
   abstract applyCommonTransform(matrix: Mat3): void;
   
   protected abstract renderContent(): RenderToSvgResult;

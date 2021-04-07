@@ -21,14 +21,20 @@ type AnnotatorMode = "select" | "pen";
 type FileButtons = "open" | "save" | "close";
 
 export interface TsImageViewerOptions {
+  /**parent container CSS selector */
   containerSelector: string;
+  /**current user name (used for annotations) */
   userName?: string;
 
+  /**list of the file interaction buttons shown */
   fileButtons?: FileButtons[];
+  /**action to execute instead of the default file open action */
   fileOpenAction?: () => void;
+  /**action to execute instead of the default file download action */
   fileSaveAction?: () => void;
   fileCloseAction?: () => void;
 
+  /**action to execute on annotation change event */
   annotChangeCallback?: (detail: AnnotEventDetail) => void;
 }
 
@@ -38,6 +44,8 @@ export class TsImageViewer {
   //#region private fields
   private readonly _userName: string;
 
+  // TODO: move readonly properties to the main options
+  /**count of the prerendered previews outside of the current preview viewport */
   private readonly _visibleAdjPreviews = 0;
   private readonly _previewWidth = 100;
   private readonly _minScale = 0.125;
@@ -70,14 +78,17 @@ export class TsImageViewer {
   private _fileSaveAction: () => void;
   private _fileCloseAction: () => void;
   
+  /**information about the last pointer position */
   private _pointerInfo = {
     lastPos: <Vec2>null,
     downPos: <Vec2>null,
     downScroll: <Vec2>null, 
   };
+  /**common timers */
   private _timers = {    
     hidePanels: 0,
   };
+  /**the object used for touch zoom handling */
   private _pinchInfo = {
     active: false,
     lastDist: 0,
@@ -122,6 +133,7 @@ export class TsImageViewer {
     document.addEventListener("tsimage-annotchange", this.onAnnotationChange);  
   }
 
+  /**create a temp download link and click on it */
   private static downloadFile(blob: Blob, name?: string) {
     const url = URL.createObjectURL(blob);
 
@@ -135,6 +147,7 @@ export class TsImageViewer {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
+  /**free the object resources to let GC clean them to avoid memory leak */
   destroy() {
     document.removeEventListener("tsimage-imagechange", this.onImageChange);
     document.removeEventListener("tsimage-annotchange", this.onAnnotationChange);
@@ -148,6 +161,10 @@ export class TsImageViewer {
     this._shadowRoot.innerHTML = "";
   }  
   
+  /**
+   * 
+   * @param loadInfos array of objects with an information about files being loaded
+   */
   async openImagesAsync(loadInfos: ImageLoadInfo[]): Promise<void> {
     try {
       await this._viewerData.addImagesAsync(loadInfos);
@@ -157,11 +174,16 @@ export class TsImageViewer {
     this.refreshImages();
   }
 
+  /**close all opened images */
   closeImages(): void {
     this._viewerData.clearImages();
     this.refreshImages();
   }
   
+  /**
+   * import previously exported TsImage annotations
+   * @param dtos annotation data transfer objects
+   */
   importAnnotations(dtos: AnnotationDto[]) {
     try {
       this._viewerData.appendSerializedAnnotations(dtos);
@@ -170,11 +192,20 @@ export class TsImageViewer {
     }
   }
   
+  /**
+   * export TsImage annotations as data transfer objects
+   * @param imageUuid if omitted, annotations from all opened images will be exported
+   * @returns 
+   */
   exportAnnotations(imageUuid?: string): AnnotationDto[] {
     const dtos = this._viewerData.serializeAnnotations(imageUuid);
     return dtos;
   }
   
+  /**
+   * import previously exported serialized TsImage annotations
+   * @param json serialized annotation data transfer objects
+   */
   importAnnotationsFromJson(json: string) {
     try {
       const dtos: AnnotationDto[] = JSON.parse(json);
@@ -184,6 +215,11 @@ export class TsImageViewer {
     }
   }
   
+  /**
+   * export TsImage annotations as a serialized array of data transfer objects
+   * @param imageUuid if omitted, annotations from all opened images will be exported
+   * @returns json string
+   */
   exportAnnotationsToJson(imageUuid?: string): string {
     const dtos = this._viewerData.serializeAnnotations(imageUuid);
     return JSON.stringify(dtos);
@@ -208,9 +244,9 @@ export class TsImageViewer {
     this._mainContainer = mainContainer;
     this._mainContainerRObserver = mcResizeObserver;  
 
+    this._contextMenu = new ContextMenu();
     this._previewer = this._shadowRoot.querySelector("#previewer");
     this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;
-    this._contextMenu = new ContextMenu();
     this._viewer.addEventListener("contextmenu", (e: MouseEvent) => {
       if (this._contextMenuEnabled) {
         e.preventDefault();
@@ -219,6 +255,7 @@ export class TsImageViewer {
     });
   }
   
+  /**add event listemers to interface general buttons */
   private initViewControls() { 
     this._shadowRoot.querySelector("#paginator-prev")
       .addEventListener("click", this.onPaginatorPrevClick);
@@ -394,7 +431,7 @@ export class TsImageViewer {
     // add current image container
     this._viewer.append(this._viewerData.currentImageView?.viewWrapper);
 
-    if (imageCount === 1) { 
+    if (imageCount === 1) { // only one image opened
       // hide previewer
       this.togglePreviewer(false); 
       this._shadowRoot.querySelector("#previewer-toggler").classList.add("disabled");
@@ -414,9 +451,13 @@ export class TsImageViewer {
     }
   }
   //#endregion
-  
-  
+
+
   //#region previewer
+  /**
+   * show or hide previewer
+   * @param show true: show, false|undefined: hide
+   */
   private togglePreviewer(show: boolean) {    
     if (show) {
       this._mainContainer.classList.remove("hide-previewer");
@@ -478,6 +519,7 @@ export class TsImageViewer {
     const r = width - l;
     const b = height - t;
 
+    // hide the top and bottom panels if the cursor is far from the container edge
     if (Math.min(l, r, t, b) > 100) {
       if (!this._panelsHidden && !this._timers.hidePanels) {
         this._timers.hidePanels = setTimeout(() => {
@@ -589,7 +631,7 @@ export class TsImageViewer {
   };
   //#endregion
 
-  //#region viewer zoom
+  //#region viewer image zoom
   private setScale(scale: number, cursorPosition?: Vec2) {
     const imageView = this?._viewerData?.currentImageView;
     if (!scale || scale === this._scale || !imageView) {
@@ -797,7 +839,7 @@ export class TsImageViewer {
   };
   //#endregion
 
-  //#region viewer rotation
+  //#region viewer image rotation
   private onRotateCounterClockwiseClick = () => {
     this._viewerData.currentImageView?.rotateCounterClockwise();
     this.setAnnotatorMode(this._annotatorMode, true);
@@ -813,6 +855,12 @@ export class TsImageViewer {
 
 
   //#region images and paginator
+  /**
+   * get image previews that are visible in the previewer viewport at the moment
+   * @param container 
+   * @param images 
+   * @returns 
+   */
   private getVisiblePreviewImages(container: HTMLDivElement, images: ImageView[]): Set<number> {
     const imagesVisible = new Set<number>();
     if (!images.length) {
@@ -838,6 +886,10 @@ export class TsImageViewer {
     return imagesVisible;
   }
   
+  /**
+   * render image previews that are visible in the previewer viewport at the moment
+   * @returns 
+   */
   private renderVisiblePreviews() {
     if (this._previewerHidden) {
       return;
@@ -969,13 +1021,18 @@ export class TsImageViewer {
     }
   };
 
+  /**
+   * prepare the context menu to work with a pen annotator
+   */
   private initContextPenColorPicker() {
+    // TODO: move default colors to the main options
     const colors: Quadruple[] = [
       [0, 0, 0, 0.9], // black
       [205, 0, 0, 0.9], // red
       [0, 205, 0, 0.9], // green
       [0, 0, 205, 0.9], // blue
     ];
+    // init the color picker
     const contextMenuColorPicker = document.createElement("div");
     contextMenuColorPicker.classList.add("context-menu-content", "row");
     colors.forEach(x => {          
@@ -996,6 +1053,7 @@ export class TsImageViewer {
       contextMenuColorPicker.append(item);
     });
 
+    // init the stroke width selection slider
     const contextMenuWidthSlider = document.createElement("div");
     contextMenuWidthSlider.classList.add("context-menu-content", "row");
     const slider = document.createElement("input");
@@ -1014,12 +1072,10 @@ export class TsImageViewer {
     });
     contextMenuWidthSlider.append(slider);
 
+    // set the context menu content
     this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
+    // activate the context menu
     this._contextMenuEnabled = true;
   }
-  //#endregion
-
-
-  //#region misc 
   //#endregion
 }

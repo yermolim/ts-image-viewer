@@ -40,11 +40,13 @@ export class PenAnnotator extends Annotator {
     this.updatePenGroupPosition();
   }
 
+  /**remove the last path */
   undoPath() {
     this._annotationPenData?.removeLastPath();
     this.emitPathCount();
   }
 
+  /**remove all paths */
   clearPaths() {
     this.removeTempPenData();
   }
@@ -58,9 +60,11 @@ export class PenAnnotator extends Annotator {
     const imageUuid = this._annotationPenData.id;
     const annotation = PenAnnotation.createFromPenData(
       this._annotationPenData, userName);    
+      
     const rotation = this._imageView.rotation;
     if (rotation) {
-      // TODO: implement correct translation depending on the image rotation
+      // transform the annotation depending on the current image rotation
+
       const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = annotation.aabb;
       const centerX = (xmax + xmin) / 2;      
       const centerY = (ymax + ymin) / 2;      
@@ -92,6 +96,7 @@ export class PenAnnotator extends Annotator {
       annotation.applyCommonTransform(mat);
     }
     
+    // reset pen data
     this.removeTempPenData();
     return {imageUuid, annotation};
   }
@@ -115,11 +120,11 @@ export class PenAnnotator extends Annotator {
       return;
     }
 
+    // move the pen group depending on the current scale and the image position
     const {top: iy, left: ix} = image.viewContainer.getBoundingClientRect();
     const {top: vy, left: vx} = this._overlay.getBoundingClientRect();
     const offsetX = (ix - vx) / this._scale;
     const offsetY = (iy - vy) / this._scale;
-
     this._annotationPenData.setGroupMatrix(
       [1, 0, 0, 1, offsetX, offsetY]);
   }

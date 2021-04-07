@@ -14,6 +14,7 @@ export class ImageInfo {
   }
 
   protected readonly _dimensions: Vec2 = new Vec2();
+  /**the image original width and height */
   get dimensions(): Vec2 {
     return this._dimensions;
   }

@@ -12,17 +12,25 @@ export function getDistance(x1: number, y1: number, x2: number, y2: number): num
 }
 
 export interface RenderToSvgResult {
+  /**main svg element of the rendered object */
   svg: SVGGraphicsElement;
+  /**optional clip path array */
   clipPaths?: SVGClipPathElement[];
   
+  /**the svg element copy of the rendered object (used for a transformation visualization) */
   tempCopy?: SVGGraphicsElement;
+  /** use element of the svg element copy (used for a transformation visualization) */
   tempCopyUse?: SVGUseElement;
 }
 
 export interface BBox {
+  /**lower-left corner coords */
   ll: Vec2; 
+  /**lower-right corner coords */
   lr: Vec2; 
+  /**upper-right corner coords */
   ur: Vec2; 
+  /**upper-left corner coords */
   ul: Vec2;
 }
 

@@ -37,19 +37,22 @@ export class ImageAnnotationView {
     
     this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     this._container.append(this._svg);
-  } 
-
+  }
+  
+  /**free the object resources to let GC clean them to avoid memory leak */
   destroy() {
     this.remove();
     this._container = null;
     this._destroyed = true;
   }
 
+  /**remove from DOM */
   remove() {    
     this._container?.remove();
     document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }  
 
+  /**append to the specified element */
   appendTo(parent: HTMLElement) {
     if (this._destroyed) {
       return;
@@ -60,6 +63,7 @@ export class ImageAnnotationView {
     document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }
 
+  /**create HTMLImageElement from all the annotations*/
   async toImageAsync(): Promise<HTMLImageElement> {
     const svgSerialized = new XMLSerializer().serializeToString(this._svg);
     const svgBlob = new Blob([svgSerialized], {type: "image/svg+xml;charset=utf-8"});

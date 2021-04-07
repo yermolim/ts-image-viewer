@@ -1208,10 +1208,10 @@ class ContextMenu {
 class Annotation {
     constructor(dto) {
         this._aabb = [new Vec2(), new Vec2()];
-        this._transformationMatrix = new Mat3();
-        this._transformationPoint = new Vec2();
-        this._boxX = new Vec2();
-        this._boxY = new Vec2();
+        this._tempMatrix = new Mat3();
+        this._tempPoint = new Vec2();
+        this._tempVecA = new Vec2();
+        this._tempVecB = new Vec2();
         this._svgId = getRandomUuid();
         this.onRectPointerDown = (e) => {
             document.dispatchEvent(new AnnotSelectionRequestEvent({ annotation: this }));
@@ -1223,7 +1223,7 @@ class Annotation {
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
-                this._transformationPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
+                this._tempPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
                 document.addEventListener("pointermove", this.onRectPointerMove);
             }, 200);
         };
@@ -1232,9 +1232,9 @@ class Annotation {
                 return;
             }
             const current = this.convertClientCoordsToImage(e.clientX, e.clientY);
-            this._transformationMatrix.reset()
-                .applyTranslation(current.x - this._transformationPoint.x, current.y - this._transformationPoint.y);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+            this._tempMatrix.reset()
+                .applyTranslation(current.x - this._tempPoint.x, current.y - this._tempPoint.y);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRectPointerUp = (e) => {
             if (!e.isPrimary) {
@@ -1243,15 +1243,7 @@ class Annotation {
             document.removeEventListener("pointermove", this.onRectPointerMove);
             document.removeEventListener("pointerup", this.onRectPointerUp);
             document.removeEventListener("pointerout", this.onRectPointerUp);
-            if (this._transformationTimer) {
-                clearTimeout(this._transformationTimer);
-                this._transformationTimer = null;
-                return;
-            }
-            this._svgContentCopy.remove();
-            this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-            this.applyCommonTransform(this._transformationMatrix);
-            this._transformationMatrix.reset();
+            this.applyTempTransform();
         };
         this.onRotationHandlePointerDown = (e) => {
             if (!e.isPrimary) {
@@ -1275,11 +1267,11 @@ class Annotation {
             const centerY = (ymin + ymax) / 2;
             const clientCenter = this.convertImageCoordsToClient(centerX, centerY);
             const angle = Math.atan2(e.clientY - clientCenter.y, e.clientX - clientCenter.x) - Math.PI / 2;
-            this._transformationMatrix.reset()
+            this._tempMatrix.reset()
                 .applyTranslation(-centerX, -centerY)
                 .applyRotation(-angle)
                 .applyTranslation(centerX, centerY);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRotationHandlePointerUp = (e) => {
             if (!e.isPrimary) {
@@ -1288,15 +1280,7 @@ class Annotation {
             document.removeEventListener("pointermove", this.onRotationHandlePointerMove);
             document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
             document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
-            if (this._transformationTimer) {
-                clearTimeout(this._transformationTimer);
-                this._transformationTimer = null;
-                return;
-            }
-            this._svgContentCopy.remove();
-            this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-            this.applyCommonTransform(this._transformationMatrix);
-            this._transformationMatrix.reset();
+            this.applyTempTransform();
         };
         this.onScaleHandlePointerDown = (e) => {
             if (!e.isPrimary) {
@@ -1313,30 +1297,30 @@ class Annotation {
             const handleName = target.dataset["handleName"];
             switch (handleName) {
                 case "ll":
-                    this._transformationPoint.setFromVec2(ur);
-                    this._boxX.setFromVec2(ul).substract(ur);
-                    this._boxY.setFromVec2(lr).substract(ur);
+                    this._tempPoint.setFromVec2(ur);
+                    this._tempVecA.setFromVec2(ul).substract(ur);
+                    this._tempVecB.setFromVec2(lr).substract(ur);
                     break;
                 case "lr":
-                    this._transformationPoint.setFromVec2(ul);
-                    this._boxX.setFromVec2(ur).substract(ul);
-                    this._boxY.setFromVec2(ll).substract(ul);
+                    this._tempPoint.setFromVec2(ul);
+                    this._tempVecA.setFromVec2(ur).substract(ul);
+                    this._tempVecB.setFromVec2(ll).substract(ul);
                     break;
                 case "ur":
-                    this._transformationPoint.setFromVec2(ll);
-                    this._boxX.setFromVec2(lr).substract(ll);
-                    this._boxY.setFromVec2(ul).substract(ll);
+                    this._tempPoint.setFromVec2(ll);
+                    this._tempVecA.setFromVec2(lr).substract(ll);
+                    this._tempVecB.setFromVec2(ul).substract(ll);
                     break;
                 case "ul":
-                    this._transformationPoint.setFromVec2(lr);
-                    this._boxX.setFromVec2(ll).substract(lr);
-                    this._boxY.setFromVec2(ur).substract(lr);
+                    this._tempPoint.setFromVec2(lr);
+                    this._tempVecA.setFromVec2(ll).substract(lr);
+                    this._tempVecB.setFromVec2(ur).substract(lr);
                     break;
                 default:
                     throw new Error(`Invalid handle name: ${handleName}`);
             }
-            this._boxXLength = this._boxX.getMagnitude();
-            this._boxYLength = this._boxY.getMagnitude();
+            this._tempX = this._tempVecA.getMagnitude();
+            this._tempY = this._tempVecB.getMagnitude();
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
@@ -1348,24 +1332,26 @@ class Annotation {
             if (!e.isPrimary) {
                 return;
             }
-            const current = this.convertClientCoordsToImage(e.clientX, e.clientY)
-                .substract(this._transformationPoint);
-            const currentLength = current.getMagnitude();
-            const cos = Math.abs(current.dotProduct(this._boxX)) / currentLength / this._boxXLength;
-            const pXLength = cos * currentLength;
-            const pYLength = Math.sqrt(currentLength * currentLength - pXLength * pXLength);
-            const scaleX = pXLength / this._boxXLength;
-            const scaleY = pYLength / this._boxYLength;
+            const currentBoxDiagonal = this.convertClientCoordsToImage(e.clientX, e.clientY)
+                .substract(this._tempPoint);
+            const currentBoxDiagonalLength = currentBoxDiagonal.getMagnitude();
+            const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecA))
+                / currentBoxDiagonalLength / this._tempX;
+            const currentXSideLength = cos * currentBoxDiagonalLength;
+            const currentYSideLength = Math.sqrt(currentBoxDiagonalLength * currentBoxDiagonalLength
+                - currentXSideLength * currentXSideLength);
+            const scaleX = currentXSideLength / this._tempX;
+            const scaleY = currentYSideLength / this._tempY;
             const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
-            const centerX = (xmin + xmax) / 2;
-            const centerY = (ymin + ymax) / 2;
-            this._transformationMatrix.reset()
-                .applyTranslation(-centerX, -centerY)
+            const annotCenterX = (xmin + xmax) / 2;
+            const annotCenterY = (ymin + ymax) / 2;
+            this._tempMatrix.reset()
+                .applyTranslation(-annotCenterX, -annotCenterY)
                 .applyScaling(scaleX, scaleY)
-                .applyTranslation(centerX, centerY);
-            const translation = this._transformationPoint.clone().substract(this._transformationPoint.clone().applyMat3(this._transformationMatrix));
-            this._transformationMatrix.applyTranslation(translation.x, translation.y);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+                .applyTranslation(annotCenterX, annotCenterY);
+            const translation = this._tempPoint.clone().substract(this._tempPoint.clone().applyMat3(this._tempMatrix));
+            this._tempMatrix.applyTranslation(translation.x, translation.y);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onScaleHandlePointerUp = (e) => {
             if (!e.isPrimary) {
@@ -1374,15 +1360,7 @@ class Annotation {
             document.removeEventListener("pointermove", this.onScaleHandlePointerMove);
             document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
             document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
-            if (this._transformationTimer) {
-                clearTimeout(this._transformationTimer);
-                this._transformationTimer = null;
-                return;
-            }
-            this._svgContentCopy.remove();
-            this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-            this.applyCommonTransform(this._transformationMatrix);
-            this._transformationMatrix.reset();
+            this.applyTempTransform();
         };
         this.type = (dto === null || dto === void 0 ? void 0 : dto.annotationType) || "none";
         this.uuid = (dto === null || dto === void 0 ? void 0 : dto.uuid) || getRandomUuid();
@@ -1459,11 +1437,11 @@ class Annotation {
         const halfHeight = (ymax - ymin) / 2;
         const x = xmin + halfWidth;
         const y = ymin + halfHeight;
-        this._transformationMatrix.reset()
+        this._tempMatrix.reset()
             .applyTranslation(-x, -y)
             .applyRotation(degree / 180 * Math.PI)
             .applyTranslation(x, y);
-        this.applyCommonTransform(this._transformationMatrix);
+        this.applyCommonTransform(this._tempMatrix);
     }
     toDto() {
         return {
@@ -1629,6 +1607,17 @@ class Annotation {
         this._svgClipPaths = contentResult.clipPaths;
         this.updateHandles();
     }
+    applyTempTransform() {
+        if (this._transformationTimer) {
+            clearTimeout(this._transformationTimer);
+            this._transformationTimer = null;
+            return;
+        }
+        this._svgContentCopy.remove();
+        this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+        this.applyCommonTransform(this._tempMatrix);
+        this._tempMatrix.reset();
+    }
 }
 const annotSelectionRequestEvent = "tsimage-annotselectionrequest";
 class AnnotSelectionRequestEvent extends CustomEvent {
@@ -1661,9 +1650,6 @@ class Annotator {
     set scale(value) {
         this._scale = value;
         this.refreshViewBox();
-    }
-    get overlayContainer() {
-        return this._overlayContainer;
     }
     destroy() {
         var _a, _b, _c;
@@ -1836,14 +1822,14 @@ class PenData {
             .slice(Math.max(0, buffer.length - this._options.bufferSize), buffer.length);
     }
     getAveragePosition(offset) {
-        const len = this._positionBuffer.length;
-        if (len % 2 === 1 || len >= this._options.bufferSize) {
+        const bufferLen = this._positionBuffer.length;
+        if (bufferLen % 2 === 1 || bufferLen >= this._options.bufferSize) {
             let totalX = 0;
             let totalY = 0;
             let pos;
             let i;
             let count = 0;
-            for (i = offset; i < len; i++) {
+            for (i = offset; i < bufferLen; i++) {
                 count++;
                 pos = this._positionBuffer[i];
                 totalX += pos.x;
@@ -3173,9 +3159,9 @@ class TsImageViewer {
         mcResizeObserver.observe(mainContainer);
         this._mainContainer = mainContainer;
         this._mainContainerRObserver = mcResizeObserver;
+        this._contextMenu = new ContextMenu();
         this._previewer = this._shadowRoot.querySelector("#previewer");
         this._viewer = this._shadowRoot.querySelector("#viewer");
-        this._contextMenu = new ContextMenu();
         this._viewer.addEventListener("contextmenu", (e) => {
             if (this._contextMenuEnabled) {
                 e.preventDefault();

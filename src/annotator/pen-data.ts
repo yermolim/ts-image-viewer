@@ -7,6 +7,7 @@ interface PathData {
 }
 
 export interface PenDataOptions {
+  /**higher values give smoother lines but lower performance */
   bufferSize?: number; 
   strokeWidth?: number;  
   color?: Quadruple;
@@ -55,6 +56,7 @@ export class PenData {
     this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   }
 
+  /**start the new path. discards unfinished current path */
   newPath(startPosition: Vec2) {
     const [r, g, b, a] = this._options.color || [0, 0, 0, 1];
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -71,6 +73,7 @@ export class PenData {
     this._group.append(path);
   }
 
+  /**end the current path and push it to the 'paths' property */
   endPath() {    
     if (this._currentPath && this._currentPath.positions.length > 1) {      
       this._paths.push(this._currentPath);
@@ -93,11 +96,13 @@ export class PenData {
     pathData?.path.remove();
   }
 
+  /**add position to the current path */
   addPosition(pos: Vec2) {
     this.appendPositionToBuffer(pos);
     this.updateCurrentPath();
   }
 
+  /**transform path group */
   setGroupMatrix(matrix?: Hextuple) {
     this._group.setAttribute("transform", `matrix(${matrix.join(" ")})`);
   }
@@ -110,14 +115,14 @@ export class PenData {
   }
 
   private getAveragePosition(offset: number): Vec2 {
-    const len = this._positionBuffer.length;
-    if (len % 2 === 1 || len >= this._options.bufferSize) {
+    const bufferLen = this._positionBuffer.length;
+    if (bufferLen % 2 === 1 || bufferLen >= this._options.bufferSize) {
       let totalX = 0;
       let totalY = 0;
       let pos: Vec2;
       let i: number;
       let count = 0;
-      for (i = offset; i < len; i++) {
+      for (i = offset; i < bufferLen; i++) {
         count++;
         pos = this._positionBuffer[i];
         totalX += pos.x;
@@ -132,19 +137,19 @@ export class PenData {
     let pos = this.getAveragePosition(0);
 
     if (pos) {
-      // Get the smoothed part of the path that will not change
+      // get the smoothed part of the path that will not change
       this._currentPathString += " L" + pos.x + " " + pos.y;    
       this._currentPath.positions.push(pos);
 
-      // Get the last part of the path (close to the current mouse position)
-      // This part will change if the mouse moves again
+      // get the last part of the path (close to the current mouse position)
+      // this part will change if the mouse moves again
       let tmpPath = "";
       for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
         pos = this.getAveragePosition(offset);
         tmpPath += " L" + pos.x + " " + pos.y;
       }
 
-      // Set the complete current path coordinates
+      // set the complete current path coordinates
       this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
     }
   };

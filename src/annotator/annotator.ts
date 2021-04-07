@@ -20,10 +20,6 @@ export abstract class Annotator {
   protected _lastScale: number;
   
   protected _overlayContainer: HTMLDivElement;
-  get overlayContainer(): HTMLDivElement {
-    return this._overlayContainer;
-  }
-
   protected _overlay: HTMLDivElement;
   protected _svgWrapper: SVGGraphicsElement;
   protected _svgGroup: SVGGraphicsElement;
@@ -41,6 +37,7 @@ export abstract class Annotator {
     this._imageView = imageView;
   }
 
+  /**free the annotator resources */
   destroy() {    
     this._overlayContainer.remove();
 
@@ -49,6 +46,7 @@ export abstract class Annotator {
     this._parentResizeObserver?.disconnect();
   }
 
+  /**refresh the annotator dimensions */
   refreshViewBox() {
     const {width: w, height: h} = this._overlay.getBoundingClientRect();
     if (!w || !h) {

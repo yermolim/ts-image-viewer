@@ -71,6 +71,7 @@ export class ViewerData {
     document.addEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
   }
 
+  /**free the object resources to let GC clean them to avoid memory leak */
   destroy() {
     document.removeEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
     this._imageViews?.forEach(x => x.destroy());
@@ -237,6 +238,10 @@ export class ViewerData {
     }));
   }
   
+  /**
+   * append previously exported annotations
+   * @param dtos annotation data transfer objects
+   */
   appendSerializedAnnotations(dtos: AnnotationDto[]) {
     let annotation: Annotation;
     for (const dto of dtos) {
@@ -267,6 +272,11 @@ export class ViewerData {
     this.deleteAnnotation(this._selectedAnnotation);
   }
 
+  /**
+   * get the annotations as data transfer objects
+   * @param imageUuid if not specified all the annotations is returned
+   * @returns annotation data transfer objects
+   */
   serializeAnnotations(imageUuid?: string): AnnotationDto[] {
     const dtos: AnnotationDto[] = [];
 
