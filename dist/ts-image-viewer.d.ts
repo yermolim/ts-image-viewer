@@ -78,6 +78,7 @@ export declare class TsImageViewer {
 	private initModeSwitchButtons;
 	private initAnnotationButtons;
 	private refreshImages;
+	private togglePreviewer;
 	private scrollToCurrentPreview;
 	private onPreviewerToggleClick;
 	private onPreviewerImageClick;

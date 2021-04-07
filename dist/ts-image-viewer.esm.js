@@ -68,7 +68,7 @@ const html = `
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="top-panel"> 
-      <div class="subpanel panel-item">
+      <div id="previewer-toggler" class="subpanel panel-item">
         <div id="toggle-previewer" class="panel-button panel-item">
           <img src="${img$c}"/>
         </div> 
@@ -358,10 +358,13 @@ const styles = `
     width: 20px;
     height: 20px;
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tsimage-color-fg-primary-final)) saturate(1000%);
-  }  
+  }
   .panel-button:hover img,
   .panel-button.on img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tsimage-color-fg-accent-final)) saturate(1000%);
+  }
+  .disabled .panel-button img {
+    filter: invert() opacity(0.2) drop-shadow(0 0 0 var(--tsimage-color-fg-primary-final)) saturate(1000%);
   }
   
   .subpanel {
@@ -743,6 +746,9 @@ const styles = `
   }
   #button-open-file {
     pointer-events: auto !important;
+  }
+  .disabled #button-open-file img {
+    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tsimage-color-fg-primary-final)) saturate(1000%);
   }
 </style>
 `;
@@ -2858,17 +2864,7 @@ class TsImageViewer {
             this.closeImages();
         };
         this.onPreviewerToggleClick = () => {
-            if (this._previewerHidden) {
-                this._mainContainer.classList.remove("hide-previewer");
-                this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
-                this._previewerHidden = false;
-                setTimeout(() => this.renderVisiblePreviews(), 1000);
-            }
-            else {
-                this._mainContainer.classList.add("hide-previewer");
-                this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
-                this._previewerHidden = true;
-            }
+            this.togglePreviewer(this._previewerHidden);
         };
         this.onPreviewerImageClick = (e) => {
             let target = e.target;
@@ -3129,19 +3125,10 @@ class TsImageViewer {
                 throw new Error(`Cannot load file data: ${e.message}`);
             }
             this.refreshImages();
-            this.renderVisiblePreviews();
-            this._mainContainer.classList.remove("disabled");
         });
     }
     closeImages() {
         this._viewerData.clearImages();
-        if (this === null || this === void 0 ? void 0 : this._annotator) {
-            this._annotator.destroy();
-            this._annotator = null;
-        }
-        this._mainContainer.classList.add("disabled");
-        this.setViewerMode("hand");
-        this.setAnnotatorMode("select");
         this.refreshImages();
     }
     importAnnotations(dtos) {
@@ -3293,16 +3280,48 @@ class TsImageViewer {
         var _a;
         const imageCount = this._viewerData.imageCount;
         if (!imageCount) {
+            if (this === null || this === void 0 ? void 0 : this._annotator) {
+                this._annotator.destroy();
+                this._annotator = null;
+            }
+            this._mainContainer.classList.add("disabled");
+            this.setViewerMode("hand");
+            this.setAnnotatorMode("select");
+            this.togglePreviewer(false);
             return;
         }
+        this._mainContainer.classList.remove("disabled");
         this._previewer.innerHTML = "";
-        for (const imageView of this._viewerData.imageViews) {
-            imageView.scale = this._scale;
-            imageView.previewContainer.addEventListener("click", this.onPreviewerImageClick);
-            this._previewer.append(imageView.previewContainer);
-        }
         this._viewer.innerHTML = "";
         this._viewer.append((_a = this._viewerData.currentImageView) === null || _a === void 0 ? void 0 : _a.viewWrapper);
+        if (imageCount === 1) {
+            this.togglePreviewer(false);
+            this._shadowRoot.querySelector("#previewer-toggler").classList.add("disabled");
+            this._shadowRoot.querySelector("#paginator").classList.add("disabled");
+        }
+        else {
+            this._shadowRoot.querySelector("#previewer-toggler").classList.remove("disabled");
+            for (const imageView of this._viewerData.imageViews) {
+                imageView.scale = this._scale;
+                imageView.previewContainer.addEventListener("click", this.onPreviewerImageClick);
+                this._previewer.append(imageView.previewContainer);
+            }
+            this.renderVisiblePreviews();
+            this._shadowRoot.querySelector("#paginator").classList.remove("disabled");
+        }
+    }
+    togglePreviewer(show) {
+        if (show) {
+            this._mainContainer.classList.remove("hide-previewer");
+            this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+            this._previewerHidden = false;
+            setTimeout(() => this.renderVisiblePreviews(), 1000);
+        }
+        else {
+            this._mainContainer.classList.add("hide-previewer");
+            this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+            this._previewerHidden = true;
+        }
     }
     scrollToCurrentPreview() {
         const { top: cTop, height: cHeight } = this._previewer.getBoundingClientRect();

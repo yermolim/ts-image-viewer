@@ -27,7 +27,7 @@ export const html = /*html*/`
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="top-panel"> 
-      <div class="subpanel panel-item">
+      <div id="previewer-toggler" class="subpanel panel-item">
         <div id="toggle-previewer" class="panel-button panel-item">
           <img src="${icon_sidebar}"/>
         </div> 

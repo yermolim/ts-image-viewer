@@ -198,10 +198,13 @@ export const styles = /*html*/`
     width: 20px;
     height: 20px;
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tsimage-color-fg-primary-final)) saturate(1000%);
-  }  
+  }
   .panel-button:hover img,
   .panel-button.on img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tsimage-color-fg-accent-final)) saturate(1000%);
+  }
+  .disabled .panel-button img {
+    filter: invert() opacity(0.2) drop-shadow(0 0 0 var(--tsimage-color-fg-primary-final)) saturate(1000%);
   }
   
   .subpanel {
@@ -583,6 +586,9 @@ export const styles = /*html*/`
   }
   #button-open-file {
     pointer-events: auto !important;
+  }
+  .disabled #button-open-file img {
+    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tsimage-color-fg-primary-final)) saturate(1000%);
   }
 </style>
 `;

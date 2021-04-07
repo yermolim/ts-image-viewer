@@ -154,25 +154,11 @@ export class TsImageViewer {
     } catch (e) {
       throw new Error(`Cannot load file data: ${e.message}`);
     }
-
     this.refreshImages();
-    this.renderVisiblePreviews();
-
-    this._mainContainer.classList.remove("disabled");
   }
 
   closeImages(): void {
     this._viewerData.clearImages();
-
-    if (this?._annotator) {
-      this._annotator.destroy();
-      this._annotator = null;
-    }
-    
-    this._mainContainer.classList.add("disabled");
-    this.setViewerMode("hand");
-    this.setAnnotatorMode("select");  
-
     this.refreshImages();
   }
   
@@ -383,28 +369,67 @@ export class TsImageViewer {
   //#region open/close private
   private refreshImages(): void {
     const imageCount = this._viewerData.imageCount;
-    if (!imageCount) {
+
+    if (!imageCount) { // all images closed
+      if (this?._annotator) {
+        this._annotator.destroy();
+        this._annotator = null;
+      }
+      // disable interface
+      this._mainContainer.classList.add("disabled");
+      // reset modes
+      this.setViewerMode("hand");
+      this.setAnnotatorMode("select");  
+      // hide previewer
+      this.togglePreviewer(false);
       return;
     }
 
+    // enable interface
+    this._mainContainer.classList.remove("disabled");    
     // remove previous previews
     this._previewer.innerHTML = "";
-    // set scale and add new previews
-    for (const imageView of this._viewerData.imageViews) {
-      imageView.scale = this._scale;
-      imageView.previewContainer.addEventListener("click", this.onPreviewerImageClick);
-      this._previewer.append(imageView.previewContainer);
-    }
-    
     // remove old image container    
     this._viewer.innerHTML = "";
     // add current image container
     this._viewer.append(this._viewerData.currentImageView?.viewWrapper);
+
+    if (imageCount === 1) { 
+      // hide previewer
+      this.togglePreviewer(false); 
+      this._shadowRoot.querySelector("#previewer-toggler").classList.add("disabled");
+      // disable paginator
+      this._shadowRoot.querySelector("#paginator").classList.add("disabled");
+    } else {
+      // set scale and add new previews
+      this._shadowRoot.querySelector("#previewer-toggler").classList.remove("disabled");
+      for (const imageView of this._viewerData.imageViews) {
+        imageView.scale = this._scale;
+        imageView.previewContainer.addEventListener("click", this.onPreviewerImageClick);
+        this._previewer.append(imageView.previewContainer);
+      }
+      this.renderVisiblePreviews();
+      // enable paginator
+      this._shadowRoot.querySelector("#paginator").classList.remove("disabled");
+    }
   }
   //#endregion
   
   
   //#region previewer
+  private togglePreviewer(show: boolean) {    
+    if (show) {
+      this._mainContainer.classList.remove("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+      this._previewerHidden = false;
+      setTimeout(() => this.renderVisiblePreviews(), 1000);
+    } else {      
+      this._mainContainer.classList.add("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+      this._previewerHidden = true;
+    }
+  }
+
   private scrollToCurrentPreview() { 
     const {top: cTop, height: cHeight} = this._previewer.getBoundingClientRect();
     const {top: pTop, height: pHeight} = this._viewerData.currentImageView
@@ -418,16 +443,7 @@ export class TsImageViewer {
   }
   
   private onPreviewerToggleClick = () => {
-    if (this._previewerHidden) {
-      this._mainContainer.classList.remove("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
-      this._previewerHidden = false;
-      setTimeout(() => this.renderVisiblePreviews(), 1000);
-    } else {      
-      this._mainContainer.classList.add("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
-      this._previewerHidden = true;
-    }
+    this.togglePreviewer(this._previewerHidden);
   };
 
   private onPreviewerImageClick = (e: Event) => {
