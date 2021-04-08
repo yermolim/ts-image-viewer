@@ -1479,6 +1479,43 @@ class Annotation {
         const position = new Vec2(imageTopLeft.x + (imageX * imageScale), imageTopLeft.y + (imageY * imageScale));
         return position;
     }
+    getAnnotationToImageMatrix(imageDimensions) {
+        if (!imageDimensions) {
+            return new Mat3();
+        }
+        const imageRotation = imageDimensions === null || imageDimensions === void 0 ? void 0 : imageDimensions.rotation;
+        if (!imageRotation) {
+            return new Mat3();
+        }
+        this.updateAABB();
+        const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this.aabb;
+        const centerX = (xmax + xmin) / 2;
+        const centerY = (ymax + ymin) / 2;
+        const { width: imageWidth, height: imageHeight } = imageDimensions;
+        let x;
+        let y;
+        switch (imageRotation) {
+            case 90:
+                x = centerY;
+                y = imageHeight - centerX;
+                break;
+            case 180:
+                x = imageWidth - centerX;
+                y = imageHeight - centerY;
+                break;
+            case 270:
+                x = imageWidth - centerY;
+                y = centerX;
+                break;
+            default:
+                throw new Error(`Invalid rotation image value: ${imageRotation}`);
+        }
+        const mat = new Mat3()
+            .applyTranslation(-centerX, -centerY)
+            .applyRotation(imageRotation / 180 * Math.PI)
+            .applyTranslation(x, y);
+        return mat;
+    }
     renderBox() {
         const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -1886,7 +1923,7 @@ class PenAnnotation extends Annotation {
     get strokeDashGap() {
         return this._strokeDashGap;
     }
-    static createFromPenData(data, userName) {
+    static createFromPenData(data, userName, dimensions) {
         const pathList = [];
         data.paths.forEach(path => {
             const ink = [];
@@ -1910,6 +1947,10 @@ class PenAnnotation extends Annotation {
         };
         const annotation = new PenAnnotation(dto);
         annotation.updateAABB();
+        if (dimensions === null || dimensions === void 0 ? void 0 : dimensions.rotation) {
+            const mat = annotation.getAnnotationToImageMatrix(dimensions);
+            annotation.applyCommonTransform(mat);
+        }
         return annotation;
     }
     toDto() {
@@ -2084,37 +2125,11 @@ class PenAnnotator extends Annotator {
             return;
         }
         const imageUuid = this._annotationPenData.id;
-        const annotation = PenAnnotation.createFromPenData(this._annotationPenData, userName);
-        const rotation = this._imageView.rotation;
-        if (rotation) {
-            const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = annotation.aabb;
-            const centerX = (xmax + xmin) / 2;
-            const centerY = (ymax + ymin) / 2;
-            const { x: imageWidth, y: imageHeight } = this._imageView.imageInfo.dimensions;
-            let x;
-            let y;
-            switch (rotation) {
-                case 90:
-                    x = centerY;
-                    y = imageHeight - centerX;
-                    break;
-                case 180:
-                    x = imageWidth - centerX;
-                    y = imageHeight - centerY;
-                    break;
-                case 270:
-                    x = imageWidth - centerY;
-                    y = centerX;
-                    break;
-                default:
-                    throw new Error(`Invalid rotation image value: ${rotation}`);
-            }
-            const mat = new Mat3()
-                .applyTranslation(-centerX, -centerY)
-                .applyRotation(rotation / 180 * Math.PI)
-                .applyTranslation(x, y);
-            annotation.applyCommonTransform(mat);
-        }
+        const annotation = PenAnnotation.createFromPenData(this._annotationPenData, userName, {
+            rotation: this._imageView.rotation,
+            width: this._imageView.imageInfo.dimensions.x,
+            height: this._imageView.imageInfo.dimensions.y,
+        });
         this.removeTempPenData();
         return { imageUuid, annotation };
     }

@@ -1,5 +1,5 @@
-import { Quadruple, Double, Hextuple, getRandomUuid, RenderToSvgResult } from "../common";
-import { Mat3, Vec2, vecMinMax } from "../math";
+import { Quadruple, Double, getRandomUuid, RenderToSvgResult, BaseDimensions } from "../common";
+import { Mat3, Vec2 } from "../math";
 import { PenData } from "../annotator/pen-data";
 
 import { Annotation, AnnotationDto } from "./annotation";
@@ -38,7 +38,8 @@ export class PenAnnotation extends Annotation {
     this._strokeDashGap = dto.strokeDashGap;
   }
   
-  static createFromPenData(data: PenData, userName: string): PenAnnotation {
+  static createFromPenData(data: PenData, userName: string, 
+    dimensions?: BaseDimensions): PenAnnotation {
     const positions: Vec2[] = [];
     const pathList: number[][] = [];
     data.paths.forEach(path => {
@@ -68,6 +69,12 @@ export class PenAnnotation extends Annotation {
 
     const annotation = new PenAnnotation(dto);
     annotation.updateAABB();
+    
+    if (dimensions?.rotation) {
+      const mat = annotation.getAnnotationToImageMatrix(dimensions);
+      annotation.applyCommonTransform(mat);
+    }
+
     return annotation;
   }
 
@@ -88,7 +95,7 @@ export class PenAnnotation extends Annotation {
     };
   }
 
-  applyCommonTransform(matrix: Mat3) {
+  protected applyCommonTransform(matrix: Mat3) {
     // transform current InkList
     let x: number;
     let y: number;

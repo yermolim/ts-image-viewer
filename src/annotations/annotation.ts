@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import { Mat3, Vec2 } from "../math";
-import { BBox, getRandomUuid, RenderToSvgResult } from "../common";
+import { BaseDimensions, BBox, getRandomUuid, RenderToSvgResult } from "../common";
 
 export abstract class Annotation {
   translationEnabled: boolean;
@@ -227,6 +227,52 @@ export abstract class Annotation {
 
     return position;
   }
+
+  /**construct transformation matrix */
+  protected getAnnotationToImageMatrix(imageDimensions: BaseDimensions): Mat3 {
+    if (!imageDimensions) {
+      return new Mat3();
+    }
+    
+    const imageRotation = imageDimensions?.rotation;
+    if (!imageRotation) {
+      return new Mat3();
+    }
+
+    this.updateAABB();
+
+    // calculate a transfornation matrix depending on the current image rotation
+
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
+    const centerX = (xmax + xmin) / 2;      
+    const centerY = (ymax + ymin) / 2;      
+    const {width: imageWidth, height: imageHeight} = imageDimensions;
+
+    let x: number;
+    let y: number;
+    switch(imageRotation) {
+      case 90:
+        x = centerY;
+        y = imageHeight - centerX;
+        break;
+      case 180:
+        x = imageWidth - centerX;
+        y = imageHeight - centerY;
+        break;
+      case 270:
+        x = imageWidth - centerY;
+        y = centerX;
+        break;
+      default:
+        throw new Error(`Invalid rotation image value: ${imageRotation}`);
+    }
+
+    const mat = new Mat3()
+      .applyTranslation(-centerX, -centerY)
+      .applyRotation(imageRotation / 180 * Math.PI)
+      .applyTranslation(x, y);
+    return mat;
+  }
   //#endregion
 
   //#region annotation components render
@@ -408,7 +454,7 @@ export abstract class Annotation {
       this._transformationTimer = null;
       return;
     }
-    
+
     // remove the copy from DOM
     this._svgContentCopy.remove();
     // reset the copy transform
@@ -665,7 +711,7 @@ export abstract class Annotation {
    * transform the annotation using a 3x3 matrix
    * @param matrix 
    */
-  abstract applyCommonTransform(matrix: Mat3): void;
+  protected abstract applyCommonTransform(matrix: Mat3): void;
   
   protected abstract renderContent(): RenderToSvgResult;
   

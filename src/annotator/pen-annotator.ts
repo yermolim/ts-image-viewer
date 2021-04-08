@@ -59,42 +59,11 @@ export class PenAnnotator extends Annotator {
 
     const imageUuid = this._annotationPenData.id;
     const annotation = PenAnnotation.createFromPenData(
-      this._annotationPenData, userName);    
-      
-    const rotation = this._imageView.rotation;
-    if (rotation) {
-      // transform the annotation depending on the current image rotation
-
-      const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = annotation.aabb;
-      const centerX = (xmax + xmin) / 2;      
-      const centerY = (ymax + ymin) / 2;      
-      const {x: imageWidth, y: imageHeight} = this._imageView.imageInfo.dimensions;
-
-      let x: number;
-      let y: number;
-      switch(rotation) {
-        case 90:
-          x = centerY;
-          y = imageHeight - centerX;
-          break;
-        case 180:
-          x = imageWidth - centerX;
-          y = imageHeight - centerY;
-          break;
-        case 270:
-          x = imageWidth - centerY;
-          y = centerX;
-          break;
-        default:
-          throw new Error(`Invalid rotation image value: ${rotation}`);
-      }
-
-      const mat = new Mat3()
-        .applyTranslation(-centerX, -centerY)
-        .applyRotation(rotation / 180 * Math.PI)
-        .applyTranslation(x, y);
-      annotation.applyCommonTransform(mat);
-    }
+      this._annotationPenData, userName, {
+        rotation: this._imageView.rotation,
+        width: this._imageView.imageInfo.dimensions.x,
+        height: this._imageView.imageInfo.dimensions.y,
+      });      
     
     // reset pen data
     this.removeTempPenData();

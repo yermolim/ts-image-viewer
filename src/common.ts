@@ -34,6 +34,12 @@ export interface BBox {
   ul: Vec2;
 }
 
+export interface BaseDimensions {  
+  width: number;
+  height: number;
+  rotation?: number;
+}
+
 export class LinkedListNode<T> {
   data: T;
   next: LinkedListNode<T>;
