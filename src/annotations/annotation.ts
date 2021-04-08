@@ -7,6 +7,7 @@ export abstract class Annotation {
   
   readonly type: string;
   readonly uuid: string;
+
   protected _imageUuid: string;
   get imageUuid(): string {
     return this._imageUuid;
@@ -15,6 +16,18 @@ export abstract class Annotation {
     if (value !== this._imageUuid) {
       this._imageUuid = value;
     }
+  }
+  
+  protected _imageDimensions: BaseDimensions;
+  get imageDimensions(): BaseDimensions {
+    return this._imageDimensions;
+  }
+  set imageDimensions(value: BaseDimensions) {
+    if (!value) {
+      return;
+    }
+    this._tempImageRotationMatrix.setFromMat3(this.getAnnotationToImageMatrix(value));
+    this._imageDimensions = value;
   }
 
   protected _deleted: boolean;
@@ -47,17 +60,19 @@ export abstract class Annotation {
   }
 
   protected _transformationTimer: number; 
-  /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected _tempMatrix = new Mat3(); 
-  /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected _tempPoint = new Vec2();
-
-  /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected _tempVecA = new Vec2();
-  /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected _tempVecB = new Vec2();
   protected _tempX: number;
   protected _tempY: number;
+
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected readonly _tempImageRotationMatrix = new Mat3();
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected readonly _tempTransformationMatrix = new Mat3(); 
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected readonly _tempPoint = new Vec2();
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected readonly _tempVecA = new Vec2();
+  /**temp object used for calculations to prevent unnecessary objects creation overhead */
+  protected readonly _tempVecB = new Vec2();
   //#endregion
 
   //#region render-related properties
@@ -150,11 +165,11 @@ export abstract class Annotation {
     const x = xmin + halfWidth;
     const y = ymin + halfHeight;
     
-    this._tempMatrix.reset()
+    this._tempTransformationMatrix.reset()
       .applyTranslation(-x, -y)
       .applyRotation(degree / 180 * Math.PI)
       .applyTranslation(x, y);
-    this.applyCommonTransform(this._tempMatrix);
+    this.applyCommonTransform(this._tempTransformationMatrix);
   }
 
   /**
@@ -228,7 +243,7 @@ export abstract class Annotation {
     return position;
   }
 
-  /**construct transformation matrix */
+  /**construct the annotation transformation matrix depending on the current image rotation */
   protected getAnnotationToImageMatrix(imageDimensions: BaseDimensions): Mat3 {
     if (!imageDimensions) {
       return new Mat3();
@@ -461,10 +476,10 @@ export abstract class Annotation {
     this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
     // transform the annotation
-    this.applyCommonTransform(this._tempMatrix);
+    this.applyCommonTransform(this._tempTransformationMatrix);
 
     // reset the temp matrix
-    this._tempMatrix.reset();
+    this._tempTransformationMatrix.reset();
   }
 
   //#region main svg handlers (selection + translation)
@@ -499,13 +514,13 @@ export abstract class Annotation {
     const current = this.convertClientCoordsToImage(e.clientX, e.clientY);
 
     // update the temp transformation matrix
-    this._tempMatrix.reset()
+    this._tempTransformationMatrix.reset()
       .applyTranslation(current.x - this._tempPoint.x, 
         current.y - this._tempPoint.y);
 
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopyUse.setAttribute("transform", 
-      `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
+      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onRectPointerUp = (e: PointerEvent) => {
@@ -561,14 +576,14 @@ export abstract class Annotation {
     ) - Math.PI / 2;
 
     // update the temp transformation matrix
-    this._tempMatrix.reset()
+    this._tempTransformationMatrix.reset()
       .applyTranslation(-centerX, -centerY)
       .applyRotation(-angle)
       .applyTranslation(centerX, centerY);
 
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopyUse.setAttribute("transform", 
-      `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
+      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onRotationHandlePointerUp = (e: PointerEvent) => {
@@ -675,19 +690,19 @@ export abstract class Annotation {
     const annotCenterY = (ymin + ymax) / 2;
 
     // update the temp transformation matrix
-    this._tempMatrix.reset()
+    this._tempTransformationMatrix.reset()
       .applyTranslation(-annotCenterX, -annotCenterY)
       // .applyRotation(-currentRotation)
       .applyScaling(scaleX, scaleY)
       // .applyRotation(currentRotation)
       .applyTranslation(annotCenterX, annotCenterY);
     const translation = this._tempPoint.clone().substract(
-      this._tempPoint.clone().applyMat3(this._tempMatrix));
-    this._tempMatrix.applyTranslation(translation.x, translation.y);
+      this._tempPoint.clone().applyMat3(this._tempTransformationMatrix));
+    this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
     
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopyUse.setAttribute("transform", 
-      `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
+      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onScaleHandlePointerUp = (e: PointerEvent) => {

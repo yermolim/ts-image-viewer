@@ -18,6 +18,28 @@ export class ImageInfo {
   get dimensions(): Vec2 {
     return this._dimensions;
   }
+  
+  protected _scale = 1; 
+  set scale(value: number) {   
+    if (this._scale === value) {
+      return;
+    }
+    this._scale = Math.max(value, 0);
+  }
+  get scale(): number {
+    return this._scale;
+  }
+  
+  protected _rotation = 0;
+  set rotation(value: number) {
+    if (this._rotation === value || isNaN(value)) {
+      return;
+    }
+    this._rotation = value % 360;
+  } 
+  get rotation(): number {
+    return this._rotation;
+  }
 
   protected _annotations: Annotation[] = [];
   get annotations(): Annotation[] {

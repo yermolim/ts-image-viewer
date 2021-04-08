@@ -1208,7 +1208,8 @@ class ContextMenu {
 class Annotation {
     constructor(dto) {
         this._aabb = [new Vec2(), new Vec2()];
-        this._tempMatrix = new Mat3();
+        this._tempImageRotationMatrix = new Mat3();
+        this._tempTransformationMatrix = new Mat3();
         this._tempPoint = new Vec2();
         this._tempVecA = new Vec2();
         this._tempVecB = new Vec2();
@@ -1232,9 +1233,9 @@ class Annotation {
                 return;
             }
             const current = this.convertClientCoordsToImage(e.clientX, e.clientY);
-            this._tempMatrix.reset()
+            this._tempTransformationMatrix.reset()
                 .applyTranslation(current.x - this._tempPoint.x, current.y - this._tempPoint.y);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRectPointerUp = (e) => {
             if (!e.isPrimary) {
@@ -1267,11 +1268,11 @@ class Annotation {
             const centerY = (ymin + ymax) / 2;
             const clientCenter = this.convertImageCoordsToClient(centerX, centerY);
             const angle = Math.atan2(e.clientY - clientCenter.y, e.clientX - clientCenter.x) - Math.PI / 2;
-            this._tempMatrix.reset()
+            this._tempTransformationMatrix.reset()
                 .applyTranslation(-centerX, -centerY)
                 .applyRotation(-angle)
                 .applyTranslation(centerX, centerY);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRotationHandlePointerUp = (e) => {
             if (!e.isPrimary) {
@@ -1345,13 +1346,13 @@ class Annotation {
             const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this._aabb;
             const annotCenterX = (xmin + xmax) / 2;
             const annotCenterY = (ymin + ymax) / 2;
-            this._tempMatrix.reset()
+            this._tempTransformationMatrix.reset()
                 .applyTranslation(-annotCenterX, -annotCenterY)
                 .applyScaling(scaleX, scaleY)
                 .applyTranslation(annotCenterX, annotCenterY);
-            const translation = this._tempPoint.clone().substract(this._tempPoint.clone().applyMat3(this._tempMatrix));
-            this._tempMatrix.applyTranslation(translation.x, translation.y);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempMatrix.toFloatShortArray().join(" ")})`);
+            const translation = this._tempPoint.clone().substract(this._tempPoint.clone().applyMat3(this._tempTransformationMatrix));
+            this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onScaleHandlePointerUp = (e) => {
             if (!e.isPrimary) {
@@ -1380,6 +1381,16 @@ class Annotation {
         if (value !== this._imageUuid) {
             this._imageUuid = value;
         }
+    }
+    get imageDimensions() {
+        return this._imageDimensions;
+    }
+    set imageDimensions(value) {
+        if (!value) {
+            return;
+        }
+        this._tempImageRotationMatrix.setFromMat3(this.getAnnotationToImageMatrix(value));
+        this._imageDimensions = value;
     }
     get deleted() {
         return this._deleted;
@@ -1437,11 +1448,11 @@ class Annotation {
         const halfHeight = (ymax - ymin) / 2;
         const x = xmin + halfWidth;
         const y = ymin + halfHeight;
-        this._tempMatrix.reset()
+        this._tempTransformationMatrix.reset()
             .applyTranslation(-x, -y)
             .applyRotation(degree / 180 * Math.PI)
             .applyTranslation(x, y);
-        this.applyCommonTransform(this._tempMatrix);
+        this.applyCommonTransform(this._tempTransformationMatrix);
     }
     toDto() {
         return {
@@ -1652,8 +1663,8 @@ class Annotation {
         }
         this._svgContentCopy.remove();
         this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-        this.applyCommonTransform(this._tempMatrix);
-        this._tempMatrix.reset();
+        this.applyCommonTransform(this._tempTransformationMatrix);
+        this._tempTransformationMatrix.reset();
     }
 }
 const annotSelectionRequestEvent = "tsimage-annotselectionrequest";
@@ -2180,6 +2191,8 @@ class PenAnnotator extends Annotator {
 class ImageInfo {
     constructor(image, uuid) {
         this._dimensions = new Vec2();
+        this._scale = 1;
+        this._rotation = 0;
         this._annotations = [];
         if (!image || !image.complete) {
             throw new Error("Image is not loaded");
@@ -2196,6 +2209,24 @@ class ImageInfo {
     }
     get dimensions() {
         return this._dimensions;
+    }
+    set scale(value) {
+        if (this._scale === value) {
+            return;
+        }
+        this._scale = Math.max(value, 0);
+    }
+    get scale() {
+        return this._scale;
+    }
+    set rotation(value) {
+        if (this._rotation === value || isNaN(value)) {
+            return;
+        }
+        this._rotation = value % 360;
+    }
+    get rotation() {
+        return this._rotation;
     }
     get annotations() {
         return this._annotations;
@@ -2292,6 +2323,11 @@ class ImageAnnotationView {
             if (annotation.deleted) {
                 continue;
             }
+            annotation.imageDimensions = {
+                width: this._imageInfo.dimensions.x,
+                height: this._imageInfo.dimensions.y,
+                rotation: this._imageInfo.rotation,
+            };
             const renderResult = annotation.render();
             if (!renderResult) {
                 continue;
@@ -2343,8 +2379,6 @@ class ImageView {
         this._viewWrapper.classList.add("image-wrapper");
         this._viewWrapper.setAttribute("data-image-index", this.index + "");
         this._viewWrapper.append(this.viewContainer);
-        this._scale = 1;
-        this._rotation = 0;
         this.updateDimensions();
     }
     get previewContainer() {
@@ -2364,24 +2398,24 @@ class ImageView {
         return this._viewRendered;
     }
     set scale(value) {
-        if (value <= 0 || this._scale === value) {
+        if (this.imageInfo.scale === value) {
             return;
         }
-        this._scale = value;
+        this.imageInfo.scale = value;
         this.updateDimensions();
     }
     get scale() {
-        return this._scale;
+        return this.imageInfo.scale;
     }
-    set $rotation(value) {
-        if (this._rotation === value) {
+    set _rotation(value) {
+        if (this.imageInfo.rotation === value) {
             return;
         }
-        this._rotation = value;
+        this.imageInfo.rotation = value;
         this.updateDimensions();
     }
     get rotation() {
-        return this._rotation;
+        return this.imageInfo.rotation;
     }
     get viewValid() {
         return this._dimensionsValid && this.$viewRendered;
@@ -2432,19 +2466,19 @@ class ImageView {
         this.$viewRendered = false;
     }
     rotateClockwise() {
-        if (this._rotation === 270) {
-            this.$rotation = 0;
+        if (this.rotation === 270) {
+            this._rotation = 0;
         }
         else {
-            this.$rotation = (this._rotation || 0) + 90;
+            this._rotation = (this.rotation || 0) + 90;
         }
     }
     rotateCounterClockwise() {
-        if (!this._rotation) {
-            this.$rotation = 270;
+        if (!this.rotation) {
+            this._rotation = 270;
         }
         else {
-            this.$rotation = this._rotation - 90;
+            this._rotation = this.rotation - 90;
         }
     }
     bakeAnnotationsAsync() {
@@ -2488,8 +2522,8 @@ class ImageView {
         return canvas;
     }
     updateDimensions() {
-        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
-        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+        this._dimensions.scaledWidth = this._dimensions.width * this.scale;
+        this._dimensions.scaledHeight = this._dimensions.height * this.scale;
         const w = this._dimensions.scaledWidth;
         const h = this._dimensions.scaledHeight;
         if (this._viewCanvas) {
@@ -2498,8 +2532,8 @@ class ImageView {
         }
         this._viewContainer.style.width = w + "px";
         this._viewContainer.style.height = h + "px";
-        if (this._rotation) {
-            switch (this._rotation) {
+        if (this.rotation) {
+            switch (this.rotation) {
                 case 90:
                     this._viewWrapper.style.width = h + "px";
                     this._viewWrapper.style.height = w + "px";
@@ -2516,7 +2550,7 @@ class ImageView {
                     this._viewContainer.style.transform = "rotate(270deg) translateX(-100%)";
                     break;
                 default:
-                    throw new Error(`Invalid rotation degree: ${this._rotation}`);
+                    throw new Error(`Invalid rotation degree: ${this.rotation}`);
             }
         }
         else {

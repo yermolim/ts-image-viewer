@@ -5,7 +5,7 @@ export class ImageView {
   readonly index: number;  
   readonly imageInfo: ImageInfo;
 
-  private _dimensions: {
+  private readonly _dimensions: {
     width: number; 
     height: number;
     previewWidth: number;
@@ -42,28 +42,26 @@ export class ImageView {
 
   private _annotationView: ImageAnnotationView;
   
-  private _scale: number; 
   set scale(value: number) {   
-    if (value <= 0 || this._scale === value) {
+    if (this.imageInfo.scale === value) {
       return;
     }
-    this._scale = value;
+    this.imageInfo.scale = value;
     this.updateDimensions();
   }
   get scale(): number {
-    return this._scale;
+    return this.imageInfo.scale;
   }
   
-  private _rotation: number;
-  private set $rotation(value: number) {
-    if (this._rotation === value) {
+  private set _rotation(value: number) {
+    if (this.imageInfo.rotation === value) {
       return;
     }
-    this._rotation = value;
+    this.imageInfo.rotation = value;
     this.updateDimensions();
   } 
   get rotation(): number {
-    return this._rotation;
+    return this.imageInfo.rotation;
   }
 
   private _dimensionsValid: boolean;
@@ -106,8 +104,6 @@ export class ImageView {
     this._viewWrapper.setAttribute("data-image-index", this.index + "");
     this._viewWrapper.append(this.viewContainer);    
     
-    this._scale = 1;
-    this._rotation = 0;
     this.updateDimensions();
   }
 
@@ -170,18 +166,18 @@ export class ImageView {
   }
 
   rotateClockwise() {
-    if (this._rotation === 270) {
-      this.$rotation = 0;
+    if (this.rotation === 270) {
+      this._rotation = 0;
     } else {
-      this.$rotation = (this._rotation || 0) + 90;
+      this._rotation = (this.rotation || 0) + 90;
     }
   }
 
   rotateCounterClockwise() {
-    if (!this._rotation) {
-      this.$rotation = 270;
+    if (!this.rotation) {
+      this._rotation = 270;
     } else {
-      this.$rotation = this._rotation - 90;
+      this._rotation = this.rotation - 90;
     }
   }
 
@@ -237,8 +233,8 @@ export class ImageView {
   }
 
   private updateDimensions() {
-    this._dimensions.scaledWidth = this._dimensions.width * this._scale;
-    this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+    this._dimensions.scaledWidth = this._dimensions.width * this.scale;
+    this._dimensions.scaledHeight = this._dimensions.height * this.scale;
 
     const w = this._dimensions.scaledWidth;
     const h = this._dimensions.scaledHeight;    
@@ -251,9 +247,9 @@ export class ImageView {
     this._viewContainer.style.width = w + "px";
     this._viewContainer.style.height = h + "px";
 
-    if (this._rotation) {    
+    if (this.rotation) {    
       // transform the view container depending on the rotation angle 
-      switch (this._rotation) {
+      switch (this.rotation) {
         case 90:
           this._viewWrapper.style.width = h + "px";
           this._viewWrapper.style.height = w + "px";
@@ -270,7 +266,7 @@ export class ImageView {
           this._viewContainer.style.transform = "rotate(270deg) translateX(-100%)";
           break;
         default:
-          throw new Error(`Invalid rotation degree: ${this._rotation}`);
+          throw new Error(`Invalid rotation degree: ${this.rotation}`);
       }
     } else {
       this._viewWrapper.style.width = w + "px";

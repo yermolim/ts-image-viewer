@@ -96,10 +96,16 @@ export class ImageAnnotationView {
         continue;
       }
 
+      annotation.imageDimensions = {
+        width: this._imageInfo.dimensions.x,
+        height: this._imageInfo.dimensions.y,
+        rotation: this._imageInfo.rotation,
+      };
+
       const renderResult = annotation.render();
       if (!renderResult) {
         continue;
-      }      
+      }
 
       const {svg, clipPaths} = renderResult;
       this._svg.append(svg);
