@@ -1208,11 +1208,10 @@ class ContextMenu {
 class Annotation {
     constructor(dto) {
         this._aabb = [new Vec2(), new Vec2()];
-        this._tempImageRotationMatrix = new Mat3();
         this._tempTransformationMatrix = new Mat3();
-        this._tempPoint = new Vec2();
-        this._tempVecA = new Vec2();
-        this._tempVecB = new Vec2();
+        this._tempTransformationStartPoint = new Vec2();
+        this._tempVecX = new Vec2();
+        this._tempVecY = new Vec2();
         this._svgId = getRandomUuid();
         this.onRectPointerDown = (e) => {
             document.dispatchEvent(new AnnotSelectionRequestEvent({ annotation: this }));
@@ -1224,7 +1223,7 @@ class Annotation {
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
-                this._tempPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
+                this._tempTransformationStartPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
                 document.addEventListener("pointermove", this.onRectPointerMove);
             }, 200);
         };
@@ -1234,7 +1233,7 @@ class Annotation {
             }
             const current = this.convertClientCoordsToImage(e.clientX, e.clientY);
             this._tempTransformationMatrix.reset()
-                .applyTranslation(current.x - this._tempPoint.x, current.y - this._tempPoint.y);
+                .applyTranslation(current.x - this._tempTransformationStartPoint.x, current.y - this._tempTransformationStartPoint.y);
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRectPointerUp = (e) => {
@@ -1260,6 +1259,7 @@ class Annotation {
             e.stopPropagation();
         };
         this.onRotationHandlePointerMove = (e) => {
+            var _a;
             if (!e.isPrimary) {
                 return;
             }
@@ -1267,10 +1267,13 @@ class Annotation {
             const centerX = (xmin + xmax) / 2;
             const centerY = (ymin + ymax) / 2;
             const clientCenter = this.convertImageCoordsToClient(centerX, centerY);
-            const angle = Math.atan2(e.clientY - clientCenter.y, e.clientX - clientCenter.x) - Math.PI / 2;
+            const imageAngle = ((_a = this._imageDimensions) === null || _a === void 0 ? void 0 : _a.rotation)
+                ? this._imageDimensions.rotation / 180 * Math.PI
+                : 0;
+            const angle = Math.atan2(e.clientX - clientCenter.x, e.clientY - clientCenter.y) + imageAngle;
             this._tempTransformationMatrix.reset()
                 .applyTranslation(-centerX, -centerY)
-                .applyRotation(-angle)
+                .applyRotation(angle)
                 .applyTranslation(centerX, centerY);
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
@@ -1298,30 +1301,30 @@ class Annotation {
             const handleName = target.dataset["handleName"];
             switch (handleName) {
                 case "ll":
-                    this._tempPoint.setFromVec2(ur);
-                    this._tempVecA.setFromVec2(ul).substract(ur);
-                    this._tempVecB.setFromVec2(lr).substract(ur);
+                    this._tempTransformationStartPoint.setFromVec2(ur);
+                    this._tempVecX.setFromVec2(ul).substract(ur);
+                    this._tempVecY.setFromVec2(lr).substract(ur);
                     break;
                 case "lr":
-                    this._tempPoint.setFromVec2(ul);
-                    this._tempVecA.setFromVec2(ur).substract(ul);
-                    this._tempVecB.setFromVec2(ll).substract(ul);
+                    this._tempTransformationStartPoint.setFromVec2(ul);
+                    this._tempVecX.setFromVec2(ur).substract(ul);
+                    this._tempVecY.setFromVec2(ll).substract(ul);
                     break;
                 case "ur":
-                    this._tempPoint.setFromVec2(ll);
-                    this._tempVecA.setFromVec2(lr).substract(ll);
-                    this._tempVecB.setFromVec2(ul).substract(ll);
+                    this._tempTransformationStartPoint.setFromVec2(ll);
+                    this._tempVecX.setFromVec2(lr).substract(ll);
+                    this._tempVecY.setFromVec2(ul).substract(ll);
                     break;
                 case "ul":
-                    this._tempPoint.setFromVec2(lr);
-                    this._tempVecA.setFromVec2(ll).substract(lr);
-                    this._tempVecB.setFromVec2(ur).substract(lr);
+                    this._tempTransformationStartPoint.setFromVec2(lr);
+                    this._tempVecX.setFromVec2(ll).substract(lr);
+                    this._tempVecY.setFromVec2(ur).substract(lr);
                     break;
                 default:
                     throw new Error(`Invalid handle name: ${handleName}`);
             }
-            this._tempX = this._tempVecA.getMagnitude();
-            this._tempY = this._tempVecB.getMagnitude();
+            this._tempX = this._tempVecX.getMagnitude();
+            this._tempY = this._tempVecY.getMagnitude();
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
@@ -1334,9 +1337,9 @@ class Annotation {
                 return;
             }
             const currentBoxDiagonal = this.convertClientCoordsToImage(e.clientX, e.clientY)
-                .substract(this._tempPoint);
+                .substract(this._tempTransformationStartPoint);
             const currentBoxDiagonalLength = currentBoxDiagonal.getMagnitude();
-            const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecA))
+            const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecX))
                 / currentBoxDiagonalLength / this._tempX;
             const currentXSideLength = cos * currentBoxDiagonalLength;
             const currentYSideLength = Math.sqrt(currentBoxDiagonalLength * currentBoxDiagonalLength
@@ -1350,7 +1353,7 @@ class Annotation {
                 .applyTranslation(-annotCenterX, -annotCenterY)
                 .applyScaling(scaleX, scaleY)
                 .applyTranslation(annotCenterX, annotCenterY);
-            const translation = this._tempPoint.clone().substract(this._tempPoint.clone().applyMat3(this._tempTransformationMatrix));
+            const translation = this._tempTransformationStartPoint.clone().substract(this._tempTransformationStartPoint.clone().applyMat3(this._tempTransformationMatrix));
             this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
@@ -1380,17 +1383,8 @@ class Annotation {
     set imageUuid(value) {
         if (value !== this._imageUuid) {
             this._imageUuid = value;
+            this._imageDimensions = null;
         }
-    }
-    get imageDimensions() {
-        return this._imageDimensions;
-    }
-    set imageDimensions(value) {
-        if (!value) {
-            return;
-        }
-        this._tempImageRotationMatrix.setFromMat3(this.getAnnotationToImageMatrix(value));
-        this._imageDimensions = value;
     }
     get deleted() {
         return this._deleted;
@@ -1413,7 +1407,8 @@ class Annotation {
     get lastRenderResult() {
         return this._lastRenderResult;
     }
-    render(forceRerender = false) {
+    render(imageDimensions, forceRerender = false) {
+        this._imageDimensions = imageDimensions;
         if (!this._svg) {
             this._svg = this.renderMainElement();
         }
@@ -1464,31 +1459,85 @@ class Annotation {
             author: this.author,
         };
     }
-    getScale() {
-        const realWidth = +this._svgBox.getAttribute("width");
-        const { width: currentWidth } = this._svgBox.getBoundingClientRect();
-        const imageScale = currentWidth / realWidth;
-        return imageScale;
-    }
     convertClientCoordsToImage(clientX, clientY) {
-        const { x, y, width, height } = this._svgBox.getBoundingClientRect();
-        const rectMinScaled = new Vec2(x, y);
-        const rectMaxScaled = new Vec2(x + width, y + height);
-        const [{ x: xmin, y: ymin }, { x: xmax }] = this._aabb;
-        const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
-        const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
-        const position = new Vec2((clientX - imageTopLeft.x) / imageScale, (clientY - imageTopLeft.y) / imageScale);
-        return position;
+        var _a, _b;
+        this.updateAABB();
+        const [annotLocalMin, annotLocalMax] = this.aabb;
+        const { x: annotClientXMin, y: annotClientYMin, width: annotClientHorLength, height: annotClientVertLength } = this._svgBox.getBoundingClientRect();
+        const imageRotation = ((_a = this._imageDimensions) === null || _a === void 0 ? void 0 : _a.rotation) || 0;
+        let imageScale = (_b = this === null || this === void 0 ? void 0 : this._imageDimensions) === null || _b === void 0 ? void 0 : _b.scale;
+        let annotLocalHorLength;
+        const imageClientZero = new Vec2();
+        const localResult = new Vec2();
+        switch (imageRotation) {
+            case 0:
+                annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin - annotLocalMin.x * imageScale, annotClientYMin - annotLocalMin.y * imageScale);
+                localResult.set((clientX - imageClientZero.x) / imageScale, (clientY - imageClientZero.y) / imageScale);
+                break;
+            case 90:
+                annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin + annotClientHorLength + annotLocalMin.y * imageScale, annotClientYMin - annotLocalMin.x * imageScale);
+                localResult.set((clientY - imageClientZero.y) / imageScale, (imageClientZero.x - clientX) / imageScale);
+                break;
+            case 180:
+                annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin + annotClientHorLength + annotLocalMin.x * imageScale, annotClientYMin + annotClientVertLength + annotLocalMin.y * imageScale);
+                localResult.set((imageClientZero.x - clientX) / imageScale, (imageClientZero.y - clientY) / imageScale);
+                break;
+            case 270:
+                annotLocalHorLength = annotLocalMax.y - annotLocalMin.y;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin - annotLocalMin.y * imageScale, annotClientYMin + annotClientVertLength + annotLocalMin.x * imageScale);
+                localResult.set((imageClientZero.y - clientY) / imageScale, (clientX - imageClientZero.x) / imageScale);
+                break;
+            default:
+                throw new Error(`Invalid rotation image value: ${imageRotation}`);
+        }
+        return localResult;
     }
     convertImageCoordsToClient(imageX, imageY) {
-        const { x, y, width, height } = this._svgBox.getBoundingClientRect();
-        const rectMinScaled = new Vec2(x, y);
-        const rectMaxScaled = new Vec2(x + width, y + height);
-        const [{ x: xmin, y: ymin }, { x: xmax }] = this._aabb;
-        const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
-        const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
-        const position = new Vec2(imageTopLeft.x + (imageX * imageScale), imageTopLeft.y + (imageY * imageScale));
-        return position;
+        var _a, _b;
+        this.updateAABB();
+        const [annotLocalMin, annotLocalMax] = this.aabb;
+        const { x: annotClientXMin, y: annotClientYMin, width: annotClientHorLength, height: annotClientVertLength } = this._svgBox.getBoundingClientRect();
+        const imageRotation = ((_a = this._imageDimensions) === null || _a === void 0 ? void 0 : _a.rotation) || 0;
+        let imageScale = (_b = this === null || this === void 0 ? void 0 : this._imageDimensions) === null || _b === void 0 ? void 0 : _b.scale;
+        let annotLocalHorLength;
+        const imageClientZero = new Vec2();
+        const localResult = new Vec2();
+        switch (imageRotation) {
+            case 0:
+                annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin - annotLocalMin.x * imageScale, annotClientYMin - annotLocalMin.y * imageScale);
+                localResult.set(imageX * imageScale + imageClientZero.x, imageY * imageScale + imageClientZero.y);
+                break;
+            case 90:
+                annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin + annotClientHorLength + annotLocalMin.y * imageScale, annotClientYMin - annotLocalMin.x * imageScale);
+                localResult.set(imageClientZero.x - imageY * imageScale, imageX * imageScale + imageClientZero.y);
+                break;
+            case 180:
+                annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin + annotClientHorLength + annotLocalMin.x * imageScale, annotClientYMin + annotClientVertLength + annotLocalMin.y * imageScale);
+                localResult.set(imageClientZero.x - imageX * imageScale, imageClientZero.y - imageY * imageScale);
+                break;
+            case 270:
+                annotLocalHorLength = annotLocalMax.y - annotLocalMin.y;
+                imageScale || (imageScale = annotClientHorLength / annotLocalHorLength);
+                imageClientZero.set(annotClientXMin - annotLocalMin.y * imageScale, annotClientYMin + annotClientVertLength + annotLocalMin.x * imageScale);
+                localResult.set(imageY * imageScale + imageClientZero.x, imageClientZero.y - imageX * imageScale);
+                break;
+            default:
+                throw new Error(`Invalid rotation image value: ${imageRotation}`);
+        }
+        return localResult;
     }
     getAnnotationToImageMatrix(imageDimensions) {
         if (!imageDimensions) {
@@ -1614,7 +1663,8 @@ class Annotation {
         return rotationGroup;
     }
     renderHandles() {
-        const scale = this.getScale();
+        var _a;
+        const scale = ((_a = this._imageDimensions) === null || _a === void 0 ? void 0 : _a.scale) || 1;
         return [...this.renderScaleHandles(scale), this.renderRotationHandle(scale)];
     }
     updateHandles() {
@@ -1957,7 +2007,6 @@ class PenAnnotation extends Annotation {
             strokeDashGap: null,
         };
         const annotation = new PenAnnotation(dto);
-        annotation.updateAABB();
         if (dimensions === null || dimensions === void 0 ? void 0 : dimensions.rotation) {
             const mat = annotation.getAnnotationToImageMatrix(dimensions);
             annotation.applyCommonTransform(mat);
@@ -2323,12 +2372,13 @@ class ImageAnnotationView {
             if (annotation.deleted) {
                 continue;
             }
-            annotation.imageDimensions = {
+            const imageDimensions = {
                 width: this._imageInfo.dimensions.x,
                 height: this._imageInfo.dimensions.y,
+                scale: this._imageInfo.scale,
                 rotation: this._imageInfo.rotation,
             };
-            const renderResult = annotation.render();
+            const renderResult = annotation.render(imageDimensions);
             if (!renderResult) {
                 continue;
             }

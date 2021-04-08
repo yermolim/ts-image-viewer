@@ -37,6 +37,7 @@ export interface BBox {
 export interface BaseDimensions {  
   width: number;
   height: number;
+  scale?: number;
   rotation?: number;
 }
 

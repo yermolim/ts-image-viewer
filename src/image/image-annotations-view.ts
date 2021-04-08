@@ -96,13 +96,14 @@ export class ImageAnnotationView {
         continue;
       }
 
-      annotation.imageDimensions = {
+      const imageDimensions = {
         width: this._imageInfo.dimensions.x,
         height: this._imageInfo.dimensions.y,
+        scale: this._imageInfo.scale,
         rotation: this._imageInfo.rotation,
       };
 
-      const renderResult = annotation.render();
+      const renderResult = annotation.render(imageDimensions);
       if (!renderResult) {
         continue;
       }

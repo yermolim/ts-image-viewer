@@ -68,7 +68,6 @@ export class PenAnnotation extends Annotation {
     };
 
     const annotation = new PenAnnotation(dto);
-    annotation.updateAABB();
     
     if (dimensions?.rotation) {
       const mat = annotation.getAnnotationToImageMatrix(dimensions);

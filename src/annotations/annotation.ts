@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { Mat3, Vec2 } from "../math";
+import { Mat3, Vec2, vecMinMax } from "../math";
 import { BaseDimensions, BBox, getRandomUuid, RenderToSvgResult } from "../common";
 
 export abstract class Annotation {
@@ -15,19 +15,8 @@ export abstract class Annotation {
   set imageUuid(value: string) {
     if (value !== this._imageUuid) {
       this._imageUuid = value;
+      this._imageDimensions = null;
     }
-  }
-  
-  protected _imageDimensions: BaseDimensions;
-  get imageDimensions(): BaseDimensions {
-    return this._imageDimensions;
-  }
-  set imageDimensions(value: BaseDimensions) {
-    if (!value) {
-      return;
-    }
-    this._tempImageRotationMatrix.setFromMat3(this.getAnnotationToImageMatrix(value));
-    this._imageDimensions = value;
   }
 
   protected _deleted: boolean;
@@ -59,20 +48,20 @@ export abstract class Annotation {
     return [this._aabb[0].clone(), this._aabb[1].clone()];
   }
 
+  protected _imageDimensions: BaseDimensions;
+
   protected _transformationTimer: number; 
   protected _tempX: number;
   protected _tempY: number;
 
   /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected readonly _tempImageRotationMatrix = new Mat3();
-  /**temp object used for calculations to prevent unnecessary objects creation overhead */
   protected readonly _tempTransformationMatrix = new Mat3(); 
   /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected readonly _tempPoint = new Vec2();
+  protected readonly _tempTransformationStartPoint = new Vec2();
   /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected readonly _tempVecA = new Vec2();
+  protected readonly _tempVecX = new Vec2();
   /**temp object used for calculations to prevent unnecessary objects creation overhead */
-  protected readonly _tempVecB = new Vec2();
+  protected readonly _tempVecY = new Vec2();
   //#endregion
 
   //#region render-related properties
@@ -98,7 +87,7 @@ export abstract class Annotation {
     return this._lastRenderResult;
   }
   //#endregion
-  
+
   protected constructor(dto?: AnnotationDto) {
     this.type = dto?.annotationType || "none";
     this.uuid = dto?.uuid || getRandomUuid();
@@ -114,10 +103,13 @@ export abstract class Annotation {
   
   /**
    * render current annotation to an svg element
+   * @param imageDimensions object with the parent image dimention info
    * @param forceRerender 
    * @returns 
    */
-  render(forceRerender = false): RenderToSvgResult {
+  render(imageDimensions: BaseDimensions, forceRerender = false): RenderToSvgResult {
+    this._imageDimensions = imageDimensions;
+
     if (!this._svg) {
       this._svg = this.renderMainElement();
     }
@@ -190,37 +182,99 @@ export abstract class Annotation {
   
   //#region protected render methods
 
-  //#region common methods used for rendering purposes
-  /**
-   * returns current image scale. 
-   * !works correctly only when the annotation SVG is appended to the DOM!
-   * @returns 
-   */
-  protected getScale(): number {    
-    const realWidth = +this._svgBox.getAttribute("width");
-    const {width: currentWidth} = this._svgBox.getBoundingClientRect();
-    const imageScale = currentWidth / realWidth;
-    return imageScale;
-  }
-  
+  //#region common methods used for rendering purposes  
   /**
    * get a 2D vector with a position of the specified point in the image coords 
    * @param clientX 
    * @param clientY 
    */
   protected convertClientCoordsToImage(clientX: number, clientY: number): Vec2 {
-    const {x, y, width, height} = this._svgBox.getBoundingClientRect();
-    const rectMinScaled = new Vec2(x, y);
-    const rectMaxScaled = new Vec2(x + width, y + height);
-    const [{x: xmin, y: ymin}, {x: xmax}] = this._aabb;
-    const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
-    const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
-    const position = new Vec2(
-      (clientX - imageTopLeft.x) / imageScale,
-      (clientY - imageTopLeft.y) / imageScale,
-    );
+    // local coords - coordinates in the image coordinate system
+    // client coords - coordinates in the page coordinate system
+    // hor length - the length of the side of the annotation that is currently horizontal (after the image rotation)
 
-    return position;
+    this.updateAABB();
+    const [annotLocalMin, annotLocalMax] = this.aabb;  
+    const {x: annotClientXMin, y: annotClientYMin, 
+      width: annotClientHorLength, height: annotClientVertLength} = 
+      this._svgBox.getBoundingClientRect();
+
+    const imageRotation = this._imageDimensions?.rotation || 0;
+    let imageScale = this?._imageDimensions?.scale;
+    let annotLocalHorLength: number;
+    // current client position of the image corner with image coords 0,0
+    const imageClientZero = new Vec2(); 
+    const localResult = new Vec2();
+    switch(imageRotation) {
+      // rotated clockwise around the image top-left corner
+      case 0:
+        // horizontal edge is horizontal, so use X coords
+        annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin - annotLocalMin.x * imageScale,
+          annotClientYMin - annotLocalMin.y * imageScale
+        );
+
+        localResult.set(          
+          (clientX - imageClientZero.x) / imageScale,
+          (clientY - imageClientZero.y) / imageScale
+        );
+        break;
+      case 90:
+        // rotate(90deg) translateY(-100%)
+        // vertical edge is horizontal, so use Y coords
+        annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin + annotClientHorLength + annotLocalMin.y * imageScale,
+          annotClientYMin - annotLocalMin.x * imageScale
+        );
+
+        localResult.set(          
+          (clientY - imageClientZero.y) / imageScale,
+          (imageClientZero.x - clientX) / imageScale
+        );
+        break;
+      case 180:
+        // rotate(180deg) translateX(-100%) translateY(-100%)
+        // horizontal edge is horizontal, so use X coords
+        annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin + annotClientHorLength + annotLocalMin.x * imageScale,
+          annotClientYMin + annotClientVertLength + annotLocalMin.y * imageScale
+        );
+
+        localResult.set(          
+          (imageClientZero.x - clientX) / imageScale,
+          (imageClientZero.y - clientY) / imageScale
+        );
+        break;
+      case 270:
+        // rotate(270deg) translateX(-100%)
+        // vertical edge is horizontal, so use Y coords
+        annotLocalHorLength = annotLocalMax.y - annotLocalMin.y;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin - annotLocalMin.y * imageScale,
+          annotClientYMin + annotClientVertLength + annotLocalMin.x * imageScale
+        );
+
+        localResult.set(          
+          (imageClientZero.y - clientY) / imageScale,
+          (clientX - imageClientZero.x) / imageScale
+        );
+        break;
+      default:
+        throw new Error(`Invalid rotation image value: ${imageRotation}`);
+    }
+
+    return localResult;
   }
   
   /**
@@ -228,19 +282,93 @@ export abstract class Annotation {
    * @param imageX 
    * @param imageY 
    */
-  protected convertImageCoordsToClient(imageX: number, imageY: number): Vec2 {
-    const {x, y, width, height} = this._svgBox.getBoundingClientRect();
-    const rectMinScaled = new Vec2(x, y);
-    const rectMaxScaled = new Vec2(x + width, y + height);    
-    const [{x: xmin, y: ymin}, {x: xmax}] = this._aabb;
-    const imageScale = (rectMaxScaled.x - rectMinScaled.x) / (xmax - xmin);
-    const imageTopLeft = new Vec2(x - xmin * imageScale, y - ymin * imageScale);
-    const position = new Vec2(
-      imageTopLeft.x + (imageX * imageScale),
-      imageTopLeft.y + (imageY * imageScale),
-    );
+  protected convertImageCoordsToClient(imageX: number, imageY: number): Vec2 {    
+    // local coords - coordinates in the image coordinate system
+    // client coords - coordinates in the page coordinate system
+    // hor length - the length of the side of the annotation that is currently horizontal (after the image rotation)
 
-    return position;
+    this.updateAABB();
+    const [annotLocalMin, annotLocalMax] = this.aabb;  
+    const {x: annotClientXMin, y: annotClientYMin, 
+      width: annotClientHorLength, height: annotClientVertLength} = 
+      this._svgBox.getBoundingClientRect();
+
+    const imageRotation = this._imageDimensions?.rotation || 0;
+    let imageScale = this?._imageDimensions?.scale;
+    let annotLocalHorLength: number;
+    // current client position of the image corner with image coords 0,0
+    const imageClientZero = new Vec2(); 
+    const localResult = new Vec2();
+    switch(imageRotation) {
+      // rotated clockwise around the image top-left corner
+      case 0:
+        // horizontal edge is horizontal, so use X coords
+        annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin - annotLocalMin.x * imageScale,
+          annotClientYMin - annotLocalMin.y * imageScale
+        );
+
+        localResult.set(
+          imageX * imageScale + imageClientZero.x,
+          imageY * imageScale + imageClientZero.y
+        );
+        break;
+      case 90:
+        // rotate(90deg) translateY(-100%)
+        // vertical edge is horizontal, so use Y coords
+        annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin + annotClientHorLength + annotLocalMin.y * imageScale,
+          annotClientYMin - annotLocalMin.x * imageScale,
+        );
+
+        localResult.set(      
+          imageClientZero.x - imageY * imageScale,
+          imageX * imageScale + imageClientZero.y
+        );
+        break;
+      case 180:
+        // rotate(180deg) translateX(-100%) translateY(-100%)
+        // horizontal edge is horizontal, so use X coords
+        annotLocalHorLength = annotLocalMax.x - annotLocalMin.x;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin + annotClientHorLength + annotLocalMin.x * imageScale,
+          annotClientYMin + annotClientVertLength + annotLocalMin.y * imageScale,
+        );
+
+        localResult.set(          
+          imageClientZero.x - imageX * imageScale,
+          imageClientZero.y - imageY * imageScale
+        );
+        break;
+      case 270:
+        // rotate(270deg) translateX(-100%)
+        // vertical edge is horizontal, so use Y coords
+        annotLocalHorLength = annotLocalMax.y - annotLocalMin.y;
+        imageScale ||= annotClientHorLength / annotLocalHorLength;
+
+        imageClientZero.set(
+          annotClientXMin - annotLocalMin.y * imageScale,
+          annotClientYMin + annotClientVertLength + annotLocalMin.x * imageScale,
+        );
+
+        localResult.set(     
+          imageY * imageScale + imageClientZero.x,
+          imageClientZero.y - imageX * imageScale
+        );
+        break;
+      default:
+        throw new Error(`Invalid rotation image value: ${imageRotation}`);
+    }
+
+    return localResult;
   }
 
   /**construct the annotation transformation matrix depending on the current image rotation */
@@ -254,27 +382,31 @@ export abstract class Annotation {
       return new Mat3();
     }
 
+    // calculate a transformation matrix depending on the current image rotation
+
     this.updateAABB();
-
-    // calculate a transfornation matrix depending on the current image rotation
-
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
-    const centerX = (xmax + xmin) / 2;      
-    const centerY = (ymax + ymin) / 2;      
+
+    const centerX = (xmax + xmin) / 2;
+    const centerY = (ymax + ymin) / 2;
     const {width: imageWidth, height: imageHeight} = imageDimensions;
 
     let x: number;
     let y: number;
     switch(imageRotation) {
+      // rotated clockwise around the image top-left corner
       case 90:
+        // rotate(90deg) translateY(-100%)
         x = centerY;
         y = imageHeight - centerX;
         break;
       case 180:
+        // rotate(180deg) translateX(-100%) translateY(-100%)
         x = imageWidth - centerX;
         y = imageHeight - centerY;
         break;
       case 270:
+        // rotate(270deg) translateX(-100%)
         x = imageWidth - centerY;
         y = centerX;
         break;
@@ -405,7 +537,7 @@ export abstract class Annotation {
    * override in subclass to apply a custom annotation handles renderer
    */
   protected renderHandles(): SVGGraphicsElement[] { 
-    const scale = this.getScale();
+    const scale = this._imageDimensions?.scale || 1;
     return [...this.renderScaleHandles(scale), this.renderRotationHandle(scale)];
   } 
 
@@ -500,7 +632,7 @@ export abstract class Annotation {
       // append the svg element copy   
       this._svg.after(this._svgContentCopy);
       // set the starting transformation point
-      this._tempPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
+      this._tempTransformationStartPoint.setFromVec2(this.convertClientCoordsToImage(e.clientX, e.clientY));
       document.addEventListener("pointermove", this.onRectPointerMove);
     }, 200);
   };
@@ -512,11 +644,10 @@ export abstract class Annotation {
     }
 
     const current = this.convertClientCoordsToImage(e.clientX, e.clientY);
-
     // update the temp transformation matrix
     this._tempTransformationMatrix.reset()
-      .applyTranslation(current.x - this._tempPoint.x, 
-        current.y - this._tempPoint.y);
+      .applyTranslation(current.x - this._tempTransformationStartPoint.x, 
+        current.y - this._tempTransformationStartPoint.y);
 
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopyUse.setAttribute("transform", 
@@ -570,15 +701,15 @@ export abstract class Annotation {
     const centerX = (xmin + xmax) / 2;
     const centerY = (ymin + ymax) / 2;
     const clientCenter = this.convertImageCoordsToClient(centerX, centerY);
-    const angle = Math.atan2(
-      e.clientY - clientCenter.y, 
-      e.clientX - clientCenter.x
-    ) - Math.PI / 2;
+    const imageAngle = this._imageDimensions?.rotation
+      ? this._imageDimensions.rotation / 180 * Math.PI
+      : 0;
+    const angle = Math.atan2(e.clientX - clientCenter.x, e.clientY - clientCenter.y) + imageAngle;
 
     // update the temp transformation matrix
     this._tempTransformationMatrix.reset()
       .applyTranslation(-centerX, -centerY)
-      .applyRotation(-angle)
+      .applyRotation(angle)
       .applyTranslation(centerX, centerY);
 
     // move the svg element copy to visualize the future transformation in real-time
@@ -622,31 +753,31 @@ export abstract class Annotation {
     const handleName = target.dataset["handleName"];
     switch (handleName) {
       case "ll": 
-        this._tempPoint.setFromVec2(ur);
-        this._tempVecA.setFromVec2(ul).substract(ur);
-        this._tempVecB.setFromVec2(lr).substract(ur);      
+        this._tempTransformationStartPoint.setFromVec2(ur);
+        this._tempVecX.setFromVec2(ul).substract(ur);
+        this._tempVecY.setFromVec2(lr).substract(ur);      
         break;
       case "lr":
-        this._tempPoint.setFromVec2(ul);
-        this._tempVecA.setFromVec2(ur).substract(ul);
-        this._tempVecB.setFromVec2(ll).substract(ul); 
+        this._tempTransformationStartPoint.setFromVec2(ul);
+        this._tempVecX.setFromVec2(ur).substract(ul);
+        this._tempVecY.setFromVec2(ll).substract(ul); 
         break;
       case "ur":
-        this._tempPoint.setFromVec2(ll); 
-        this._tempVecA.setFromVec2(lr).substract(ll);
-        this._tempVecB.setFromVec2(ul).substract(ll);
+        this._tempTransformationStartPoint.setFromVec2(ll); 
+        this._tempVecX.setFromVec2(lr).substract(ll);
+        this._tempVecY.setFromVec2(ul).substract(ll);
         break;
       case "ul":
-        this._tempPoint.setFromVec2(lr); 
-        this._tempVecA.setFromVec2(ll).substract(lr);
-        this._tempVecB.setFromVec2(ur).substract(lr);
+        this._tempTransformationStartPoint.setFromVec2(lr); 
+        this._tempVecX.setFromVec2(ll).substract(lr);
+        this._tempVecY.setFromVec2(ur).substract(lr);
         break;
       default:
         // execution should not reach here
         throw new Error(`Invalid handle name: ${handleName}`);
     }
-    this._tempX = this._tempVecA.getMagnitude();
-    this._tempY = this._tempVecB.getMagnitude();
+    this._tempX = this._tempVecX.getMagnitude();
+    this._tempY = this._tempVecY.getMagnitude();
 
     // set timeout to prevent an accidental annotation scaling
     this._transformationTimer = setTimeout(() => {
@@ -671,11 +802,11 @@ export abstract class Annotation {
 
     // calculate the current diagonal vector
     const currentBoxDiagonal = this.convertClientCoordsToImage(e.clientX, e.clientY)
-      .substract(this._tempPoint);
+      .substract(this._tempTransformationStartPoint);
     const currentBoxDiagonalLength = currentBoxDiagonal.getMagnitude();
 
     // calculate the cosine of the angle between the current diagonal vector and the initial box side
-    const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecA)) 
+    const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecX)) 
       / currentBoxDiagonalLength / this._tempX;
     // calculate the current box side lengths
     const currentXSideLength = cos * currentBoxDiagonalLength;
@@ -696,8 +827,8 @@ export abstract class Annotation {
       .applyScaling(scaleX, scaleY)
       // .applyRotation(currentRotation)
       .applyTranslation(annotCenterX, annotCenterY);
-    const translation = this._tempPoint.clone().substract(
-      this._tempPoint.clone().applyMat3(this._tempTransformationMatrix));
+    const translation = this._tempTransformationStartPoint.clone().substract(
+      this._tempTransformationStartPoint.clone().applyMat3(this._tempTransformationMatrix));
     this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
     
     // move the svg element copy to visualize the future transformation in real-time
