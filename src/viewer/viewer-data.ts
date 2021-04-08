@@ -270,6 +270,7 @@ export class ViewerData {
   
   deleteSelectedAnnotation() {
     this.deleteAnnotation(this._selectedAnnotation);
+    this.selectedAnnotation = null;
   }
 
   /**

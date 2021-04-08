@@ -2744,6 +2744,7 @@ class ViewerData {
     }
     deleteSelectedAnnotation() {
         this.deleteAnnotation(this._selectedAnnotation);
+        this.selectedAnnotation = null;
     }
     serializeAnnotations(imageUuid) {
         var _a, _b, _c, _d, _e;
