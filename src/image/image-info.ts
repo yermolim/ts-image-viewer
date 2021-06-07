@@ -1,4 +1,4 @@
-import { Vec2 } from "../math";
+import { Vec2 } from "mathador";
 import { getRandomUuid } from "../common";
 import { Annotation } from "../annotations/annotation";
 

@@ -1,5 +1,5 @@
 import { v4 as uuidV4 } from "uuid";
-import { Vec2 } from "./math";
+import { Vec2 } from "mathador";
 
 /* eslint-disable no-bitwise */
 export function getRandomUuid(): string {

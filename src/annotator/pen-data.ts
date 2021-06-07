@@ -1,5 +1,5 @@
+import { Vec2 } from "mathador";
 import { Quadruple, Hextuple } from "../common";
-import { Vec2 } from "../math";
 
 interface PathData {
   path: SVGPathElement;

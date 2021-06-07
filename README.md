@@ -3,5 +3,5 @@ browser image viewer with basic painting support
 
 WIP. Readme will be added later.
 
-dependencies:
+external dependencies:
 - <a href="https://github.com/uuidjs/uuid">uuid<a>

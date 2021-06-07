@@ -1,4 +1,4 @@
-import { Mat3, Vec2 } from "../math";
+import { Mat3, Vec2 } from "mathador";
 import { Quadruple } from "../common";
 
 import { Annotator } from "./annotator";

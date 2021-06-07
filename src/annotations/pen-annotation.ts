@@ -1,5 +1,5 @@
+import { Mat3, Vec2 } from "mathador";
 import { Quadruple, Double, getRandomUuid, RenderToSvgResult, BaseDimensions } from "../common";
-import { Mat3, Vec2 } from "../math";
 import { PenData } from "../annotator/pen-data";
 
 import { Annotation, AnnotationDto } from "./annotation";

@@ -3,7 +3,7 @@ import { html } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
 import { getDistance, Quadruple } from "./common";
-import { clamp, Vec2 } from "./math";
+import { clamp, Vec2 } from "mathador";
 
 import { ContextMenu } from "./elements/context-menu";
 

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { Mat3, Vec2, vecMinMax } from "../math";
+import { Mat3, Vec2 } from "mathador";
 import { BaseDimensions, BBox, getRandomUuid, RenderToSvgResult } from "../common";
 
 export abstract class Annotation {
