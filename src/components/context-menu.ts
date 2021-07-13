@@ -14,6 +14,14 @@ export class ContextMenu {
       this._content = null;
     }
   }
+
+  private _enabled: boolean;
+  get enabled(): boolean {
+    return this._enabled;
+  }
+  set enabled(value: boolean) {
+    this._enabled = !!value;
+  }
   
   constructor() {
     this._container = document.createElement("div");
@@ -22,36 +30,35 @@ export class ContextMenu {
     document.addEventListener("pointerdown", this.onPointerDownOutside);
   }
 
+  /**free the resources that can prevent garbage to be collected */
   destroy() {
     this.clear();
     document.removeEventListener("pointerdown", this.onPointerDownOutside);
   }
 
   /**
-   * append the context menu to the specified element at the specified position
-   * @param pointerPosition 
-   * @param parent 
+   * append the context menu to the specified parent element and move it to the specified position 
+   * @param pointerPosition position relative to the viewport (clientX, clientY)
+   * @param parent HTMLElement to attach the menu to
    */
   show(pointerPosition: Vec2, parent: HTMLElement) {
     parent.append(this._container);
     this._shown = true;
     setTimeout(() => {
-      this.setContextMenuPosition(pointerPosition, parent);
-      // make the menu opaque only after repositioning to prevent flickering
+      this.setContextMenuPosition(pointerPosition, parent);      
       this._container.style.opacity = "1";
     }, 0);
   }
 
-  /**remove the context menu from DOM */
+  /**remove the menu from DOM */
   hide() {
-    // make the menu transparent to prevent flickering when showing it again
     this._container.style.opacity = "0";
     this._container.remove();
     this._shown = false;
   }
 
-  /**remove the context menu from DOM and clear the menu content */
-  clear() {
+  /**clear the menu content and remove the menu from DOM */
+  clear() {    
     this.hide();
     this.content = null;
   }
@@ -61,8 +68,8 @@ export class ContextMenu {
       return;
     }
     const target = e.composedPath()[0] as HTMLElement;
-    // hide the menu if pointer is down outside
     if (!target.closest("#context-menu")) {
+      // the pointer is outside of the menu elementm, hide the menu
       this.hide();
     }
   };
@@ -75,21 +82,19 @@ export class ContextMenu {
     const relPointerPosition = new Vec2(pointerPosition.x - parentRect.x, 
       pointerPosition.y - parentRect.y);
 
-    // determine the menu alignment depending on the pointer position relative to the parent element 
-
+    // move the menu to avoid it from being outside the container
     if (relPointerPosition.x + menuDimension.x > parentRect.width + parentRect.x) {
       menuPosition.x = relPointerPosition.x - menuDimension.x;
     } else {
       menuPosition.x = relPointerPosition.x;
     }
-
     if (relPointerPosition.y + menuDimension.y > parentRect.height + parentRect.y) {
       menuPosition.y = relPointerPosition.y - menuDimension.y;
     } else {
       menuPosition.y = relPointerPosition.y;
     }
 
-    this._container.style.left = menuPosition.x + "px";
-    this._container.style.top = menuPosition.y + "px";
+    this._container.style.left = menuPosition.x + parent.scrollLeft + "px";
+    this._container.style.top = menuPosition.y + parent.scrollTop + "px";
   }
 }

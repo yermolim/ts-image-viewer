@@ -1,10 +1,11 @@
-import { Mat3, Vec2 } from "mathador";
-import { Quadruple, Double, getRandomUuid, RenderToSvgResult, BaseDimensions } from "../common";
-import { PenData } from "../annotator/pen-data";
+import { clamp, Mat3, Vec2 } from "mathador";
 
-import { Annotation, AnnotationDto } from "./annotation";
+import { AnnotationBase, AnnotationDto } from "../common/annotation";
+import { EventService } from "../common/event-service";
+import { Quadruple, Double } from "../common/types";
+import { AppearanceRenderResult, selectionStrokeWidth, SvgElementWithBlendMode } from "../drawing/utils";
 
-export class PenAnnotation extends Annotation {  
+export class PenAnnotation extends AnnotationBase {  
   protected _pathList: number[][];
   get pathList(): number[][] {
     return this._pathList;
@@ -22,7 +23,7 @@ export class PenAnnotation extends Annotation {
     return this._strokeDashGap;
   }
 
-  constructor(dto: PenAnnotationDto) {
+  constructor(eventService: EventService, dto: PenAnnotationDto) {
     if (!dto) {
       throw new Error("No source object passed to the constructor");
     }
@@ -30,51 +31,12 @@ export class PenAnnotation extends Annotation {
       throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'pen')`);
     }
 
-    super(dto);
+    super(eventService, dto);
 
     this._pathList = dto.pathList;
     this._strokeColor = dto.strokeColor;
     this._strokeWidth = dto.strokeWidth;
     this._strokeDashGap = dto.strokeDashGap;
-  }
-  
-  static createFromPenData(data: PenData, userName: string, 
-    dimensions?: BaseDimensions): PenAnnotation {
-    const positions: Vec2[] = [];
-    const pathList: number[][] = [];
-    data.paths.forEach(path => {
-      const ink: number[] = [];
-      path.positions.forEach(pos => {
-        positions.push(pos);
-        ink.push(pos.x, pos.y);
-      });
-      pathList.push(ink);
-    });
-
-    const nowString = new Date().toISOString();
-    const dto: PenAnnotationDto = {
-      uuid: getRandomUuid(),
-      annotationType: "pen",
-      imageUuid: null,
-
-      dateCreated: nowString,
-      dateModified: nowString,
-      author: userName || "unknown",
-
-      pathList,
-      strokeColor: data.color,
-      strokeWidth: data.strokeWidth,
-      strokeDashGap: null,
-    };
-
-    const annotation = new PenAnnotation(dto);
-    
-    if (dimensions?.rotation) {
-      const mat = annotation.getAnnotationToImageMatrix(dimensions);
-      annotation.applyCommonTransform(mat);
-    }
-
-    return annotation;
   }
 
   toDto(): PenAnnotationDto {
@@ -87,6 +49,9 @@ export class PenAnnotation extends Annotation {
       dateModified: this._dateModified.toISOString(),
       author: this._author,
 
+      rotation: this._rotation,
+      textContent: this._textContent,
+
       pathList: this._pathList,
       strokeColor: this._strokeColor,
       strokeWidth: this._strokeWidth,
@@ -94,7 +59,7 @@ export class PenAnnotation extends Annotation {
     };
   }
 
-  protected applyCommonTransform(matrix: Mat3) {
+  protected override async applyCommonTransformAsync(matrix: Mat3, undoable = true) {
     // transform current InkList
     let x: number;
     let y: number;
@@ -107,11 +72,9 @@ export class PenAnnotation extends Annotation {
         list[i] = vec.x;
         list[i + 1] = vec.y;
       }
-    });    
+    });
 
-    this._dateModified = new Date();    
-
-    this.updateRender();
+    await super.applyCommonTransformAsync(matrix, undoable);
   }
 
   protected updateAABB() {
@@ -141,36 +104,85 @@ export class PenAnnotation extends Annotation {
       }
     });
 
+    const halfStrokeW = this.strokeWidth / 2;
+    xMin -= halfStrokeW;
+    yMin -= halfStrokeW;
+    xMax += halfStrokeW;
+    xMax += halfStrokeW;
+
     this._aabb[0].set(xMin, yMin);
     this._aabb[1].set(xMax, yMax);
   } 
 
-  protected renderContent(): RenderToSvgResult {   
-    try {
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("fill", "none");
-      g.setAttribute("stroke", `rgba(${this._strokeColor.join(",")})`);
-      g.setAttribute("stroke-width", this._strokeWidth + "");
-      if (this._strokeDashGap) {
-        g.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
-      }
+  protected renderAppearance(): AppearanceRenderResult {   
+    try {      
+      const clipPaths: SVGClipPathElement[] = [];
+      const elements: SvgElementWithBlendMode[] = [];
+      const pickHelpers: SVGGraphicsElement[] = [];
+      
+      // clip paths
+      const [min, max] = this.aabb;
+      const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+      clipPath.id = `clip0_${this.uuid}`;
+      clipPath.innerHTML = "<path d=\""
+        + `M${min.x},${min.y} `
+        + `L${max.x},${min.y} `
+        + `L${max.x},${max.y} `
+        + `L${min.x},${max.y} `
+        + "z"
+        + "\"/>";
+      clipPaths.push(clipPath);
+
+      // graphic elements
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.setAttribute("clip-path", `url(#${clipPath.id})`);
+      
+      const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      clonedGroup.classList.add("annotation-pick-helper");
 
       for (const pathCoords of this.pathList) {
         if (!pathCoords?.length) {
           continue;
-        }
+        }        
 
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        group.setAttribute("fill", "none");
+        const [r, g, b, a] = this._strokeColor;
+        group.setAttribute("stroke", `rgba(${r*255},${g*255},${b*255},${a})`);
+        group.setAttribute("stroke-width", this._strokeWidth + "");
+        if (this._strokeDashGap) {
+          group.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
+        }
+
         let d = `M ${pathCoords[0]} ${pathCoords[1]}`;
         for (let i = 2; i < pathCoords.length;) {
           d += ` L ${pathCoords[i++]} ${pathCoords[i++]}`;
         }
         path.setAttribute("d", d);
-        g.append(path);
+        
+        group.append(path);
+        
+        // create a transparent path copy with large stroke width to simplify user interaction  
+        const clonedPath = path.cloneNode(true) as SVGPathElement;
+        const clonedPathStrokeWidth = this._strokeWidth < selectionStrokeWidth
+          ? selectionStrokeWidth
+          : this._strokeWidth;
+        clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+        clonedPath.setAttribute("stroke", "transparent");
+        clonedPath.setAttribute("fill", "none");
+        clonedGroup.append(clonedPath);
       }
+
+      elements.push({
+        element: group, 
+        blendMode: "normal",
+      });
+      pickHelpers.push(clonedGroup);
       
       return {
-        svg: g,
+        elements,
+        clipPaths,
+        pickHelpers,
       };
     }
     catch (e) {

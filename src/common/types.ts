@@ -1,45 +1,3 @@
-import { v4 as uuidV4 } from "uuid";
-import { Vec2 } from "mathador";
-
-/* eslint-disable no-bitwise */
-export function getRandomUuid(): string {
-  // return crypto.getRandomValues(new Uint32Array(4)).join("-");
-  return uuidV4();
-}
-
-export function getDistance(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.hypot(x2 - x1, y2 - y1);
-}
-
-export interface RenderToSvgResult {
-  /**main svg element of the rendered object */
-  svg: SVGGraphicsElement;
-  /**optional clip path array */
-  clipPaths?: SVGClipPathElement[];
-  
-  /**the svg element copy of the rendered object (used for a transformation visualization) */
-  tempCopy?: SVGGraphicsElement;
-  /** use element of the svg element copy (used for a transformation visualization) */
-  tempCopyUse?: SVGUseElement;
-}
-
-export interface BBox {
-  /**lower-left corner coords */
-  ll: Vec2; 
-  /**lower-right corner coords */
-  lr: Vec2; 
-  /**upper-right corner coords */
-  ur: Vec2; 
-  /**upper-left corner coords */
-  ul: Vec2;
-}
-
-export interface BaseDimensions {  
-  width: number;
-  height: number;
-  scale?: number;
-  rotation?: number;
-}
 
 export class LinkedListNode<T> {
   data: T;
@@ -259,4 +217,12 @@ export type Hextuple = readonly [a: number, b: number, d: number, e: number, g: 
 * readonly tuple of eight numbers
 */
 export type Octuple = readonly [x1: number, y1: number, x2: number, y2: number, 
-  x3: number, y3: number, x4: number, y4: number];
+  x3: number, y3: number, x4: number, y4: number];  
+
+export type ListenerLike = (this: HTMLElement, e: any) => any;
+  
+export interface ExecutedAsyncCommand {
+  timestamp: number;  
+  undo(): Promise<void>;
+  redo?(): Promise<void>;
+}

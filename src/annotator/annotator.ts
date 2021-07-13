@@ -1,25 +1,50 @@
-import { ImageView } from "../image/image-view";
-
-interface ImageCoords {
-  imageX: number;
-  imageY: number;
+import { imageChangeEvent, ImageEvent, imageServiceStateChangeEvent, ImageServiceStateChangeEvent } from "../common/events";
+import { ImageCoords } from "../common/image-info";
+import { ImageService } from "../services/image-service";
+  
+interface PointerDownInfo {
+  timestamp: number;
+  clientX: number;
+  clientY: number;
 }
 
-export abstract class Annotator {
-  protected readonly _parent: HTMLDivElement;
-  protected readonly _imageView: ImageView;
+//#region custom events
+export const annotatorTypes = ["geom", "pen", "stamp", "text"] as const;
+export type AnnotatorType = typeof annotatorTypes[number];
 
-  protected _scale = 1;
-  get scale(): number {
-    return this._scale;
+export const annotatorDataChangeEvent = "tsimage-annotatordatachange" as const;
+export interface AnnotatorDataChangeEventDetail {
+  annotatorType: AnnotatorType;
+  elementCount?: number;
+  undoable?: boolean;
+  clearable?: boolean;
+  saveable?: boolean;
+}
+export class AnnotatorDataChangeEvent extends CustomEvent<AnnotatorDataChangeEventDetail> {
+  constructor(detail: AnnotatorDataChangeEventDetail) {
+    super(annotatorDataChangeEvent, {detail});
   }
-  set scale(value: number) {
-    this._scale = value;
-    this.refreshViewBox();
+}
+
+declare global {
+  interface HTMLElementEventMap {
+    [annotatorDataChangeEvent]: AnnotatorDataChangeEvent;
   }
-  protected _lastScale: number;
+}
+//#endregion
+
+/**
+ * base class for annotation addition tools
+ */
+export abstract class Annotator {
+  protected readonly _imageService: ImageService;
+  protected readonly _parent: HTMLDivElement;
   
   protected _overlayContainer: HTMLDivElement;
+  get overlayContainer(): HTMLDivElement {
+    return this._overlayContainer;
+  }
+
   protected _overlay: HTMLDivElement;
   protected _svgWrapper: SVGGraphicsElement;
   protected _svgGroup: SVGGraphicsElement;
@@ -27,26 +52,36 @@ export abstract class Annotator {
   protected _parentMutationObserver: MutationObserver;
   protected _parentResizeObserver: ResizeObserver;
 
-  protected _imageCoords: ImageCoords;
+  protected _lastPointerDownInfo: PointerDownInfo;
+  protected _pointerCoordsInImageCS: ImageCoords;  
 
-  constructor(parent: HTMLDivElement, imageView: ImageView) {
-    if (!parent || !imageView) {
-      throw new Error("Argument is not defined");
+  constructor(imageService: ImageService, parent: HTMLDivElement) {
+    if (!imageService) {
+      throw new Error("Image service not defined");
     }
+    if (!parent) {
+      throw new Error("Parent container not defined");
+    }
+
+    this._imageService = imageService;
     this._parent = parent;
-    this._imageView = imageView;
   }
 
-  /**free the annotator resources */
+  /**free resources to let GC clean them to avoid memory leak */
   destroy() {    
-    this._overlayContainer.remove();
+    this._imageService.eventService.removeListener(imageChangeEvent, this.onImageChange);
+    this._imageService.eventService.removeListener(imageServiceStateChangeEvent, this.onStateChange);
 
     this._parent?.removeEventListener("scroll", this.onParentScroll);
     this._parentMutationObserver?.disconnect();
     this._parentResizeObserver?.disconnect();
+
+    this._overlayContainer.remove();
   }
 
-  /**refresh the annotator dimensions */
+  /**
+   * refresh the inner SVG view box dimensions 
+   */
   refreshViewBox() {
     const {width: w, height: h} = this._overlay.getBoundingClientRect();
     if (!w || !h) {
@@ -55,60 +90,24 @@ export abstract class Annotator {
 
     this._overlay.style.left = this._parent.scrollLeft + "px";
     this._overlay.style.top = this._parent.scrollTop + "px";   
-    const viewBoxWidth = w / this._scale;
-    const viewBoxHeight = h / this._scale;
+    const viewBoxWidth = w / this._imageService.scale;
+    const viewBoxHeight = h / this._imageService.scale;
     this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-    this._lastScale = this._scale;
-  }
-
-  protected onParentScroll = () => {
-    this.refreshViewBox();
-  };
-
-  protected initObservers() {
-    this._parent.addEventListener("scroll", this.onParentScroll);
-    const onPossibleViewerSizeChanged = () => {
-      if (this._scale === this._lastScale) {
-        return;
-      }
-      this.refreshViewBox();
-    };
-    const viewerRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
-      onPossibleViewerSizeChanged();
-    });
-    const viewerMObserver = new MutationObserver((mutations: MutationRecord[]) => {
-      const record = mutations[0];
-      if (!record) {
-        return;
-      }
-      record.addedNodes.forEach(x => {
-        const element = x as HTMLElement;
-        if (element.classList.contains("image")) {
-          viewerRObserver.observe(x as HTMLElement);
-        }
-      });
-      record.removedNodes.forEach(x => viewerRObserver.unobserve(x as HTMLElement));
-      onPossibleViewerSizeChanged();
-    });
-    viewerMObserver.observe(this._parent, {
-      attributes: false,
-      childList: true,
-      subtree: false,
-    });
-    this._parentMutationObserver = viewerMObserver;
-    this._parentResizeObserver = viewerRObserver;
+    
+    this.refreshGroupPosition();
   }
   
   protected init() {
     const annotationOverlayContainer = document.createElement("div");
-    annotationOverlayContainer.id = "annotator-overlay-container";
+    annotationOverlayContainer.id = "annotation-overlay-container";
     
     const annotationOverlay = document.createElement("div");
-    annotationOverlay.id = "annotator-overlay";
+    annotationOverlay.id = "annotation-overlay";
     
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.classList.add("annotator-svg", "abs-stretch", "no-margin", "no-padding");
-    svg.setAttribute("opacity", "0.75");
+    svg.classList.add("abs-stretch", "no-margin", "no-padding");
+    // svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
+    svg.setAttribute("opacity", "0.5");
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     svg.append(g);
@@ -125,35 +124,95 @@ export abstract class Annotator {
 
     this.refreshViewBox();    
     // add handlers and observers to keep the svg scale actual
-    this.initObservers();
+    this.initEventHandlers();
+  }
+
+  /**
+   * initialize observers for the parent mutations
+   */
+  protected initEventHandlers() {
+    this._overlay.addEventListener("pointerdown", this.onOverlayPointerDown);
+
+    this._parent.addEventListener("scroll", this.onParentScroll);
+    const parentRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
+      this.refreshViewBox();
+    });
+    const parentMObserver = new MutationObserver((mutations: MutationRecord[]) => {
+      const record = mutations[0];
+      if (!record) {
+        return;
+      }
+      record.addedNodes.forEach(x => {
+        const element = x as HTMLElement;
+        if (element.classList.contains("image")) {
+          parentRObserver.observe(x as HTMLElement);
+        }
+      });
+      record.removedNodes.forEach(x => parentRObserver.unobserve(x as HTMLElement));
+      this.refreshViewBox();
+    });
+    parentRObserver.observe(this._parent);
+    parentMObserver.observe(this._parent, {
+      attributes: false,
+      childList: true,
+      subtree: false,
+    });
+    this._parentMutationObserver = parentMObserver;
+    this._parentResizeObserver = parentRObserver;
+
+    // handle image change events to keep the view box dimensions actual
+    this._imageService.eventService.addListener(imageChangeEvent, this.onImageChange);
+    this._imageService.eventService.addListener(imageServiceStateChangeEvent, this.onStateChange);
+  }
+
+  protected onImageChange = (event: ImageEvent) => {
+    this.refreshViewBox();
+  };
+  
+  protected onStateChange = (event: ImageServiceStateChangeEvent) => {
+    this.refreshViewBox();
+  };
+
+  protected onParentScroll = () => {
+    this.refreshViewBox();
+  }; 
+  
+  protected onOverlayPointerDown = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      // the event source is the non-primary touch. ignore that
+      return;
+    }
+
+    // save the current pointer information to check the click duration and the displacement relative to the starting point
+    this._lastPointerDownInfo = {
+      timestamp: performance.now(),
+      clientX: e.clientX,
+      clientY: e.clientY,
+    };
+  };
+  
+  /**
+   * update the current pointer coordinates using the image coordinate system
+   * @param clientX 
+   * @param clientY 
+   */
+  protected updatePointerCoords(clientX: number, clientY: number) {
+    const imageCoords = this._imageService
+      .currentImageView?.getImageCoordsUnderPointer(clientX, clientY);
+    if (!imageCoords) {
+      this._svgGroup.classList.add("annotation-out-of-image");
+    } else {      
+      this._svgGroup.classList.remove("annotation-out-of-image");
+    }   
+
+    this._pointerCoordsInImageCS = imageCoords;
   }
   
-  protected updateImageCoords(clientX: number, clientY: number) {
-    const imageCoords = this.getImageCoordsUnderPointer(clientX, clientY);
-    if (!imageCoords) {
-      this._svgWrapper.classList.add("out");
-    } else {      
-      this._svgWrapper.classList.remove("out");
-    }
-
-    this._imageCoords = imageCoords;
-  }  
-   
-  protected getImageCoordsUnderPointer(clientX: number, clientY: number): ImageCoords {
-    const {left: pxMin, top: pyMin, width: pw, height: ph} = this._imageView.viewContainer.getBoundingClientRect();
-    const pxMax = pxMin + pw;
-    const pyMax = pyMin + ph;
-
-    if ((clientX < pxMin || clientX > pxMax)
-      || (clientY < pyMin || clientY > pyMax)) {
-      // point is not inside a image
-      return null;
-    }
-
-    // point is inside the image
-    return {
-      imageX: (clientX - pxMin) / this._scale,
-      imageY: (clientY - pyMin) / this._scale,
-    };  
-  }
+  abstract undo(): void; 
+  
+  abstract clear(): void; 
+  
+  abstract saveAnnotationAsync(): Promise<void>;  
+  
+  protected abstract refreshGroupPosition(): void;
 }
