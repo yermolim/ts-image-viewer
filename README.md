@@ -1,5 +1,5 @@
 # ts-image-viewer
-browser image viewer with basic painting support
+Browser image viewer with basic annotationing support
 
 WIP. Readme will be added later.
 
