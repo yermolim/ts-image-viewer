@@ -180,7 +180,7 @@ const mainHtml = `
           <img src="${img$9}"/>
         </div> 
         <div id="button-annotation-mode-stamp" 
-          class="panel-button annotation-panel-item">
+          class="panel-button annotation-panel-item disabled">
           <img src="${img$3}"/>
         </div> 
       </div>
@@ -216,7 +216,7 @@ const mainHtml = `
           <img src="${img$9}"/>
         </div> 
         <div id="button-annotation-mode-geometric" 
-          class="panel-button annotation-panel-item">
+          class="panel-button annotation-panel-item disabled">
           <img src="${img$d}"/>
         </div>
       </div>
@@ -234,7 +234,7 @@ const mainHtml = `
           <img src="${img$9}"/>
         </div> 
         <div id="button-annotation-mode-text" 
-          class="panel-button annotation-panel-item">
+          class="panel-button annotation-panel-item disabled">
           <img src="${img}"/>
         </div>
       </div>
@@ -291,7 +291,7 @@ const styles = `
   }
 
   .disabled {
-    pointer-events: none;
+    pointer-events: none !important;
   }
 
   .relative {
@@ -984,21 +984,23 @@ const styles = `
     stroke-dasharray: 3 0;
   } 
   .mode-annotation .annotation-controls.selected .annotation-handle {
-    r: 8;
+    stroke-width: 16;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
     cursor: pointer;
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.helper {
-    r: 4;
-    fill: rgba(200, 200, 50, 0.75);
+    stroke-width: 12;
+    stroke: rgba(200, 200, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.scale {
-    fill: rgba(0, 0, 0, 0.75);
+    stroke: rgba(0, 0, 0, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.rotation {
-    fill: rgba(50, 100, 50, 0.75);
+    stroke: rgba(50, 100, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.translation {
-    fill: rgba(100, 100, 200, 0.75);
+    stroke: rgba(100, 100, 200, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
@@ -2399,11 +2401,13 @@ class AnnotationBase {
         };
         const handles = [];
         ["ll", "lr", "ur", "ul"].forEach(x => {
-            const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            const handle = document.createElementNS("http://www.w3.org/2000/svg", "line");
             handle.classList.add("annotation-handle", "scale");
             handle.setAttribute("data-handle-name", x);
-            handle.setAttribute("cx", bBox[x].x + "");
-            handle.setAttribute("cy", bBox[x].y + "");
+            handle.setAttribute("x1", bBox[x].x + "");
+            handle.setAttribute("y1", bBox[x].y + "");
+            handle.setAttribute("x2", bBox[x].x + "");
+            handle.setAttribute("y2", bBox[x].y + 0.1 + "");
             handle.addEventListener("pointerdown", this.onScaleHandlePointerDown);
             handles.push(handle);
         });
@@ -2430,11 +2434,13 @@ class AnnotationBase {
         rotationGroupLine.setAttribute("y1", centerY + "");
         rotationGroupLine.setAttribute("x2", handleCenter.x + "");
         rotationGroupLine.setAttribute("y2", handleCenter.y + "");
-        const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
         centerRectHandle.classList.add("annotation-handle", "rotation");
         centerRectHandle.setAttribute("data-handle-name", "center");
-        centerRectHandle.setAttribute("cx", handleCenter.x + "");
-        centerRectHandle.setAttribute("cy", handleCenter.y + "");
+        centerRectHandle.setAttribute("x1", handleCenter.x + "");
+        centerRectHandle.setAttribute("y1", handleCenter.y + "");
+        centerRectHandle.setAttribute("x2", handleCenter.x + "");
+        centerRectHandle.setAttribute("y2", handleCenter.y + 0.1 + "");
         centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
         rotationGroup.append(rotationGroupCircle, rotationGroupLine, centerRectHandle);
         return rotationGroup;
@@ -3792,6 +3798,9 @@ class ImageView {
             const tempCtx = tempCanvas.getContext("2d");
             tempCtx.drawImage(this.imageInfo.image, 0, 0, x, y, 0, 0, x, y);
             for (const annot of this.imageInfo.annotations || []) {
+                if (annot.deleted) {
+                    continue;
+                }
                 const images = yield annot.toImageAsync();
                 for (const image of images) {
                     tempCtx.drawImage(image, 0, 0);

@@ -199,6 +199,10 @@ export class ImageView implements ImageInfoView {
     tempCtx.drawImage(this.imageInfo.image, 0, 0, x, y, 0, 0, x, y);
 
     for (const annot of this.imageInfo.annotations || []) {
+      if (annot.deleted) {
+        continue;
+      }
+
       const images = await annot.toImageAsync();
       // draw the annotations over the original image
       for (const image of images) {
