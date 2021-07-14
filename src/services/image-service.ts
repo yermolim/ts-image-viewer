@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import { ExecutedAsyncCommand } from "../common/types";
+import { loadImageAsync } from "../common/dom";
 import { ImageInfo, ImageLoadInfo, ImageInfoView } from "../common/image-info";
 import { AnnotationBase, AnnotationDto } from "../common/annotation";
 import { ScaleChangedEvent, annotSelectionRequestEvent, 
@@ -109,46 +110,31 @@ export class ImageService {
         continue;
       }
 
-      let loadedImage: HTMLImageElement;
+      let imageSource: HTMLImageElement | string;
       let imageUrl: string;
       switch (info.type) {
-
         case "URL":
+          if (typeof info.data !== "string") {
+            throw new Error(`Invalid data type: ${typeof info.data} (must be string)`);
+          }
+          if (this._lazyLoadImages) {
+            imageSource = info.data;
+          } else {
+            imageSource = await loadImageAsync(info.data as string);
+          }
+          break;
         case "Base64":
           if (typeof info.data !== "string") {
             throw new Error(`Invalid data type: ${typeof info.data} (must be string)`);
           }
-          loadedImage = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const image = new Image();
-            image.onerror = (e: string | Event) => {
-              console.log(`Error while loading image: ${e}`);
-              resolve(null);
-            };
-            image.onload = () => {
-              resolve(image);
-            };
-            image.src = info.data as string;
-          });
+          imageSource = await loadImageAsync(info.data as string);
           break;
-
         case "Blob":
           if (!(info.data instanceof Blob)) {            
             throw new Error("Invalid data type: must be Blob");
           }
           imageUrl = URL.createObjectURL(info.data);
-          loadedImage = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const image = new Image();
-            image.onerror = (e: string | Event) => {
-              URL.revokeObjectURL(imageUrl);
-              console.log(`Error while loading image: ${e}`);
-              resolve(null);
-            };
-            image.onload = () => {              
-              URL.revokeObjectURL(imageUrl);
-              resolve(image);
-            };
-            image.src = imageUrl;
-          });
+          imageSource = await loadImageAsync(imageUrl, true);
           break;
 
         case "ByteArray":
@@ -163,19 +149,7 @@ export class ImageService {
             type: "application/octet-binary",
           });
           imageUrl = URL.createObjectURL(blob);
-          loadedImage = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const image = new Image();
-            image.onerror = (e: string | Event) => {
-              URL.revokeObjectURL(imageUrl);
-              console.log(`Error while loading image: ${e}`);
-              resolve(null);
-            };
-            image.onload = () => {              
-              URL.revokeObjectURL(imageUrl);
-              resolve(image);
-            };
-            image.src = imageUrl;
-          });
+          imageSource = await loadImageAsync(imageUrl, true);
           break;
 
         default:
@@ -183,13 +157,14 @@ export class ImageService {
           throw new Error(`Invalid info type: ${info.type}`);
       }
 
-      if (!loadedImage) {
+      if (!imageSource) {
         continue;
       }
 
-      const imageInfo = new ImageInfo(loadedImage, info.uuid);
-      const view = new ImageView(this._eventService, imageInfo, this._imageViews.length, this._previewWidth);
-      this._imageViews.push(view);
+      const imageInfo = new ImageInfo(imageSource, info.uuid);
+      const view = new ImageView(this._eventService, imageInfo, 
+        this._imageViews.length, this._previewWidth);
+      this._imageViews.push(view);     
     }    
 
     this._eventService.dispatchEvent(new ImageEvent({   

@@ -96,11 +96,15 @@ export class Viewer {
     this.zoomInCentered();
   }
   
-  zoomFitViewer() {
+  zoomFitViewer() {    
     const cWidth = this._container.getBoundingClientRect().width;
     const pWidth = this._imageService.currentImageView
       .viewContainer.getBoundingClientRect().width;
     const scale = (cWidth  - 20) / pWidth * this._scale;
+    if (!scale || scale === Infinity) {
+      return;
+    }
+    
     this.setScale(scale);
   }
   
@@ -110,7 +114,12 @@ export class Viewer {
       .viewContainer.getBoundingClientRect();
     const hScale = (cWidth - 20) / pWidth * this._scale;
     const vScale = (cHeight - 20) / pHeight * this._scale;
-    this.setScale(Math.min(hScale, vScale));
+    const scale = Math.min(hScale, vScale);
+    if (!scale || scale === Infinity) {
+      return;
+    }
+
+    this.setScale(scale);
   }  
   
   async showTextDialogAsync(initialText: string): Promise<string> {

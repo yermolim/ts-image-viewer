@@ -7,15 +7,16 @@ export class ImageView implements ImageInfoView {
   readonly eventService: EventService;
   readonly imageInfo: ImageInfo;
 
-  private readonly _dimensions: {
-    width: number; 
-    height: number;
-    previewWidth: number;
-    previewHeight: number;
-    scaledWidth?: number;
-    scaledHeight?: number;
+  private readonly _dimensions = {
+    width: 0, 
+    height: 0,
+    previewWidth: 0,
+    previewHeight: 0,
+    scaledWidth: 0,
+    scaledHeight: 0,
   };
 
+  private _previewWidth: number;
   private _previewContainer: HTMLDivElement; 
   get previewContainer(): HTMLDivElement {
     return this._previewContainer;
@@ -81,22 +82,17 @@ export class ImageView implements ImageInfoView {
     }
     if (isNaN(index)) {
       throw new Error("Index is not defined");
-    }
+    }    
 
     this.eventService = eventService;
     this.imageInfo = imageInfo;
     this.index = index;
 
-    const {x: width, y: height} = imageInfo.dimensions;
-    previewWidth = Math.max(previewWidth ?? 0, 50);
-    const previewHeight = previewWidth * (height / width);
-    this._dimensions = {width, height, previewWidth, previewHeight};
+    this._previewWidth = previewWidth;
 
     this._previewContainer = document.createElement("div");
     this._previewContainer.classList.add("image-preview");    
     this._previewContainer.setAttribute("data-image-index", this.index + 1 + "");
-    this._previewContainer.style.width = this._dimensions.previewWidth + "px";
-    this._previewContainer.style.height = this._dimensions.previewHeight + "px";
 
     this._viewInnerContainer = document.createElement("div");
     this._viewInnerContainer.classList.add("image");
@@ -120,11 +116,16 @@ export class ImageView implements ImageInfoView {
     if (!force && this._previewRendered) {
       return;
     }
+    
+    const image = await this.imageInfo.getImageAsync();
+    const {x: imgW, y: imgH} = this.imageInfo.dimensions;
+    this.refreshDimensions();
 
     const canvas = this.createPreviewCanvas();
     const ctx = canvas.getContext("2d");
-    const {x: imgW, y: imgH} = this.imageInfo.dimensions;
-    ctx.drawImage(this.imageInfo.image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+    if (image) {
+      ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+    }
 
     this._previewContainer.innerHTML = "";
     this._previewContainer.append(canvas);
@@ -136,11 +137,16 @@ export class ImageView implements ImageInfoView {
       return;
     }
 
+    const image = await this.imageInfo.getImageAsync();
+    const {x: imgW, y: imgH} = this.imageInfo.dimensions;
+    this.refreshDimensions();
+
     // create a new canvas of the needed size and fill it with a rendered image
     const canvas = this.createViewCanvas();
     const ctx = canvas.getContext("2d");
-    const {x: imgW, y: imgH} = this.imageInfo.dimensions;
-    ctx.drawImage(this.imageInfo.image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+    if (image) {
+      ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+    }
 
     this._viewCanvas?.remove();
     this._viewInnerContainer.append(canvas);
@@ -158,6 +164,7 @@ export class ImageView implements ImageInfoView {
   
   clearPreview() {
     this._previewContainer.innerHTML = "";
+    this._previewRendered = false;
   }
 
   clearView() {
@@ -196,17 +203,20 @@ export class ImageView implements ImageInfoView {
     const tempCtx = tempCanvas.getContext("2d");
 
     // draw the original image
-    tempCtx.drawImage(this.imageInfo.image, 0, 0, x, y, 0, 0, x, y);
+    const image = await this.imageInfo.getImageAsync();
+    if (image) {
+      tempCtx.drawImage(image, 0, 0, x, y, 0, 0, x, y);
+    }
 
     for (const annot of this.imageInfo.annotations || []) {
       if (annot.deleted) {
         continue;
       }
 
-      const images = await annot.toImageAsync();
+      const annotImages = await annot.toImageAsync();
       // draw the annotations over the original image
-      for (const image of images) {
-        tempCtx.drawImage(image, 0, 0);
+      for (const annotImage of annotImages) {
+        tempCtx.drawImage(annotImage, 0, 0);
       }
     }
 
@@ -299,6 +309,17 @@ export class ImageView implements ImageInfoView {
   }
 
   private refreshDimensions() {
+    const {x: width, y: height} = this.imageInfo.dimensions;
+    const previewWidth = Math.max(this._previewWidth ?? 0, 50);
+    const previewHeight = previewWidth * (height / width);
+    this._dimensions.width = width;
+    this._dimensions.height = height;
+    this._dimensions.previewWidth = previewWidth;
+    this._dimensions.previewHeight = previewHeight;
+
+    this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+    this._previewContainer.style.height = this._dimensions.previewHeight + "px";
+
     this._dimensions.scaledWidth = this._dimensions.width * this.scale;
     this._dimensions.scaledHeight = this._dimensions.height * this.scale;
 

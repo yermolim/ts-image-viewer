@@ -1,6 +1,7 @@
 import { Vec2 } from "mathador";
 
 import { getRandomUuid } from "./uuid";
+import { loadImageAsync } from "./dom";
 import { AnnotationBase } from "./annotation";
 import { EventService } from "./event-service";
 
@@ -9,10 +10,10 @@ export class ImageInfo {
   get uuid(): string {
     return this._uuid;
   }
-  
-  protected readonly _image: HTMLImageElement;
-  get image(): HTMLImageElement {
-    return this._image;
+
+  protected readonly _url: string;
+  get url(): string {
+    return this._url;
   }
 
   protected readonly _dimensions: Vec2 = new Vec2();
@@ -20,6 +21,8 @@ export class ImageInfo {
   get dimensions(): Vec2 {
     return this._dimensions;
   }
+  
+  protected _preloadedImage: HTMLImageElement;
   
   protected _scale = 1; 
   set scale(value: number) {   
@@ -48,13 +51,43 @@ export class ImageInfo {
     return this._annotations;
   }
 
-  constructor(image: HTMLImageElement, uuid?: string) {
-    if (!image || !image.complete) {
-      throw new Error("Image is not loaded");
-    }
+  /**
+   * 
+   * @param source loaded image element or image url
+   * @param uuid unique id to identify the image
+   * @returns 
+   */
+  constructor(source: HTMLImageElement | string, uuid?: string) {
     this._uuid = uuid || getRandomUuid();
-    this._image = image;
-    this._dimensions.set(image.naturalWidth, image.naturalHeight);
+
+    if (source instanceof HTMLImageElement) {
+      if (!source || !source.complete) {
+        throw new Error("Image is not loaded");
+      }  
+      this._preloadedImage = source;
+      this._dimensions.set(source.naturalWidth, source.naturalHeight);
+      return;
+    }
+
+    this._url = source;
+  }
+
+  async getImageAsync(): Promise<HTMLImageElement> {
+    if (this._preloadedImage) {
+      // image is preloaded. return it
+      return this._preloadedImage;
+    }
+
+    if (!this._url) {
+      throw new Error("No image or image url found");
+    }
+
+    const image = await loadImageAsync(this._url);
+    if (image) {      
+      this._dimensions.set(image.naturalWidth, image.naturalHeight);
+    }
+
+    return image;
   }
 }
 

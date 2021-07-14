@@ -49,3 +49,25 @@ export function downloadFile(blob: Blob, name?: string) {
 
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
+
+export async function loadImageAsync(url: string, revoke = false): Promise<HTMLImageElement> {  
+  const loadedImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onerror = (e: string | Event) => {
+      if (revoke) {        
+        URL.revokeObjectURL(url);
+      }
+      console.log(`Error while loading image: ${e}`);
+      resolve(null);
+    };
+    image.onload = () => {
+      if (revoke) {        
+        URL.revokeObjectURL(url);
+      }
+      resolve(image);
+    };
+    image.src = url;
+  });
+
+  return loadedImage;
+}

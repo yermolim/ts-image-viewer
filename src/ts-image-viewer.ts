@@ -694,8 +694,21 @@ export class TsImageViewer {
       this._mainContainer.classList.remove("undoable-commands");
     }
   };
+
+  private showPreviewer(value: boolean) {
+    if (value) {
+      this._mainContainer.classList.remove("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+      this._previewer.show();
+      setTimeout(() => this._viewer.zoomFitImage(), 1000);
+    } else {      
+      this._mainContainer.classList.add("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+      this._previewer.hide();
+    }
+  }
   
-  private refreshImages(): void {
+  private refreshImages() {
     const imageCount = this._imageService.imageCount;
     if (!imageCount) { // all images closed
       // disable interface
@@ -704,7 +717,7 @@ export class TsImageViewer {
       this.setViewerMode("hand");
       this.setAnnotatorMode("select");  
       // hide previewer
-      this._previewer.hide();
+      this.showPreviewer(false);
       return;
     } 
     
@@ -713,28 +726,19 @@ export class TsImageViewer {
 
     if (imageCount === 1) { // only one image opened
       // hide and disable previewer
-      this._previewer.hide(); 
-      this._shadowRoot.querySelector("#previewer-toggler").classList.add("disabled");
+      this.showPreviewer(false);
       // disable paginator
       this._shadowRoot.querySelector("#paginator").classList.add("disabled");
     } else {
       // enable previewer
-      this._shadowRoot.querySelector("#previewer-toggler").classList.remove("disabled");
+      this.showPreviewer(true);
       // enable paginator
       this._shadowRoot.querySelector("#paginator").classList.remove("disabled");
     }
   }
   
   private onPreviewerToggleClick = () => {
-    if (this._previewer.hidden) {
-      this._mainContainer.classList.remove("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
-      this._previewer.show();
-    } else {      
-      this._mainContainer.classList.add("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
-      this._previewer.hide();
-    }
+    this.showPreviewer(this._previewer.hidden);
   };
   
   private onMainContainerPointerMove = (event: PointerEvent) => {

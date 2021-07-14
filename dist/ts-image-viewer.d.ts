@@ -98,6 +98,7 @@ export declare class TsImageViewer {
 	private imageServiceUndo;
 	private onImageChange;
 	private onImageServiceStateChange;
+	private showPreviewer;
 	private refreshImages;
 	private onPreviewerToggleClick;
 	private onMainContainerPointerMove;

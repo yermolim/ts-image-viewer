@@ -1302,7 +1302,7 @@ const styles = `
 </style>
 `;
 
-(undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1331,6 +1331,28 @@ function downloadFile(blob, name) {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+function loadImageAsync(url, revoke = false) {
+    return __awaiter$a(this, void 0, void 0, function* () {
+        const loadedImage = yield new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onerror = (e) => {
+                if (revoke) {
+                    URL.revokeObjectURL(url);
+                }
+                console.log(`Error while loading image: ${e}`);
+                resolve(null);
+            };
+            image.onload = () => {
+                if (revoke) {
+                    URL.revokeObjectURL(url);
+                }
+                resolve(image);
+            };
+            image.src = url;
+        });
+        return loadedImage;
+    });
 }
 
 class EventService {
@@ -1794,7 +1816,7 @@ class SvgSmoothPath extends SmoothPath {
 SvgSmoothPath._defaultStrokeWidth = 3;
 SvgSmoothPath._defaultColor = [0, 0, 0, 0.8];
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2070,7 +2092,7 @@ class AnnotationBase {
         };
     }
     renderAsync(imageInfo) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (!imageInfo) {
                 throw new Error("Can't render the annotation: image dimensions is not defined");
             }
@@ -2079,7 +2101,7 @@ class AnnotationBase {
                 this._renderedControls = this.renderControls();
             }
             yield new Promise((resolve, reject) => {
-                setTimeout(() => __awaiter$8(this, void 0, void 0, function* () {
+                setTimeout(() => __awaiter$9(this, void 0, void 0, function* () {
                     yield this.updateRenderAsync();
                     resolve();
                 }), 0);
@@ -2088,7 +2110,7 @@ class AnnotationBase {
         });
     }
     moveToAsync(point) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             const aabb = this.aabb;
             const width = aabb[1].x - aabb[0].x;
             const height = aabb[1].y - aabb[0].y;
@@ -2099,7 +2121,7 @@ class AnnotationBase {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (!center) {
                 const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this.aabb;
                 center = new Vec2((xmin + xmax) / 2, (ymin + ymax) / 2);
@@ -2124,12 +2146,12 @@ class AnnotationBase {
         };
     }
     setTextContentAsync(text, undoable = true) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             const oldText = this._textContent;
             this._textContent = text;
             this._dateModified = new Date();
             const undoAction = undoable
-                ? () => __awaiter$8(this, void 0, void 0, function* () {
+                ? () => __awaiter$9(this, void 0, void 0, function* () {
                     yield this.setTextContentAsync(oldText, false);
                 })
                 : undefined;
@@ -2137,7 +2159,7 @@ class AnnotationBase {
         });
     }
     toImageAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             const renderedContent = this._renderedContent;
             if (!renderedContent) {
                 return null;
@@ -2290,13 +2312,13 @@ class AnnotationBase {
         return mat;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             this._dateModified = new Date();
             this._aabbIsActual = false;
             yield this.updateRenderAsync();
             const invertedMat = Mat3.invert(matrix);
             const undoAction = undoable
-                ? () => __awaiter$8(this, void 0, void 0, function* () {
+                ? () => __awaiter$9(this, void 0, void 0, function* () {
                     yield this.applyCommonTransformAsync(invertedMat, false);
                 })
                 : undefined;
@@ -2304,7 +2326,7 @@ class AnnotationBase {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -2313,7 +2335,7 @@ class AnnotationBase {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$8(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$9(this, void 0, void 0, function* () {
                 this._svgContentCopy.remove();
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 if (this._moved) {
@@ -2450,7 +2472,7 @@ class AnnotationBase {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -2486,7 +2508,7 @@ class AnnotationBase {
 
 const selectionStrokeWidth = 20;
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2541,7 +2563,7 @@ class PenAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             let x;
             let y;
             const vec = new Vec2();
@@ -2655,7 +2677,7 @@ class PenAnnotation extends AnnotationBase {
     }
 }
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2732,7 +2754,7 @@ class PenAnnotator extends Annotator {
         this.removeTempPenData();
     }
     saveAnnotationAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (!this._annotationPathData) {
                 return;
             }
@@ -3045,7 +3067,7 @@ class Loader {
     }
 }
 
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3057,7 +3079,7 @@ var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 class Previewer {
     constructor(imageService, container, options) {
         this._hidden = true;
-        this.onImageChange = (event) => __awaiter$5(this, void 0, void 0, function* () {
+        this.onImageChange = (event) => __awaiter$6(this, void 0, void 0, function* () {
             var _a;
             if (event.detail.type === "open") {
                 (_a = event.detail.imageViews) === null || _a === void 0 ? void 0 : _a.forEach(x => {
@@ -3086,7 +3108,7 @@ class Previewer {
                 this._imageService.setImageAtIndexAsCurrent(imageNumber - 1);
             }
         };
-        this.onPreviewerScroll = (e) => __awaiter$5(this, void 0, void 0, function* () {
+        this.onPreviewerScroll = (e) => __awaiter$6(this, void 0, void 0, function* () {
             yield this.renderVisibleAsync();
         });
         if (!imageService) {
@@ -3158,7 +3180,7 @@ class Previewer {
         return imagesVisible;
     }
     renderVisibleAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             if (this._hidden) {
                 return;
             }
@@ -3176,7 +3198,7 @@ class Previewer {
     }
 }
 
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3201,7 +3223,7 @@ class Viewer {
             sensitivity: 0.025,
             target: null,
         };
-        this.onImageChange = (e) => __awaiter$4(this, void 0, void 0, function* () {
+        this.onImageChange = (e) => __awaiter$5(this, void 0, void 0, function* () {
             if (e.detail.type === "select") {
                 const selectedImageView = e.detail.imageViews[0];
                 yield this.renderImageAsync(selectedImageView);
@@ -3336,6 +3358,9 @@ class Viewer {
         const pWidth = this._imageService.currentImageView
             .viewContainer.getBoundingClientRect().width;
         const scale = (cWidth - 20) / pWidth * this._scale;
+        if (!scale || scale === Infinity) {
+            return;
+        }
         this.setScale(scale);
     }
     zoomFitImage() {
@@ -3344,10 +3369,14 @@ class Viewer {
             .viewContainer.getBoundingClientRect();
         const hScale = (cWidth - 20) / pWidth * this._scale;
         const vScale = (cHeight - 20) / pHeight * this._scale;
-        this.setScale(Math.min(hScale, vScale));
+        const scale = Math.min(hScale, vScale);
+        if (!scale || scale === Infinity) {
+            return;
+        }
+        this.setScale(scale);
     }
     showTextDialogAsync(initialText) {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             if (this._dialogClose) {
                 return;
             }
@@ -3393,7 +3422,7 @@ class Viewer {
         this._imageService.eventService.addListener(imageChangeEvent, this.onImageChange);
     }
     renderImageAsync(image) {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             image.scale = this._scale;
             yield image.renderViewAsync(false);
             this._container.innerHTML = "";
@@ -3493,24 +3522,37 @@ class Viewer {
     }
 }
 
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ImageInfo {
-    constructor(image, uuid) {
+    constructor(source, uuid) {
         this._dimensions = new Vec2();
         this._scale = 1;
         this._rotation = 0;
         this._annotations = [];
-        if (!image || !image.complete) {
-            throw new Error("Image is not loaded");
-        }
         this._uuid = uuid || getRandomUuid();
-        this._image = image;
-        this._dimensions.set(image.naturalWidth, image.naturalHeight);
+        if (source instanceof HTMLImageElement) {
+            if (!source || !source.complete) {
+                throw new Error("Image is not loaded");
+            }
+            this._preloadedImage = source;
+            this._dimensions.set(source.naturalWidth, source.naturalHeight);
+            return;
+        }
+        this._url = source;
     }
     get uuid() {
         return this._uuid;
     }
-    get image() {
-        return this._image;
+    get url() {
+        return this._url;
     }
     get dimensions() {
         return this._dimensions;
@@ -3535,6 +3577,21 @@ class ImageInfo {
     }
     get annotations() {
         return this._annotations;
+    }
+    getImageAsync() {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            if (this._preloadedImage) {
+                return this._preloadedImage;
+            }
+            if (!this._url) {
+                throw new Error("No image or image url found");
+            }
+            const image = yield loadImageAsync(this._url);
+            if (image) {
+                this._dimensions.set(image.naturalWidth, image.naturalHeight);
+            }
+            return image;
+        });
     }
 }
 
@@ -3655,6 +3712,14 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class ImageView {
     constructor(eventService, imageInfo, index, previewWidth) {
+        this._dimensions = {
+            width: 0,
+            height: 0,
+            previewWidth: 0,
+            previewHeight: 0,
+            scaledWidth: 0,
+            scaledHeight: 0,
+        };
         if (!eventService) {
             throw new Error("Event service is not defined");
         }
@@ -3667,15 +3732,10 @@ class ImageView {
         this.eventService = eventService;
         this.imageInfo = imageInfo;
         this.index = index;
-        const { x: width, y: height } = imageInfo.dimensions;
-        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
-        const previewHeight = previewWidth * (height / width);
-        this._dimensions = { width, height, previewWidth, previewHeight };
+        this._previewWidth = previewWidth;
         this._previewContainer = document.createElement("div");
         this._previewContainer.classList.add("image-preview");
         this._previewContainer.setAttribute("data-image-index", this.index + 1 + "");
-        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
-        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
         this._viewInnerContainer = document.createElement("div");
         this._viewInnerContainer.classList.add("image");
         this._viewInnerContainer.setAttribute("data-image-index", this.index + "");
@@ -3733,10 +3793,14 @@ class ImageView {
             if (!force && this._previewRendered) {
                 return;
             }
+            const image = yield this.imageInfo.getImageAsync();
+            const { x: imgW, y: imgH } = this.imageInfo.dimensions;
+            this.refreshDimensions();
             const canvas = this.createPreviewCanvas();
             const ctx = canvas.getContext("2d");
-            const { x: imgW, y: imgH } = this.imageInfo.dimensions;
-            ctx.drawImage(this.imageInfo.image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+            if (image) {
+                ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+            }
             this._previewContainer.innerHTML = "";
             this._previewContainer.append(canvas);
             this._previewRendered = true;
@@ -3748,10 +3812,14 @@ class ImageView {
             if (!force && this.viewValid) {
                 return;
             }
+            const image = yield this.imageInfo.getImageAsync();
+            const { x: imgW, y: imgH } = this.imageInfo.dimensions;
+            this.refreshDimensions();
             const canvas = this.createViewCanvas();
             const ctx = canvas.getContext("2d");
-            const { x: imgW, y: imgH } = this.imageInfo.dimensions;
-            ctx.drawImage(this.imageInfo.image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+            if (image) {
+                ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+            }
             (_a = this._viewCanvas) === null || _a === void 0 ? void 0 : _a.remove();
             this._viewInnerContainer.append(canvas);
             this._viewCanvas = canvas;
@@ -3765,6 +3833,7 @@ class ImageView {
     }
     clearPreview() {
         this._previewContainer.innerHTML = "";
+        this._previewRendered = false;
     }
     clearView() {
         var _a, _b;
@@ -3796,14 +3865,17 @@ class ImageView {
             tempCanvas.width = x;
             tempCanvas.height = y;
             const tempCtx = tempCanvas.getContext("2d");
-            tempCtx.drawImage(this.imageInfo.image, 0, 0, x, y, 0, 0, x, y);
+            const image = yield this.imageInfo.getImageAsync();
+            if (image) {
+                tempCtx.drawImage(image, 0, 0, x, y, 0, 0, x, y);
+            }
             for (const annot of this.imageInfo.annotations || []) {
                 if (annot.deleted) {
                     continue;
                 }
-                const images = yield annot.toImageAsync();
-                for (const image of images) {
-                    tempCtx.drawImage(image, 0, 0);
+                const annotImages = yield annot.toImageAsync();
+                for (const annotImage of annotImages) {
+                    tempCtx.drawImage(annotImage, 0, 0);
                 }
             }
             const result = yield new Promise((resolve, reject) => {
@@ -3873,6 +3945,16 @@ class ImageView {
         return canvas;
     }
     refreshDimensions() {
+        var _a;
+        const { x: width, y: height } = this.imageInfo.dimensions;
+        const previewWidth = Math.max((_a = this._previewWidth) !== null && _a !== void 0 ? _a : 0, 50);
+        const previewHeight = previewWidth * (height / width);
+        this._dimensions.width = width;
+        this._dimensions.height = height;
+        this._dimensions.previewWidth = previewWidth;
+        this._dimensions.previewHeight = previewHeight;
+        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
         this._dimensions.scaledWidth = this._dimensions.width * this.scale;
         this._dimensions.scaledHeight = this._dimensions.height * this.scale;
         const w = this._dimensions.scaledWidth + "px";
@@ -4029,44 +4111,32 @@ class ImageService {
                     console.log("Empty image load info");
                     continue;
                 }
-                let loadedImage;
+                let imageSource;
                 let imageUrl;
                 switch (info.type) {
                     case "URL":
+                        if (typeof info.data !== "string") {
+                            throw new Error(`Invalid data type: ${typeof info.data} (must be string)`);
+                        }
+                        if (this._lazyLoadImages) {
+                            imageSource = info.data;
+                        }
+                        else {
+                            imageSource = yield loadImageAsync(info.data);
+                        }
+                        break;
                     case "Base64":
                         if (typeof info.data !== "string") {
                             throw new Error(`Invalid data type: ${typeof info.data} (must be string)`);
                         }
-                        loadedImage = yield new Promise((resolve, reject) => {
-                            const image = new Image();
-                            image.onerror = (e) => {
-                                console.log(`Error while loading image: ${e}`);
-                                resolve(null);
-                            };
-                            image.onload = () => {
-                                resolve(image);
-                            };
-                            image.src = info.data;
-                        });
+                        imageSource = yield loadImageAsync(info.data);
                         break;
                     case "Blob":
                         if (!(info.data instanceof Blob)) {
                             throw new Error("Invalid data type: must be Blob");
                         }
                         imageUrl = URL.createObjectURL(info.data);
-                        loadedImage = yield new Promise((resolve, reject) => {
-                            const image = new Image();
-                            image.onerror = (e) => {
-                                URL.revokeObjectURL(imageUrl);
-                                console.log(`Error while loading image: ${e}`);
-                                resolve(null);
-                            };
-                            image.onload = () => {
-                                URL.revokeObjectURL(imageUrl);
-                                resolve(image);
-                            };
-                            image.src = imageUrl;
-                        });
+                        imageSource = yield loadImageAsync(imageUrl, true);
                         break;
                     case "ByteArray":
                         if (!(info.data instanceof Uint8Array)) {
@@ -4080,27 +4150,15 @@ class ImageService {
                             type: "application/octet-binary",
                         });
                         imageUrl = URL.createObjectURL(blob);
-                        loadedImage = yield new Promise((resolve, reject) => {
-                            const image = new Image();
-                            image.onerror = (e) => {
-                                URL.revokeObjectURL(imageUrl);
-                                console.log(`Error while loading image: ${e}`);
-                                resolve(null);
-                            };
-                            image.onload = () => {
-                                URL.revokeObjectURL(imageUrl);
-                                resolve(image);
-                            };
-                            image.src = imageUrl;
-                        });
+                        imageSource = yield loadImageAsync(imageUrl, true);
                         break;
                     default:
                         throw new Error(`Invalid info type: ${info.type}`);
                 }
-                if (!loadedImage) {
+                if (!imageSource) {
                     continue;
                 }
-                const imageInfo = new ImageInfo(loadedImage, info.uuid);
+                const imageInfo = new ImageInfo(imageSource, info.uuid);
                 const view = new ImageView(this._eventService, imageInfo, this._imageViews.length, this._previewWidth);
                 this._imageViews.push(view);
             }
@@ -4557,16 +4615,7 @@ class TsImageViewer {
             }
         };
         this.onPreviewerToggleClick = () => {
-            if (this._previewer.hidden) {
-                this._mainContainer.classList.remove("hide-previewer");
-                this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
-                this._previewer.show();
-            }
-            else {
-                this._mainContainer.classList.add("hide-previewer");
-                this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
-                this._previewer.hide();
-            }
+            this.showPreviewer(this._previewer.hidden);
         };
         this.onMainContainerPointerMove = (event) => {
             const { clientX, clientY } = event;
@@ -4816,23 +4865,35 @@ class TsImageViewer {
         (_b = this._shadowRoot.querySelector(`#button-annotation-mode-${mode}`)) === null || _b === void 0 ? void 0 : _b.classList.add("on");
         this._annotatorService.mode = mode;
     }
+    showPreviewer(value) {
+        if (value) {
+            this._mainContainer.classList.remove("hide-previewer");
+            this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+            this._previewer.show();
+            setTimeout(() => this._viewer.zoomFitImage(), 1000);
+        }
+        else {
+            this._mainContainer.classList.add("hide-previewer");
+            this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+            this._previewer.hide();
+        }
+    }
     refreshImages() {
         const imageCount = this._imageService.imageCount;
         if (!imageCount) {
             this._mainContainer.classList.add("disabled");
             this.setViewerMode("hand");
             this.setAnnotatorMode("select");
-            this._previewer.hide();
+            this.showPreviewer(false);
             return;
         }
         this._mainContainer.classList.remove("disabled");
         if (imageCount === 1) {
-            this._previewer.hide();
-            this._shadowRoot.querySelector("#previewer-toggler").classList.add("disabled");
+            this.showPreviewer(false);
             this._shadowRoot.querySelector("#paginator").classList.add("disabled");
         }
         else {
-            this._shadowRoot.querySelector("#previewer-toggler").classList.remove("disabled");
+            this.showPreviewer(true);
             this._shadowRoot.querySelector("#paginator").classList.remove("disabled");
         }
     }
