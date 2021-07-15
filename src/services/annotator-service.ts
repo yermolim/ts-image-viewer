@@ -263,7 +263,7 @@ export class AnnotatorService {
       const item = document.createElement("div");
 
       // TODO: remove after implementing rest of geometric annotators
-      if (x !== "circle" && x !== "square" && x!== "polyline") {
+      if (x !== "circle" && x !== "square" && x !== "polyline" && x !== "polygon") {
         item.classList.add("disabled");
       }
 

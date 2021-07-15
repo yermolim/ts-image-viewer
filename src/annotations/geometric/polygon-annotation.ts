@@ -1,291 +1,173 @@
-// import { Mat3, Vec2 } from "mathador";
-// import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
+import { Mat3, Vec2 } from "mathador";
 
-// import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } from "../../../../spec-constants";
-// import { CryptInfo } from "../../../../encryption/interfaces";
-// import { ParserResult } from "../../../../data-parse/data-parser";
-// import { ParserInfo } from "../../../../data-parse/parser-info";
+import { AppearanceRenderResult, SELECTION_STROKE_WIDTH, 
+  SvgElementWithBlendMode } from "../../drawing/utils";
 
-// import { DateString } from "../../../strings/date-string";
-// import { LiteralString } from "../../../strings/literal-string";
-// import { XFormStream } from "../../../streams/x-form-stream";
-// import { BorderStyleDict } from "../../../appearance/border-style-dict";
-// import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
-// import { ResourceDict } from "../../../appearance/resource-dict";
-// import { PolyAnnotation, PolyAnnotationDto } from "./poly-annotation";
+import { EventService } from "../../common/event-service";
+import { PolyAnnotation, PolyAnnotationDto } from "./poly-annotation";
+import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
 
-// export interface PolygonAnnotationDto extends PolyAnnotationDto {  
-//   cloud: boolean;
-// }
+export interface PolygonAnnotationDto extends PolyAnnotationDto {  
+  cloud: boolean;
+  cloudArcSize?: number;
+}
 
-// export class PolygonAnnotation extends PolyAnnotation {  
-//   static readonly cloudArcSize = 20;
+export class PolygonAnnotation extends PolyAnnotation { 
+  /**defines if annotation should be rendered using wavy lines (for custom annotations) */
+  protected _cloud: boolean;
+  get cloud(): boolean {
+    return this._cloud;
+  } 
+  protected _cloudArcSize: number;
+
+  constructor(eventService: EventService, dto: PolygonAnnotationDto) {
+    if (!dto) {
+      throw new Error("No source object passed to the constructor");
+    }
+    if (dto.annotationType !== "polygon") {
+      throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'polygon')`);
+    }
+
+    super(eventService, dto);
+
+    this._cloud = dto.cloud ?? false;
+    this._cloudArcSize = dto.cloudArcSize ?? 20;
+  }
     
-//   constructor() {
-//     super(annotationTypes.POLYGON);
-//   }
+  override toDto(): PolygonAnnotationDto {
+    return {
+      annotationType: this.type,
+      uuid: this.uuid,
+      imageUuid: this._imageUuid,
+
+      dateCreated: this._dateCreated.toISOString(),
+      dateModified: this._dateModified.toISOString(),
+      author: this._author,
+
+      rotation: this._rotation,
+      textContent: this._textContent,
+
+      strokeColor: this._strokeColor,
+      strokeWidth: this._strokeWidth,
+      strokeDashGap: this._strokeDashGap,
+
+      cloud: this._cloud,
+      cloudArcSize: this._cloudArcSize,
+
+      vertices: this._vertices.map(x => [x.x, x.y]),
+    };
+  }
+
+  protected override async applyCommonTransformAsync(matrix: Mat3, undoable = true) {
+    this._vertices.forEach(x => x.applyMat3(matrix));
+
+    await super.applyCommonTransformAsync(matrix, undoable);
+  } 
   
-//   static createFromDto(dto: PolygonAnnotationDto): PolygonAnnotation {
-//     if (dto.annotationType !== "/Polygon") {
-//       throw new Error("Invalid annotation type");
-//     }
+  protected updateAABB() {
+    // find the minimum and maximum points
+    const {min, max} = Vec2.minMax(...this._vertices);
 
-//     const bs = new BorderStyleDict();
-//     bs.W = dto.strokeWidth;
-//     if (dto.strokeDashGap) {
-//       bs.D = dto.strokeDashGap;
-//     }
-    
-//     const annotation = new PolygonAnnotation();
-//     annotation.$name = dto.uuid;
-//     annotation.NM = LiteralString.fromString(dto.uuid);
-//     annotation.T = LiteralString.fromString(dto.author);
-//     annotation.M = DateString.fromDate(new Date(dto.dateModified));
-//     annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
-//     annotation.Contents = dto.textContent 
-//       ? LiteralString.fromString(dto.textContent) 
-//       : null;
+    const margin = this._strokeWidth / 2;
+    min.addScalar(-margin);
+    max.addScalar(margin);
+
+    // assign the corresponding fields values
+    this._aabb[0].setFromVec2(min);
+    this._aabb[1].setFromVec2(max);
+  }
+
+  protected renderAppearance(): AppearanceRenderResult {   
+    try {
+      if (!this._vertices?.length || this._vertices.length < 3) {
+        throw new Error("Any polygon can't have less than 3 vertices");
+      }
+
+      const clipPaths: SVGClipPathElement[] = [];
+      const elements: SvgElementWithBlendMode[] = [];
+      const pickHelpers: SVGGraphicsElement[] = [];
       
-//     annotation.Rect = dto.rect;
-//     annotation.C = dto.color.slice(0, 3);
-//     annotation.CA = dto.color[3];
-//     annotation.BS = bs;
-//     annotation.IT = dto.cloud
-//       ? polyIntents.CLOUD
-//       : polyIntents.POLYGON_DIMENSION;
-//     annotation.Vertices = dto.vertices;
+      // clip paths
+      const [min, max] = this.aabb;
+      const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+      clipPath.id = `clip0_${this.uuid}`;
+      clipPath.innerHTML = "<path d=\""
+        + `M${min.x},${min.y} `
+        + `L${max.x},${min.y} `
+        + `L${max.x},${max.y} `
+        + `L${min.x},${max.y} `
+        + "z"
+        + "\"/>";
+      clipPaths.push(clipPath);
 
-//     annotation.generateApStream();
-
-//     annotation._added = true;
-//     return annotation.initProxy();
-//   }
-  
-//   static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<PolygonAnnotation>> { 
-//     if (!parseInfo) {
-//       throw new Error("Parsing information not passed");
-//     } 
-//     try {
-//       const pdfObject = new PolygonAnnotation();
-//       await pdfObject.parsePropsAsync(parseInfo);
-//       return {
-//         value: pdfObject.initProxy(), 
-//         start: parseInfo.bounds.start, 
-//         end: parseInfo.bounds.end,
-//       };
-//     } catch (e) {
-//       console.log(e.message);
-//       return null;
-//     }
-//   }  
-  
-//   override toArray(cryptInfo?: CryptInfo): Uint8Array {
-//     const superBytes = super.toArray(cryptInfo);  
-//     return superBytes;
-//   } 
-  
-//   override toDto(): PolygonAnnotationDto {
-//     const color = this.getColorRect();
-
-//     return {
-//       annotationType: "/Polygon",
-//       uuid: this.$name,
-//       pageId: this.$pageId,
-
-//       dateCreated: this.CreationDate?.date.toISOString() || new Date().toISOString(),
-//       dateModified: this.M 
-//         ? this.M instanceof LiteralString
-//           ? this.M.literal
-//           : this.M.date.toISOString()
-//         : new Date().toISOString(),
-//       author: this.T?.literal,
-
-//       textContent: this.Contents?.literal,
-
-//       rect: this.Rect,
-//       bbox: this.apStream?.BBox,
-//       matrix: this.apStream?.Matrix,
-
-//       vertices: this.Vertices,
-
-//       cloud: this.IT === polyIntents.CLOUD,
-//       color,
-//       strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
-//       strokeDashGap: this.BS?.D ?? [3, 0],
-//     };
-//   }
-  
-//   /**
-//    * fill public properties from data using info/parser if available
-//    */
-//   protected override async parsePropsAsync(parseInfo: ParserInfo) {
-//     await super.parsePropsAsync(parseInfo);
-    
-//     // bake the current annotation rotation into its appearance stream
-//     // works perfectly with PDF-XChange annotations
-//     // TODO: test with annotations created not in PDF-XChange
-//     await this.bakeRotationAsync();   
-//   }
-  
-//   protected generateApStream() {
-//     if (!this.Vertices?.length || this.Vertices.length < 6) {
-//       // any polygon can't have less than 3 vertices (6 coordinates)
-//       return;
-//     }
-
-//     const apStream = new XFormStream();
-//     apStream.Filter = "/FlateDecode";
-//     apStream.LastModified = DateString.fromDate(new Date());
-//     apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-
-//     // set stroke style options
-//     const opacity = this.CA || 1;
-//     const strokeWidth = this.strokeWidth;
-//     const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
-//     const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
-//     const gs = new GraphicsStateDict();
-//     gs.AIS = true;
-//     gs.BM = "/Normal";
-//     gs.CA = opacity;
-//     gs.ca = opacity;
-//     gs.LW = strokeWidth;
-//     gs.D = [[strokeDash, strokeGap], 0];
-    
-//     // get color
-//     const colorString = this.getColorString();
-    
-//     const list = this.Vertices;
-//     let streamTextData = `q ${colorString} /GS0 gs`;
-//     if (this.IT === polyIntents.CLOUD) {
-//       gs.LC = lineCapStyles.ROUND;
-//       gs.LJ = lineJoinStyles.ROUND; 
+      // graphic elements
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.setAttribute("clip-path", `url(#${clipPath.id})`);
       
-//       const vertices: Vec2[] = [];
-//       for (let i = 0; i < list.length; i = i + 2) {
-//         vertices.push(new Vec2(list[i], list[i + 1]));
-//       }
-//       vertices.push(new Vec2(list[0], list[1])); // close the polygon
-//       const curveData = buildCloudCurveFromPolyline(vertices, PolygonAnnotation.cloudArcSize);      
+      const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      clonedGroup.classList.add("annotation-pick-helper");
 
-//       streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
-//       curveData.curves.forEach(x => {
-//         streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
-//       });
-//       streamTextData += "\nS";
-
-//     } else {
-//       gs.LC = lineCapStyles.SQUARE;
-//       gs.LJ = lineJoinStyles.MITER;
-
-//       let px: number;
-//       let py: number;
-//       streamTextData += `\n${list[0]} ${list[1]} m`;
-//       for (let i = 2; i < list.length; i = i + 2) {
-//         px = list[i];
-//         py = list[i + 1];
-//         streamTextData += `\n${px} ${py} l`;
-//       }
-//       streamTextData += "\ns"; 
-//     }
-
-//     // pop the graphics state back from the stack
-//     streamTextData += "\nQ";
-
-//     apStream.Resources = new ResourceDict();
-//     apStream.Resources.setGraphicsState("/GS0", gs);
-//     apStream.setTextStreamData(streamTextData);    
-
-//     this.apStream = apStream;
-//   }
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("fill", "none");
+      const [r, g, b, a] = this._strokeColor;
+      path.setAttribute("stroke", `rgba(${r*255},${g*255},${b*255},${a})`);
+      path.setAttribute("stroke-width", this._strokeWidth + "");
+      if (this._strokeDashGap) {
+        path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
+      }   
+      
+      let d: string;
+      
+      if (this._cloud) {
+        const vertices: Vec2[] = [...this._vertices];
+        vertices.push(this._vertices[0]); // close the polygon
+        const curveData = buildCloudCurveFromPolyline(vertices, this._cloudArcSize);
   
-//   protected override async applyCommonTransformAsync(matrix: Mat3, undoable = true) { 
-//     // use proxy for tracking property changes
-//     const dict = this.getProxy();
+        d = `M${curveData.start.x},${curveData.start.y}`;
+        curveData.curves.forEach(x => {
+          d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+        });
+      } else {
+        const zeroVertex = this._vertices?.length
+          ? this._vertices[0] 
+          : new Vec2();      
+          
+        d = `M${zeroVertex.x},${zeroVertex.y}`;        
+        for (let i = 1; i < this._vertices.length; i++) {
+          const vertex = this._vertices[i];
+          d += ` L${vertex.x},${vertex.y}`;
+        }
+        d += " Z";
+      }      
 
-//     // transform current Vertices
-//     let x: number;
-//     let y: number;
-//     let xMin: number;
-//     let yMin: number;
-//     let xMax: number;
-//     let yMax: number;
-//     const vec = new Vec2();
-//     const list = dict.Vertices;
-//     for (let i = 0; i < list.length; i = i + 2) {
-//       x = list[i];
-//       y = list[i + 1];
-//       vec.set(x, y).applyMat3(matrix);
-//       list[i] = vec.x;
-//       list[i + 1] = vec.y;
+      path.setAttribute("d", d);
+      group.append(path);
 
-//       if (!xMin || vec.x < xMin) {
-//         xMin = vec.x;
-//       }
-//       if (!yMin || vec.y < yMin) {
-//         yMin = vec.y;
-//       }
-//       if (!xMax || vec.x > xMax) {
-//         xMax = vec.x;
-//       }
-//       if (!yMax || vec.y > yMax) {
-//         yMax = vec.y;
-//       }
-//     }
-    
-//     // update the Rect
-//     const halfStrokeWidth = (dict.BS?.W ?? dict.Border?.width ?? 1) / 2;
-//     const margin = dict.IT === polyIntents.CLOUD
-//       ? PolygonAnnotation.cloudArcSize / 2 + halfStrokeWidth
-//       : halfStrokeWidth;
-//     xMin -= margin;
-//     yMin -= margin;
-//     xMax += margin;
-//     yMax += margin;
-//     dict.Rect = [xMin, yMin, xMax, yMax];
-//     // update calculated bBox if present
-//     if (dict._bBox) {
-//       const bBox =  dict.getLocalBB();
-//       bBox.ll.set(xMin, yMin);
-//       bBox.lr.set(xMax, yMin);
-//       bBox.ur.set(xMax, yMax);
-//       bBox.ul.set(xMin, yMax);
-//     }
+      // create a transparent path copy with large stroke width to simplify user interaction  
+      const clonedPath = path.cloneNode(true) as SVGPathElement;
+      const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+        ? SELECTION_STROKE_WIDTH
+        : this._strokeWidth;
+      clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+      clonedPath.setAttribute("stroke", "transparent");
+      clonedPath.setAttribute("fill", "none");
+      clonedGroup.append(clonedPath);
 
-//     // rebuild the appearance stream instead of transforming it to get rid of line distorsions
-//     dict.generateApStream();
-
-//     dict.M = DateString.fromDate(new Date());
-    
-//     if (dict.$onEditAction) {
-//       const invertedMat = Mat3.invert(matrix);     
-//       dict.$onEditAction(undoable
-//         ? async () => {
-//           await dict.applyCommonTransformAsync(invertedMat, false);
-//           await dict.updateRenderAsync();
-//         }
-//         : undefined);
-//     }
-//   }
-  
-//   protected async bakeRotationAsync() {    
-//     const angle = this.getCurrentRotation();
-//     const centerX = (this.Rect[0] + this.Rect[2]) / 2;
-//     const centerY = (this.Rect[1] + this.Rect[3]) / 2;
-
-//     // calculate the rotation matrix
-//     const matrix = new Mat3()
-//       .applyTranslation(-centerX, -centerY)
-//       .applyRotation(angle)
-//       .applyTranslation(centerX, centerY);
-
-//     await this.applyCommonTransformAsync(matrix);
-//   }
-  
-//   protected override initProxy(): PolygonAnnotation {
-//     return <PolygonAnnotation>super.initProxy();
-//   }
-
-//   protected override getProxy(): PolygonAnnotation {
-//     return <PolygonAnnotation>super.getProxy();
-//   }
-// }
+      elements.push({
+        element: group, 
+        blendMode: "normal",
+      });
+      pickHelpers.push(clonedGroup);
+      
+      return {
+        elements,
+        clipPaths,
+        pickHelpers,
+      };
+    }
+    catch (e) {
+      console.log(`Annotation render error: ${e.message}`);
+      return null;   
+    } 
+  }
+}
