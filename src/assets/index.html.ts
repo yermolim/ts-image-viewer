@@ -209,7 +209,7 @@ export const mainHtml = /*html*/`
           <img src="${icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-geometric" 
-          class="panel-button annotation-panel-item disabled">
+          class="panel-button annotation-panel-item">
           <img src="${icon_geometric}"/>
         </div>
       </div>

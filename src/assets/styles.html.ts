@@ -698,14 +698,17 @@ export const styles = /*html*/`
     cursor: grab;
   } 
   .mode-annotation .annotation-controls.selected .annotation-rect {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(80, 80, 80, 0.5);
     stroke-dasharray: 3 3;
   }
   .mode-annotation .annotation-controls.selected .annotation-bbox {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
   }   
   .mode-annotation .annotation-controls.focused .annotation-bbox {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(255, 165, 0, 1);
     stroke-dasharray: 3 0;
   } 
@@ -731,6 +734,7 @@ export const styles = /*html*/`
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
     cursor: pointer;
+    vector-effect: non-scaling-stroke;
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator .circle {
     r: 25;

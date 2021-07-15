@@ -3,7 +3,31 @@ import { clamp, Mat3, Vec2 } from "mathador";
 import { AnnotationBase, AnnotationDto } from "../common/annotation";
 import { EventService } from "../common/event-service";
 import { Quadruple, Double } from "../common/types";
-import { AppearanceRenderResult, selectionStrokeWidth, SvgElementWithBlendMode } from "../drawing/utils";
+import { AppearanceRenderResult, SELECTION_STROKE_WIDTH, SvgElementWithBlendMode } from "../drawing/utils";
+
+export interface PenAnnotationDto extends AnnotationDto {
+  pathList: number[][];
+  strokeColor: Quadruple;
+  strokeWidth: number;
+  strokeDashGap?: Double;
+}
+
+//#region custom events
+export const pathChangeEvent = "tsimage-penpathchange" as const;
+export interface PathChangeEventDetail {
+  pathCount: number;
+}
+export class PathChangeEvent extends CustomEvent<PathChangeEventDetail> {
+  constructor(detail: PathChangeEventDetail) {
+    super(pathChangeEvent, {detail});
+  }
+}
+declare global {
+  interface HTMLElementEventMap {
+    [pathChangeEvent]: PathChangeEvent;
+  }
+}
+//#endregion
 
 export class PenAnnotation extends AnnotationBase {  
   protected _pathList: number[][];
@@ -33,10 +57,10 @@ export class PenAnnotation extends AnnotationBase {
 
     super(eventService, dto);
 
-    this._pathList = dto.pathList;
-    this._strokeColor = dto.strokeColor;
-    this._strokeWidth = dto.strokeWidth;
-    this._strokeDashGap = dto.strokeDashGap;
+    this._pathList = dto.pathList || [];
+    this._strokeColor = dto.strokeColor || [0, 0, 0, 1];
+    this._strokeWidth = dto.strokeWidth || 3;
+    this._strokeDashGap = dto.strokeDashGap || [3, 0];
   }
 
   toDto(): PenAnnotationDto {
@@ -146,12 +170,12 @@ export class PenAnnotation extends AnnotationBase {
         }        
 
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        group.setAttribute("fill", "none");
+        path.setAttribute("fill", "none");
         const [r, g, b, a] = this._strokeColor;
-        group.setAttribute("stroke", `rgba(${r*255},${g*255},${b*255},${a})`);
-        group.setAttribute("stroke-width", this._strokeWidth + "");
+        path.setAttribute("stroke", `rgba(${r*255},${g*255},${b*255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
         if (this._strokeDashGap) {
-          group.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
+          path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
         }
 
         let d = `M ${pathCoords[0]} ${pathCoords[1]}`;
@@ -164,8 +188,8 @@ export class PenAnnotation extends AnnotationBase {
         
         // create a transparent path copy with large stroke width to simplify user interaction  
         const clonedPath = path.cloneNode(true) as SVGPathElement;
-        const clonedPathStrokeWidth = this._strokeWidth < selectionStrokeWidth
-          ? selectionStrokeWidth
+        const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+          ? SELECTION_STROKE_WIDTH
           : this._strokeWidth;
         clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
         clonedPath.setAttribute("stroke", "transparent");
@@ -191,27 +215,3 @@ export class PenAnnotation extends AnnotationBase {
     } 
   }
 }
-
-export interface PenAnnotationDto extends AnnotationDto {
-  pathList: number[][];
-  strokeColor: Quadruple;
-  strokeWidth: number;
-  strokeDashGap?: Double;
-}
-
-//#region custom events
-export const pathChangeEvent = "tsimage-penpathchange" as const;
-export interface PathChangeEventDetail {
-  pathCount: number;
-}
-export class PathChangeEvent extends CustomEvent<PathChangeEventDetail> {
-  constructor(detail: PathChangeEventDetail) {
-    super(pathChangeEvent, {detail});
-  }
-}
-declare global {
-  interface HTMLElementEventMap {
-    [pathChangeEvent]: PathChangeEvent;
-  }
-}
-//#endregion

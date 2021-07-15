@@ -118,6 +118,20 @@ export abstract class AnnotationBase implements RenderableAnnotation {
   }
 
   //#region edit-related properties
+  protected _bbox: BBox;
+  get bbox(): BBox {
+    if (this._bbox) {
+      return this._bbox;
+    }
+    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
+    const bbox: BBox = {
+      ul: new Vec2(xmin, ymin),
+      ll: new Vec2(xmin, ymax),
+      lr: new Vec2(xmax, ymax),
+      ur: new Vec2(xmax, ymin),
+    };
+    return bbox;
+  }
   protected _aabbIsActual: boolean;
   protected readonly _aabb: readonly [min: Vec2, min: Vec2] = [new Vec2(), new Vec2()];
   /**axis-aligned bounding box */
@@ -653,16 +667,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
   
   /**render the graphical representation of the annotation bounding box */
   protected renderBox(): SVGGraphicsElement {
-    // TODO: improve logic to support non-axis -aligned bounding boxes
-    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
-    const bBox: BBox = {
-      ul: new Vec2(xmin, ymin),
-      ll: new Vec2(xmin, ymax),
-      lr: new Vec2(xmax, ymax),
-      ur: new Vec2(xmax, ymin),
-    };
-
-    const {ll, lr, ur, ul} = bBox;
+    const {ll, lr, ur, ul} = this.bbox;
     const boxPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     boxPath.classList.add("annotation-bbox");
     boxPath.setAttribute("data-annotation-name", this.uuid);
@@ -726,24 +731,18 @@ export abstract class AnnotationBase implements RenderableAnnotation {
   //#endregion
 
   //#region render of the annotation control handles 
-  protected renderScaleHandles(): SVGGraphicsElement[] { 
-    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
-    const bBox: BBox = {
-      ul: new Vec2(xmin, ymin),
-      ll: new Vec2(xmin, ymax),
-      lr: new Vec2(xmax, ymax),
-      ur: new Vec2(xmax, ymin),
-    };
+  protected renderScaleHandles(): SVGGraphicsElement[] {
+    const bbox = this.bbox;
 
     const handles: SVGGraphicsElement[] = [];
     ["ll", "lr", "ur", "ul"].forEach(x => {
       const handle = document.createElementNS("http://www.w3.org/2000/svg", "line");
       handle.classList.add("annotation-handle", "scale");
       handle.setAttribute("data-handle-name", x);
-      handle.setAttribute("x1", bBox[x].x + "");
-      handle.setAttribute("y1", bBox[x].y + ""); 
-      handle.setAttribute("x2", bBox[x].x + "");
-      handle.setAttribute("y2", bBox[x].y + 0.1 + ""); 
+      handle.setAttribute("x1", bbox[x].x + "");
+      handle.setAttribute("y1", bbox[x].y + ""); 
+      handle.setAttribute("x2", bbox[x].x + "");
+      handle.setAttribute("y2", bbox[x].y + 0.1 + ""); 
       handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); 
       handles.push(handle);   
     });
@@ -755,7 +754,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
     const centerX = (xmin + xmax) / 2;
     const centerY = (ymin + ymax) / 2;
-    // const currentRotation = this._rotation;
+    const currentRotation = this._rotation;
 
     const rotationGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
     rotationGroup.classList.add("annotation-rotator");
@@ -768,7 +767,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
 
     const handleMatrix = new Mat3()
       .applyTranslation(-centerX, -centerY + 35)
-      // .applyRotation(currentRotation)
+      .applyRotation(currentRotation)
       .applyTranslation(centerX, centerY);
     const handleCenter = new Vec2(centerX, centerY).applyMat3(handleMatrix);
     
@@ -968,7 +967,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
     const imageAngle = this._imageInfo?.rotation
       ? this._imageInfo.rotation / 180 * Math.PI
       : 0;
-    const angle = Math.atan2(e.clientX - clientCenter.x, e.clientY - clientCenter.y) + imageAngle;
+    const angle = Math.atan2(e.clientX - clientCenter.x, e.clientY - clientCenter.y) + imageAngle;    
 
     // update the temp transformation matrix
     this._tempTransformationMatrix.reset()

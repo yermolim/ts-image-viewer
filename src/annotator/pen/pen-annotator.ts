@@ -84,41 +84,9 @@ export class PenAnnotator extends Annotator {
       return;
     }
 
-    const {height: imageHeight, width: imageWidth, top: imageTop, left: imageLeft} = 
-      image.viewContainer.getBoundingClientRect();
-    const imageBottom = imageTop + imageHeight;
-    const imageRight = imageLeft + imageWidth;
-    const {top: overlayTop, left: overlayLeft} = this._overlay.getBoundingClientRect();
-    const rotation = image.rotation;
-    const scale = image.scale;
-    let offsetX: number;
-    let offsetY: number;   
-    switch (rotation) {
-      case 0:
-        // top-left image corner
-        offsetX = (imageLeft - overlayLeft) / scale;
-        offsetY = (imageTop - overlayTop) / scale;
-        break;
-      case 90:
-        // top-right image corner
-        offsetX = (imageRight - overlayLeft) / scale;
-        offsetY = (imageTop - overlayTop) / scale; 
-        break;
-      case 180:    
-        // bottom-right image corner
-        offsetX = (imageRight - overlayLeft) / scale;
-        offsetY = (imageBottom - overlayTop) / scale;
-        break;
-      case 270:
-        // bottom-left image corner
-        offsetX = (imageLeft - overlayLeft) / scale;
-        offsetY = (imageBottom - overlayTop) / scale;
-        break;
-      default:
-        throw new Error(`Invalid rotation degree: ${rotation}`);
-    }
+    const {tx, ty, rotation} = this.getImageTransformationInfo(image);
     this._annotationPathData.group.setAttribute("transform",
-      `translate(${offsetX} ${offsetY}) rotate(${rotation})`);      
+      `translate(${tx} ${ty}) rotate(${rotation})`);      
   }
 
   /**clear the temp path group */

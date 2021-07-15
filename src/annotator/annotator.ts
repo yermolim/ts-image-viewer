@@ -1,12 +1,8 @@
-import { imageChangeEvent, ImageEvent, imageServiceStateChangeEvent, ImageServiceStateChangeEvent } from "../common/events";
-import { ImageCoords } from "../common/image-info";
+import { imageChangeEvent, ImageEvent, imageServiceStateChangeEvent, 
+  ImageServiceStateChangeEvent } from "../common/events";
+import { ImageCoords, ImageInfoView } from "../common/image-info";
+import { PointerDownInfo, TransformationInfo } from "../drawing/utils";
 import { ImageService } from "../services/image-service";
-  
-interface PointerDownInfo {
-  timestamp: number;
-  clientX: number;
-  clientY: number;
-}
 
 //#region custom events
 export const annotatorTypes = ["geom", "pen", "stamp", "text"] as const;
@@ -206,6 +202,47 @@ export abstract class Annotator {
     }   
 
     this._pointerCoordsInImageCS = imageCoords;
+  }
+
+  protected getImageTransformationInfo(image: ImageInfoView): TransformationInfo {
+    const {height: imageHeight, width: imageWidth, top: imageTop, left: imageLeft} = 
+    image.viewContainer.getBoundingClientRect();
+    const imageBottom = imageTop + imageHeight;
+    const imageRight = imageLeft + imageWidth;
+    const {top: overlayTop, left: overlayLeft} = this._overlay.getBoundingClientRect();
+    const rotation = image.rotation;
+    const scale = image.scale;
+    let offsetX: number;
+    let offsetY: number;   
+    switch (rotation) {
+      case 0:
+        // top-left image corner
+        offsetX = (imageLeft - overlayLeft) / scale;
+        offsetY = (imageTop - overlayTop) / scale;
+        break;
+      case 90:
+        // top-right image corner
+        offsetX = (imageRight - overlayLeft) / scale;
+        offsetY = (imageTop - overlayTop) / scale; 
+        break;
+      case 180:    
+        // bottom-right image corner
+        offsetX = (imageRight - overlayLeft) / scale;
+        offsetY = (imageBottom - overlayTop) / scale;
+        break;
+      case 270:
+        // bottom-left image corner
+        offsetX = (imageLeft - overlayLeft) / scale;
+        offsetY = (imageBottom - overlayTop) / scale;
+        break;
+      default:
+        throw new Error(`Invalid rotation degree: ${rotation}`);
+    }
+    return {
+      tx: offsetX,
+      ty: offsetY,
+      rotation,
+    };
   }
   
   abstract undo(): void; 

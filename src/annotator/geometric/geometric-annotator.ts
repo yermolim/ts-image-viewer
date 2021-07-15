@@ -12,19 +12,34 @@ export interface GeometricAnnotatorOptions {
 
 export abstract class GeometricAnnotator extends Annotator { 
   protected _color: Quadruple;
+  get color(): Quadruple {
+    return this._color;
+  }
+
   protected _strokeWidth: number;
+  get strokeWidth(): number {
+    return this._strokeWidth;
+  }
+
   protected _cloudMode: boolean;
+  get cloudMode(): boolean {
+    return this._cloudMode;
+  }
+  protected _cloudArcSize: number;
   
   /**current image uuid */
   protected _imageUuid: string;
+  get imageUuid(): string {
+    return this._imageUuid;
+  }
   
   protected constructor(imageService: ImageService, parent: HTMLDivElement, 
     options: GeometricAnnotatorOptions) {
-    super(imageService, parent);
+    super(imageService, parent);    
     
     this._color = options?.color || [0, 0, 0, 1];
     this._strokeWidth = options?.strokeWidth || 3;    
-    this._cloudMode = options?.cloudMode || false;
+    this._cloudMode = options?.cloudMode ?? false;
   }
   
   override destroy() {
@@ -65,45 +80,9 @@ export abstract class GeometricAnnotator extends Annotator {
       return;
     }
 
-    // TODO: ADAPT to html coordinates (0,0 - topleft)
-
-    // const {height: pageHeight, width: pageWidth, top: pageTop, left: pageLeft} = 
-    //   image.viewContainer.getBoundingClientRect();
-    // const pageBottom = pageTop + pageHeight;
-    // const pageRight = pageLeft + pageWidth;
-    // const {height: overlayHeight, top: overlayTop, left: overlayLeft} = 
-    //   this._overlay.getBoundingClientRect();
-    // const overlayBottom = overlayTop + overlayHeight;
-    // const rotation = image.rotation;
-    // const scale = image.scale;
-    // let offsetX: number;
-    // let offsetY: number;    
-    // switch (rotation) {
-    //   case 0:
-    //     // bottom-left page corner
-    //     offsetX = (pageLeft - overlayLeft) / scale;
-    //     offsetY = (overlayBottom - pageBottom) / scale;
-    //     break;
-    //   case 90:
-    //     // top-left page corner
-    //     offsetX = (pageLeft - overlayLeft) / scale;
-    //     offsetY = (overlayBottom - pageTop) / scale;
-    //     break;
-    //   case 180:    
-    //     // top-right page corner
-    //     offsetX = (pageRight - overlayLeft) / scale;
-    //     offsetY = (overlayBottom - pageTop) / scale; 
-    //     break;
-    //   case 270:
-    //     // bottom-right page corner
-    //     offsetX = (pageRight - overlayLeft) / scale;
-    //     offsetY = (overlayBottom - pageBottom) / scale;
-    //     break;
-    //   default:
-    //     throw new Error(`Invalid rotation degree: ${rotation}`);
-    // }
-    // this._svgGroup.setAttribute("transform",
-    //   `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
+    const {tx, ty, rotation} = this.getImageTransformationInfo(image);
+    this._svgGroup.setAttribute("transform",
+      `translate(${tx} ${ty}) rotate(${rotation})`);        
   }
   
   abstract override undo(): void;

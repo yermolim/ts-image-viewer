@@ -14,7 +14,7 @@ import { ContextMenu } from "../components/context-menu";
 
 import { Annotator } from "../annotator/annotator";
 import { PenAnnotator } from "../annotator/pen/pen-annotator";
-import { GeometricAnnotatorType, geometricAnnotatorTypes } 
+import { GeometricAnnotatorFactory, GeometricAnnotatorType, geometricAnnotatorTypes } 
   from "../annotator/geometric/geometric-annotator-factory";
 // import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
 // import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } 
@@ -40,7 +40,7 @@ export class AnnotatorService {
   private readonly _viewer: Viewer;
   
   private _contextMenu: ContextMenu;
-  // private _geometricFactory: GeometricAnnotatorFactory;
+  private _geometricFactory: GeometricAnnotatorFactory;
   // private _textFactory: TextAnnotatorFactory;
   private _viewerResizeObserver: ResizeObserver;
   
@@ -109,7 +109,7 @@ export class AnnotatorService {
     this._viewerResizeObserver = viewerRObserver;
     
     this._contextMenu = new ContextMenu();
-    // this._geometricFactory = new GeometricAnnotatorFactory();
+    this._geometricFactory = new GeometricAnnotatorFactory();
     // this._textFactory = new TextAnnotatorFactory();
   }
 
@@ -139,12 +139,12 @@ export class AnnotatorService {
           });
         break;
       case "geometric":
-        // this._annotator = this._geometricFactory.createAnnotator(
-        //   this._imageService, this._viewer.container, {
-        //     strokeWidth: this._strokeWidth,
-        //     color: this._strokeColor,
-        //     cloudMode: this._geometricCloudMode,
-        //   }, this._geometricSubmode);
+        this._annotator = this._geometricFactory.createAnnotator(
+          this._imageService, this._viewer.container, {
+            strokeWidth: this._strokeWidth,
+            color: this._strokeColor,
+            cloudMode: this._geometricCloudMode,
+          }, this._geometricSubmode);
         break;
       case "text":
         // this._strokeWidth = 2;
@@ -191,12 +191,12 @@ export class AnnotatorService {
           this.buildStrokeColorPicker(),
           this.buildStrokeWidthSlider(false),
         ];
-      // case "geometric":
-      //   return [
-      //     this.buildGeometricSubmodePicker(),
-      //     this.buildStrokeColorPicker(),
-      //     this.buildStrokeWidthSlider(true),
-      //   ];
+      case "geometric":
+        return [
+          this.buildGeometricSubmodePicker(),
+          this.buildStrokeColorPicker(),
+          this.buildStrokeWidthSlider(true),
+        ];
       // case "text":
       //   return [
       //     this.buildTextSubmodePicker(),
@@ -256,24 +256,30 @@ export class AnnotatorService {
   //   return pickerDiv;
   // }
   
-  // private buildGeometricSubmodePicker(): HTMLElement {    
-  //   const submodePicker = document.createElement("div");
-  //   submodePicker.classList.add("context-menu-content", "row");
-  //   geometricAnnotatorTypes.forEach(x => {   
-  //     const item = document.createElement("div");
-  //     item.classList.add("panel-button");
-  //     if (x === this._geometricSubmode) {        
-  //       item.classList.add("on");
-  //     }
-  //     item.addEventListener("click", () => {
-  //       this._geometricSubmode = x;
-  //       this.setMode();
-  //     });
-  //     item.innerHTML = geometricIcons[x];
-  //     submodePicker.append(item);
-  //   });
-  //   return submodePicker;
-  // }
+  private buildGeometricSubmodePicker(): HTMLElement {    
+    const submodePicker = document.createElement("div");
+    submodePicker.classList.add("context-menu-content", "row");
+    geometricAnnotatorTypes.forEach(x => {   
+      const item = document.createElement("div");
+
+      // TODO: remove after implementing rest of geometric annotators
+      if (x !== "circle") {
+        item.classList.add("disabled");
+      }
+
+      item.classList.add("panel-button");
+      if (x === this._geometricSubmode) {        
+        item.classList.add("on");
+      }
+      item.addEventListener("click", () => {
+        this._geometricSubmode = x;
+        this.setMode();
+      });
+      item.innerHTML = geometricIcons[x];
+      submodePicker.append(item);
+    });
+    return submodePicker;
+  }
   
   // private buildTextSubmodePicker(): HTMLElement {
   //   const submodePicker = document.createElement("div");

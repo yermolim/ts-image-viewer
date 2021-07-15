@@ -10,7 +10,7 @@ async function run(): Promise<void> {
   });
 
   const infos: ImageLoadInfo[] = [];
-  for (let i = 0; i < 10000; i++) {
+  for (let i = 0; i < 100; i++) {
     infos.push({
       type: "URL",
       data: `https://via.placeholder.com/4000x3000/aaaaaa/fff.png?text=image${i}`,
