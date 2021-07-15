@@ -1011,11 +1011,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
     target.addEventListener("pointerout", this.onScaleHandlePointerUp);
 
     // calculate the initial bounding box side vectors (from the further corner to the handle corner)
-    const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
-    const ul = new Vec2(xmin, ymin);
-    const ll = new Vec2(xmin, ymax);
-    const lr = new Vec2(xmax, ymax);
-    const ur = new Vec2(xmax, ymin);
+    const { ul, ll, lr, ur } = this.bbox;
     const handleName = target.dataset["handleName"];
     switch (handleName) {
       case "ll": 
@@ -1087,14 +1083,14 @@ export abstract class AnnotationBase implements RenderableAnnotation {
     const [{x: xmin, y: ymin}, {x: xmax, y: ymax}] = this.aabb;
     const annotCenterX = (xmin + xmax) / 2;
     const annotCenterY = (ymin + ymax) / 2;
-    // const currentRotation = this._rotation;
+    const currentRotation = this._rotation;
 
     // update the temp transformation matrix
     this._tempTransformationMatrix.reset()
       .applyTranslation(-annotCenterX, -annotCenterY)
-      // .applyRotation(-currentRotation)
+      .applyRotation(-currentRotation)
       .applyScaling(scaleX, scaleY)
-      // .applyRotation(currentRotation)
+      .applyRotation(currentRotation)
       .applyTranslation(annotCenterX, annotCenterY);
     const translation = this._tempStartPoint.clone().subtract(
       this._tempStartPoint.clone().applyMat3(this._tempTransformationMatrix));

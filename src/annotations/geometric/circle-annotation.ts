@@ -1,8 +1,9 @@
 import { Mat3, Vec2 } from "mathador";
 import { EventService } from "../../common/event-service";
-import { Double, Quadruple } from "../../common/types";
+import { Double } from "../../common/types";
 import { buildCloudCurveFromEllipse } from "../../drawing/clouds";
-import { AppearanceRenderResult, BBox, BEZIER_CONSTANT, SELECTION_STROKE_WIDTH, SvgElementWithBlendMode } from "../../drawing/utils";
+import { AppearanceRenderResult, BBox, BEZIER_CONSTANT, SELECTION_STROKE_WIDTH, 
+  SvgElementWithBlendMode } from "../../drawing/utils";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 
 export interface CircleAnnotationDto extends GeometricAnnotationDto {  
@@ -32,7 +33,7 @@ export class CircleAnnotation extends GeometricAnnotation {
   }
 
   protected _center: Vec2;
-  get cloudMode(): Vec2 {
+  get center(): Vec2 {
     return this._center.clone();
   }
   

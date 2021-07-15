@@ -3,14 +3,15 @@ import { Quadruple } from "../../common/types";
 import { ImageService } from "../../services/image-service";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
-import { GeometricCircleAnnotator } from "../geometric-circle-annotator";
+import { GeometricSquareAnnotator } from "./geometric-square-annotator";
+import { GeometricCircleAnnotator } from "./geometric-circle-annotator";
 // import { GeometricArrowAnnotator } from "./geometric-arrow-annotator";
 // import { GeometricLineAnnotator } from "./geometric-line-annotator";
 // import { GeometricPolygonAnnotator } from "./geometric-polygon-annotator";
 // import { GeometricPolylineAnnotator } from "./geometric-polyline-annotator";
-// import { GeometricSquareAnnotator } from "./geometric-square-annotator";
 
-export const geometricAnnotatorTypes = ["circle", "square", "line", "arrow", "polyline", "polygon"] as const;
+export const geometricAnnotatorTypes = ["square", "circle", 
+  "line", "arrow", "polyline", "polygon"] as const;
 export type GeometricAnnotatorType =  typeof geometricAnnotatorTypes[number];
 
 export class GeometricAnnotatorFactory {
@@ -29,7 +30,7 @@ export class GeometricAnnotatorFactory {
       throw new Error("Parent container is not defined");
     }
     
-    type ||= this._lastType || "circle";
+    type ||= this._lastType || "square";
     this._lastType = type;   
     
     const color = options?.color || this._lastColor || [0, 0, 0, 0.9];
@@ -48,18 +49,18 @@ export class GeometricAnnotatorFactory {
     };
 
     switch (type) {
-      // case "square":
-      //   return new GeometricSquareAnnotator(imageService, imageService, parent, combinedOptions);
+      case "square":
+        return new GeometricSquareAnnotator(imageService, parent, combinedOptions);
       case "circle":
         return new GeometricCircleAnnotator(imageService, parent, combinedOptions);
       // case "line":
-      //   return new GeometricLineAnnotator(imageService, imageService, parent, combinedOptions);
+      //   return new GeometricLineAnnotator(imageService, parent, combinedOptions);
       // case "arrow":
-      //   return new GeometricArrowAnnotator(imageService, imageService, parent, combinedOptions);
+      //   return new GeometricArrowAnnotator(imageService, parent, combinedOptions);
       // case "polyline":
-      //   return new GeometricPolylineAnnotator(imageService, imageService, parent, combinedOptions);
+      //   return new GeometricPolylineAnnotator(imageService, parent, combinedOptions);
       // case "polygon":
-      //   return new GeometricPolygonAnnotator(imageService, imageService, parent, combinedOptions);
+      //   return new GeometricPolygonAnnotator(imageService, parent, combinedOptions);
       default:
         throw new Error(`Invalid geometric annotator type: ${type}`);
     }
