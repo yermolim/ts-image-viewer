@@ -1,8 +1,8 @@
 import { Mat3, Vec2 } from "mathador";
 import { EventService } from "../../common/event-service";
 import { Double } from "../../common/types";
-import { buildCloudCurveFromEllipse, buildCloudCurveFromPolyline } from "../../drawing/clouds";
-import { AppearanceRenderResult, BBox, BEZIER_CONSTANT, SELECTION_STROKE_WIDTH, 
+import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
+import { AppearanceRenderResult, BBox, SELECTION_STROKE_WIDTH, 
   SvgElementWithBlendMode } from "../../drawing/utils";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 export interface SquareAnnotationDto extends GeometricAnnotationDto {
@@ -220,8 +220,8 @@ export class SquareAnnotation extends GeometricAnnotation {
     // get box margin taking into account stroke width and cloud curves
     const margin = withMargins
       ? this._cloud
-        ? this.strokeWidth / 2 + this._cloudArcSize
-        : this.strokeWidth / 2
+        ? this._strokeWidth / 2 + this._cloudArcSize
+        : this._strokeWidth / 2
       : 0;
 
     // add margins to radius

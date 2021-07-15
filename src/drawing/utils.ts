@@ -18,6 +18,20 @@ export const CLOUD_ARC_RATIO = 0.02;
 export const LINE_END_MULTIPLIER = 3;
 export const LINE_END_MIN_SIZE = 10;
 
+export const lineEndingTypes = {
+  SQUARE: "square",
+  CIRCLE: "circle",
+  DIAMOND: "diamond",
+  ARROW_OPEN: "openarrow",
+  ARROW_CLOSED: "closedarrow",
+  NONE: "none",
+  BUTT: "butt",
+  ARROW_OPEN_R: "ropenArrow",
+  ARROW_CLOSED_R: "rclosedArrow",
+  SLASH: "slash",
+} as const;
+export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
+
 export interface BBox {
   /**lower-left corner coords */
   ll: Vec2; 

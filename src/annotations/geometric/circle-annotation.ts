@@ -230,8 +230,8 @@ export class CircleAnnotation extends GeometricAnnotation {
     // get box margin taking into account stroke width and cloud curves
     const margin = withMargins
       ? this._cloud
-        ? this.strokeWidth / 2 + this._cloudArcSize
-        : this.strokeWidth / 2
+        ? this._strokeWidth / 2 + this._cloudArcSize
+        : this._strokeWidth / 2
       : 0;
 
     // add margins to radius

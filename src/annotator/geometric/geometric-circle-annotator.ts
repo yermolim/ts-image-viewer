@@ -63,7 +63,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
    * @param min rect corner with the minimal coordinate values
    * @param max rect corner with the maximal coordinate values
    */
-  protected redrawCircle(min: Vec2, max: Vec2) {
+  protected redraw(min: Vec2, max: Vec2) {
     this._svgGroup.innerHTML = "";
 
     const minSize = this._strokeWidth * 2;
@@ -162,7 +162,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     const {x: ix, y: iy} = imageCoords;
     const {min, max} = Vec2.minMax(this._down, new Vec2(ix, iy));
         
-    this.redrawCircle(min, max);
+    this.redraw(min, max);
   };
 
   protected onPointerUp = (e: PointerEvent) => {

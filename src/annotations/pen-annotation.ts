@@ -128,7 +128,7 @@ export class PenAnnotation extends AnnotationBase {
       }
     });
 
-    const halfStrokeW = this.strokeWidth / 2;
+    const halfStrokeW = this._strokeWidth / 2;
     xMin -= halfStrokeW;
     yMin -= halfStrokeW;
     xMax += halfStrokeW;

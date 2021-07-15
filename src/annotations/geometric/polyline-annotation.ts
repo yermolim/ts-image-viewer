@@ -1,324 +1,156 @@
-// import { Mat3, Vec2 } from "mathador";
+import { Mat3, Vec2 } from "mathador";
 
-// import { annotationTypes, lineCapStyles, LineEndingType, lineEndingTypes, 
-//   lineJoinStyles, polyIntents } from "../../../../spec-constants";
-// import { CryptInfo } from "../../../../encryption/interfaces";
-// import { ParserResult } from "../../../../data-parse/data-parser";
-// import { ParserInfo } from "../../../../data-parse/parser-info";
+import { AppearanceRenderResult, LineEndingType, lineEndingTypes, 
+  LINE_END_MIN_SIZE, LINE_END_MULTIPLIER, SELECTION_STROKE_WIDTH, 
+  SvgElementWithBlendMode } from "../../drawing/utils";
 
-// import { DateString } from "../../../strings/date-string";
-// import { LiteralString } from "../../../strings/literal-string";
-// import { XFormStream } from "../../../streams/x-form-stream";
-// import { BorderStyleDict } from "../../../appearance/border-style-dict";
-// import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
-// import { ResourceDict } from "../../../appearance/resource-dict";
-// import { PolyAnnotation, PolyAnnotationDto } from "./poly-annotation";
+import { EventService } from "../../common/event-service";
+import { PolyAnnotation, PolyAnnotationDto } from "./poly-annotation";
 
-// export interface PolylineAnnotationDto extends PolyAnnotationDto {  
-//   endingType?: [LineEndingType, LineEndingType];
-// }
+export interface PolylineAnnotationDto extends PolyAnnotationDto {  
+  endings?: [LineEndingType, LineEndingType];
+}
 
-// export class PolylineAnnotation extends PolyAnnotation {  
-//   /**
-//    * (Optional; PDF 1.4+) An array of two names specifying the line ending styles 
-//    * that shall be used in drawing the line. The first and second elements 
-//    * of the array shall specify the line ending styles for the endpoints defined, 
-//    * respectively, by the first and second pairs of coordinates, 
-//    * (x1, y1)and (x2, y2), in the L array
-//    */
-//   LE: [startType: LineEndingType, endType: LineEndingType] = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+export class PolylineAnnotation extends PolyAnnotation {  
+  protected _endings: [startType: LineEndingType, endType: LineEndingType];
+  get endings(): [startType: LineEndingType, endType: LineEndingType] {
+    return this._endings;
+  }
 
-//   constructor() {
-//     super(annotationTypes.POLYLINE);
-//   }
-  
-//   static createFromDto(dto: PolylineAnnotationDto): PolylineAnnotation {
-//     if (dto.annotationType !== "/Polyline") {
-//       throw new Error("Invalid annotation type");
-//     }
+  constructor(eventService: EventService, dto: PolylineAnnotationDto) {
+    if (!dto) {
+      throw new Error("No source object passed to the constructor");
+    }
+    if (dto.annotationType !== "polyline") {
+      throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'polyline')`);
+    }
 
-//     const bs = new BorderStyleDict();
-//     bs.W = dto.strokeWidth;
-//     if (dto.strokeDashGap) {
-//       bs.D = dto.strokeDashGap;
-//     }
+    super(eventService, dto);
+
+    this._endings = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+  }
     
-//     const annotation = new PolylineAnnotation();
-//     annotation.$name = dto.uuid;
-//     annotation.NM = LiteralString.fromString(dto.uuid);
-//     annotation.T = LiteralString.fromString(dto.author);
-//     annotation.M = DateString.fromDate(new Date(dto.dateModified));
-//     annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
-//     annotation.Contents = dto.textContent 
-//       ? LiteralString.fromString(dto.textContent) 
-//       : null;
+  override toDto(): PolylineAnnotationDto {
+    return {
+      annotationType: this.type,
+      uuid: this.uuid,
+      imageUuid: this._imageUuid,
+
+      dateCreated: this._dateCreated.toISOString(),
+      dateModified: this._dateModified.toISOString(),
+      author: this._author,
+
+      rotation: this._rotation,
+      textContent: this._textContent,
+
+      strokeColor: this._strokeColor,
+      strokeWidth: this._strokeWidth,
+      strokeDashGap: this._strokeDashGap,
+
+      vertices: this._vertices.map(x => [x.x, x.y]),
+      endings: this._endings,
+    };
+  }  
+  
+  protected override async applyCommonTransformAsync(matrix: Mat3, undoable = true) {
+    this._vertices.forEach(x => x.applyMat3(matrix));
+
+    await super.applyCommonTransformAsync(matrix, undoable);
+  } 
+  
+  protected updateAABB() {
+    // find the minimum and maximum points
+    const {min, max} = Vec2.minMax(...this._vertices);
+
+    // get box margin taking into account stroke width
+    const endingNotNone = this._endings &&
+      (this._endings[0] && this._endings[0] !== lineEndingTypes.NONE
+        || this._endings[1] && this._endings[1] !== lineEndingTypes.NONE);
+
+    const margin = endingNotNone
+      ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_MULTIPLIER * this._strokeWidth)
+      : this._strokeWidth / 2;
+    min.addScalar(-margin);
+    max.addScalar(margin);
+
+    // assign the corresponding fields values
+    this._aabb[0].setFromVec2(min);
+    this._aabb[1].setFromVec2(max);
+  }  
+
+  protected renderAppearance(): AppearanceRenderResult {   
+    try {
+      const clipPaths: SVGClipPathElement[] = [];
+      const elements: SvgElementWithBlendMode[] = [];
+      const pickHelpers: SVGGraphicsElement[] = [];
       
-//     annotation.Rect = dto.rect;
-//     annotation.C = dto.color.slice(0, 3);
-//     annotation.CA = dto.color[3];
-//     annotation.BS = bs;
-//     annotation.IT = polyIntents.POLYLINE_DIMENSION;
-//     annotation.LE = dto.endingType || [lineEndingTypes.NONE, lineEndingTypes.NONE];
-//     annotation.Vertices = dto.vertices;
- 
-//     annotation.generateApStream();
+      // clip paths
+      const [min, max] = this.aabb;
+      const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+      clipPath.id = `clip0_${this.uuid}`;
+      clipPath.innerHTML = "<path d=\""
+        + `M${min.x},${min.y} `
+        + `L${max.x},${min.y} `
+        + `L${max.x},${max.y} `
+        + `L${min.x},${max.y} `
+        + "z"
+        + "\"/>";
+      clipPaths.push(clipPath);
 
-//     annotation._added = true;
-//     return annotation.initProxy();
-//   }
-  
-//   static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<PolylineAnnotation>> { 
-//     if (!parseInfo) {
-//       throw new Error("Parsing information not passed");
-//     }
-//     try {
-//       const pdfObject = new PolylineAnnotation();
-//       await pdfObject.parsePropsAsync(parseInfo);
-//       return {
-//         value: pdfObject.initProxy(), 
-//         start: parseInfo.bounds.start, 
-//         end: parseInfo.bounds.end,
-//       };
-//     } catch (e) {
-//       console.log(e.message);
-//       return null;
-//     }
-//   }  
-  
-//   override toArray(cryptInfo?: CryptInfo): Uint8Array {
-//     const superBytes = super.toArray(cryptInfo);  
-//     const encoder = new TextEncoder();  
-//     const bytes: number[] = [];  
+      // graphic elements
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.setAttribute("clip-path", `url(#${clipPath.id})`);
+      
+      const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      clonedGroup.classList.add("annotation-pick-helper");
 
-//     if (this.LE) {
-//       bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE, encoder));
-//     }
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("fill", "none");
+      const [r, g, b, a] = this._strokeColor;
+      path.setAttribute("stroke", `rgba(${r*255},${g*255},${b*255},${a})`);
+      path.setAttribute("stroke-width", this._strokeWidth + "");
+      if (this._strokeDashGap) {
+        path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
+      }     
+      
+      const zeroVertex = (this._vertices && this._vertices[0]) || new Vec2();      
+      let d = `M${zeroVertex.x},${zeroVertex.y}`;
 
-//     const totalBytes: number[] = [
-//       ...superBytes.subarray(0, 2), // <<
-//       ...bytes, 
-//       ...superBytes.subarray(2, superBytes.length)];
-//     return new Uint8Array(totalBytes);
-//   } 
-    
-//   override toDto(): PolylineAnnotationDto {
-//     const color = this.getColorRect();
+      for (let i = 1; i < this._vertices.length; i++) {
+        const vertex = this._vertices[i];
+        d += ` L${vertex.x},${vertex.y}`;
+      }
 
-//     return {
-//       annotationType: "/PolyLine",
-//       uuid: this.$name,
-//       pageId: this.$pageId,
+      // TODO: draw line endings        
 
-//       dateCreated: this.CreationDate?.date.toISOString() || new Date().toISOString(),
-//       dateModified: this.M 
-//         ? this.M instanceof LiteralString
-//           ? this.M.literal
-//           : this.M.date.toISOString()
-//         : new Date().toISOString(),
-//       author: this.T?.literal,
+      path.setAttribute("d", d);
+      group.append(path);
 
-//       textContent: this.Contents?.literal,
+      // create a transparent path copy with large stroke width to simplify user interaction  
+      const clonedPath = path.cloneNode(true) as SVGPathElement;
+      const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+        ? SELECTION_STROKE_WIDTH
+        : this._strokeWidth;
+      clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+      clonedPath.setAttribute("stroke", "transparent");
+      clonedPath.setAttribute("fill", "none");
+      clonedGroup.append(clonedPath);
 
-//       rect: this.Rect,
-//       bbox: this.apStream?.BBox,
-//       matrix: this.apStream?.Matrix,
-
-//       vertices: this.Vertices,
-
-//       endingType: this.LE,
-
-//       color,
-//       strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
-//       strokeDashGap: this.BS?.D ?? [3, 0],
-//     };
-//   } 
-  
-//   /**
-//    * fill public properties from data using info/parser if available
-//    */
-//   protected override async parsePropsAsync(parseInfo: ParserInfo) {
-//     await super.parsePropsAsync(parseInfo);
-//     const {parser, bounds} = parseInfo;
-//     const start = bounds.contentStart || bounds.start;
-//     const end = bounds.contentEnd || bounds.end; 
-    
-//     let i = await parser.skipToNextNameAsync(start, end - 1);
-//     let name: string;
-//     let parseResult: ParserResult<string>;
-//     while (true) {
-//       parseResult = await parser.parseNameAtAsync(i);
-//       if (parseResult) {
-//         i = parseResult.end + 1;
-//         name = parseResult.value;
-//         switch (name) {
-//           case "/LE":
-//             const lineEndings = await parser.parseNameArrayAtAsync(i, true);
-//             if (lineEndings
-//                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[0])
-//                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[1])) {
-//               this.LE = [
-//                 <LineEndingType>lineEndings.value[0],
-//                 <LineEndingType>lineEndings.value[1],
-//               ];
-//               i = lineEndings.end + 1;
-//             } else {              
-//               throw new Error("Can't parse /LE property value");
-//             }
-//             break;
-            
-//           default:
-//             // skip to next name
-//             i = await parser.skipToNextNameAsync(i, end - 1);
-//             break;
-//         }
-//       } else {
-//         break;
-//       }
-//     }
-    
-//     // bake the current annotation rotation into its appearance stream
-//     // works perfectly with PDF-XChange annotations
-//     // TODO: test with annotations created not in PDF-XChange
-//     await this.bakeRotationAsync();   
-//   }
-  
-//   protected generateApStream() {
-//     if (!this.Vertices?.length || this.Vertices.length < 4) {
-//       // any polyline can't have less than 2 vertices (4 coordinates)
-//       return;
-//     }
-
-//     const apStream = new XFormStream();
-//     apStream.Filter = "/FlateDecode";
-//     apStream.LastModified = DateString.fromDate(new Date());
-//     apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-
-//     // set stroke style options
-//     const opacity = this.CA || 1;
-//     const strokeWidth = this.strokeWidth;
-//     const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
-//     const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
-//     const gs = new GraphicsStateDict();
-//     gs.AIS = true;
-//     gs.BM = "/Normal";
-//     gs.CA = opacity;
-//     gs.ca = opacity;
-//     gs.LW = strokeWidth;
-//     gs.D = [[strokeDash, strokeGap], 0];
-//     gs.LC = lineCapStyles.SQUARE;
-//     gs.LJ = lineJoinStyles.MITER;
-
-//     // get color
-//     const colorString = this.getColorString();
-    
-//     const list = this.Vertices;
-//     let streamTextData = `q ${colorString} /GS0 gs`;
-
-//     let px: number;
-//     let py: number;
-//     streamTextData += `\n${list[0]} ${list[1]} m`;
-//     for (let i = 2; i < list.length; i = i + 2) {
-//       px = list[i];
-//       py = list[i + 1];
-//       streamTextData += `\n${px} ${py} l`;
-//     }
-//     streamTextData += "\nS"; 
-
-//     // pop the graphics state back from the stack
-//     streamTextData += "\nQ";
-
-//     apStream.Resources = new ResourceDict();
-//     apStream.Resources.setGraphicsState("/GS0", gs);
-//     apStream.setTextStreamData(streamTextData);    
-
-//     this.apStream = apStream;
-//   }
-  
-//   protected override async applyCommonTransformAsync(matrix: Mat3, undoable = true) {  
-//     // use proxy for tracking property changes
-//     const dict = this.getProxy();
-
-//     // transform current Vertices
-//     let x: number;
-//     let y: number;
-//     let xMin: number;
-//     let yMin: number;
-//     let xMax: number;
-//     let yMax: number;
-//     const vec = new Vec2();
-//     const list = dict.Vertices;
-//     for (let i = 0; i < list.length; i = i + 2) {
-//       x = list[i];
-//       y = list[i + 1];
-//       vec.set(x, y).applyMat3(matrix);
-//       list[i] = vec.x;
-//       list[i + 1] = vec.y;
-
-//       if (!xMin || vec.x < xMin) {
-//         xMin = vec.x;
-//       }
-//       if (!yMin || vec.y < yMin) {
-//         yMin = vec.y;
-//       }
-//       if (!xMax || vec.x > xMax) {
-//         xMax = vec.x;
-//       }
-//       if (!yMax || vec.y > yMax) {
-//         yMax = vec.y;
-//       }
-//     }
-    
-//     // update the Rect
-//     const margin = (dict.BS?.W ?? dict.Border?.width ?? 1) / 2;
-//     xMin -= margin;
-//     yMin -= margin;
-//     xMax += margin;
-//     yMax += margin;
-//     dict.Rect = [xMin, yMin, xMax, yMax];
-//     // update calculated bBox if present
-//     if (dict._bBox) {
-//       const bBox =  dict.getLocalBB();
-//       bBox.ll.set(xMin, yMin);
-//       bBox.lr.set(xMax, yMin);
-//       bBox.ur.set(xMax, yMax);
-//       bBox.ul.set(xMin, yMax);
-//     }
-
-//     // rebuild the appearance stream instead of transforming it to get rid of line distorsions
-//     dict.generateApStream();
-
-//     dict.M = DateString.fromDate(new Date());
-    
-//     if (dict.$onEditAction) {
-//       const invertedMat = Mat3.invert(matrix);     
-//       dict.$onEditAction(undoable
-//         ? async () => {
-//           await dict.applyCommonTransformAsync(invertedMat, false);
-//           await dict.updateRenderAsync();
-//         }
-//         : undefined);
-//     }
-//   }
-  
-//   protected async bakeRotationAsync() {    
-//     const angle = this.getCurrentRotation();
-//     const centerX = (this.Rect[0] + this.Rect[2]) / 2;
-//     const centerY = (this.Rect[1] + this.Rect[3]) / 2;
-
-//     // calculate the rotation matrix
-//     const matrix = new Mat3()
-//       .applyTranslation(-centerX, -centerY)
-//       .applyRotation(angle)
-//       .applyTranslation(centerX, centerY);
-
-//     await this.applyCommonTransformAsync(matrix);
-//   }
-
-//   protected override initProxy(): PolylineAnnotation {
-//     return <PolylineAnnotation>super.initProxy();
-//   }
-
-//   protected override getProxy(): PolylineAnnotation {
-//     return <PolylineAnnotation>super.getProxy();
-//   }
-// }
+      elements.push({
+        element: group, 
+        blendMode: "normal",
+      });
+      pickHelpers.push(clonedGroup);
+      
+      return {
+        elements,
+        clipPaths,
+        pickHelpers,
+      };
+    }
+    catch (e) {
+      console.log(`Annotation render error: ${e.message}`);
+      return null;   
+    } 
+  }
+}

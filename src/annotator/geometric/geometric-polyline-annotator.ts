@@ -1,20 +1,16 @@
 import { Vec2 } from "mathador";
 
 import { getRandomUuid } from "../../common/uuid";
-import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
-import { CLOUD_ARC_RATIO } from "../../drawing/utils";
+import { lineEndingTypes } from "../../drawing/utils";
 
 import { ImageService } from "../../services/image-service";
-import { SquareAnnotation, SquareAnnotationDto } from "../../annotations/geometric/square-annotation";
+import { PolylineAnnotation, PolylineAnnotationDto } 
+  from "../../annotations/geometric/polyline-annotation";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 
-export class GeometricSquareAnnotator extends GeometricAnnotator {
-  /**last 'pointerdown' position in the page coordinate system */
-  protected _down: Vec2;
-
-  protected _center: Vec2;
-  protected _w: number;
-  protected _h: number;
+export class GeometricPolylineAnnotator extends GeometricAnnotator {  
+  /**points in the page coordinate system */
+  protected readonly _points: Vec2[] = [];
   
   constructor(imageService: ImageService,  
     parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
@@ -27,22 +23,29 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   }  
   
   undo() {
-    this.clear();
+    if (this._points.length) {
+      this._points.pop();
+      this.redraw();
+      this.emitPointsDataChanged();
+    }
   }
   
   clear() {  
-    this._center = null;
-    this.clearGroup();
+    if (this._points?.length) {
+      this._points.length = 0;
+      this.clearGroup();
+    }
   }
   
   async saveAnnotationAsync() {
-    if (!this._center) {
+    if (this._points.length < 2) {
+      // polyline can't contain less than 2 points
       return;
     }
 
     const imageUuid = this._imageUuid;
     const dto = this.buildAnnotationDto();
-    const annotation = new SquareAnnotation(this._imageService.eventService, dto);
+    const annotation = new PolylineAnnotation(this._imageService.eventService, dto);
     // DEBUG
     // console.log(annotation);
 
@@ -57,62 +60,34 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     this._overlay.addEventListener("pointerdown", 
       this.onPointerDown);
   }
-  
-  /**
-   * clear the old svg rectangle if present and draw a new one instead
-   * @param min rect corner with the minimal coordinate values
-   * @param max rect corner with the maximal coordinate values
-   */
-  protected redraw(min: Vec2, max: Vec2) {
+
+  protected emitPointsDataChanged() {    
+    const count = this._points.length;
+    this.emitDataChanged(count, count > 1, count > 0, count > 2);
+  }
+    
+  protected redraw() {
     this._svgGroup.innerHTML = "";
 
-    const minSize = this._strokeWidth * 2;
-    if (max.x - min.x <= minSize || max.y - min.y <= minSize) {
-      // square is too small
-      this._center = null;
+    if (this._points.length < 2) {
       return;
     }
 
     const [r, g, b, a] = this._color || [0, 0, 0, 1];
-    
+
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
     path.setAttribute("stroke-width", this._strokeWidth + "");
-    path.setAttribute("stroke-linecap", "round");      
-    path.setAttribute("stroke-linejoin", "round");   
-    
-    let pathString: string;
-    const w = (max.x - min.x);
-    const h = (max.y - min.y);
-    const center = new Vec2(min.x + w / 2, min.y + h / 2);
-    
-    this._center = center.clone();
-    this._w = w;
-    this._h = h;
-    this._cloudArcSize = this._imageService.currentImageView.imageInfo.dimensions.x * CLOUD_ARC_RATIO;
-
-    if (this._cloudMode) {
-      const curveData = buildCloudCurveFromPolyline([
-        new Vec2(min.x, min.y),
-        new Vec2(max.x, min.y),
-        new Vec2(max.x, max.y),
-        new Vec2(min.x, max.y),
-        new Vec2(min.x, min.y),
-      ], this._cloudArcSize);    
-  
-      pathString = "M" + curveData.start.x + "," + curveData.start.y;
-      curveData.curves.forEach(x => {
-        pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
-      });
-    } else {
-      pathString = "M" + min.x + "," + min.y;
-      pathString += " L" + max.x + "," + min.y;
-      pathString += " L" + max.x + "," + max.y;
-      pathString += " L" + min.x + "," + max.y;
-      pathString += " Z";
+    path.setAttribute("stroke-linecap", "square");      
+    path.setAttribute("stroke-linejoin", "miter");
+      
+    const start = this._points[0];
+    let pathString = "M" + start.x + "," + start.y;
+    for (let i = 1; i < this._points.length; i++) {
+      const point = this._points[i];
+      pathString += " L" + point.x + "," + point.y;
     }
-    
     path.setAttribute("d", pathString);
     this._svgGroup.append(path);
   }
@@ -132,10 +107,15 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
 
     const {x: ix, y: iy, info: {uuid}} = imageCoords;
     this._imageUuid = uuid;
-    this._down = new Vec2(ix, iy);
-
-    this.clear();
+    
     this.refreshGroupPosition();
+
+    if (!this._points.length) {
+      // add a starting point
+      this._points.push(new Vec2(ix, iy));
+    }
+    // add a temporary point
+    this._points.push(new Vec2(ix, iy));
 
     const target = e.target as HTMLElement;
     target.addEventListener("pointermove", this.onPointerMove);
@@ -146,9 +126,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   };
 
   protected onPointerMove = (e: PointerEvent) => {
-    if (!e.isPrimary // the event caused not by primary pointer
-      || !this._down // the pointer is not in the 'down' state
-    ) {
+    if (!e.isPrimary) { // the event caused not by primary pointer
       return;
     }
 
@@ -158,12 +136,13 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     if (!imageCoords) {
       // return if the pointer is outside image
       return;
-    }    
+    }
 
     const {x: ix, y: iy} = imageCoords;
-    const {min, max} = Vec2.minMax(this._down, new Vec2(ix, iy));
+    // update last point (temp one)
+    this._points[this._points.length - 1].set(ix, iy);
         
-    this.redraw(min, max);
+    this.redraw();
   };
 
   protected onPointerUp = (e: PointerEvent) => {
@@ -177,16 +156,14 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     target.removeEventListener("pointerout", this.onPointerUp);
     target.releasePointerCapture(e.pointerId); 
     
-    if (this._center) {
-      this.emitDataChanged(2, true, true);
-    }
+    this.emitPointsDataChanged();
   };
   
-  protected buildAnnotationDto(): SquareAnnotationDto {
+  protected buildAnnotationDto(): PolylineAnnotationDto {    
     const nowString = new Date().toISOString();
-    const dto: SquareAnnotationDto = {
+    const dto: PolylineAnnotationDto = {
       uuid: getRandomUuid(),
-      annotationType: "square",
+      annotationType: "polyline",
       imageUuid: null,
 
       dateCreated: nowString,
@@ -197,15 +174,11 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
 
       strokeColor: this._color,
       strokeWidth: this._strokeWidth,
-      strokeDashGap: null,      
-
-      cloud: this._cloudMode,
-      cloudArcSize: this._cloudArcSize,
+      strokeDashGap: null,
       
       rotation: 0,
-      width: this._w,
-      height: this._h,
-      center: [this._center.x, this._center.y],
+      vertices: this._points.map(x => [x.x, x.y]),
+      endings: [lineEndingTypes.NONE, lineEndingTypes.NONE],
     };
 
     return dto;

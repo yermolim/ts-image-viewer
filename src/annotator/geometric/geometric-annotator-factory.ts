@@ -5,13 +5,13 @@ import { ImageService } from "../../services/image-service";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricSquareAnnotator } from "./geometric-square-annotator";
 import { GeometricCircleAnnotator } from "./geometric-circle-annotator";
+import { GeometricPolylineAnnotator } from "./geometric-polyline-annotator";
 // import { GeometricArrowAnnotator } from "./geometric-arrow-annotator";
 // import { GeometricLineAnnotator } from "./geometric-line-annotator";
 // import { GeometricPolygonAnnotator } from "./geometric-polygon-annotator";
-// import { GeometricPolylineAnnotator } from "./geometric-polyline-annotator";
 
-export const geometricAnnotatorTypes = ["square", "circle", 
-  "line", "arrow", "polyline", "polygon"] as const;
+export const geometricAnnotatorTypes = ["square", "circle", "polyline", 
+  "line", "arrow", "polygon"] as const;
 export type GeometricAnnotatorType =  typeof geometricAnnotatorTypes[number];
 
 export class GeometricAnnotatorFactory {
@@ -53,12 +53,12 @@ export class GeometricAnnotatorFactory {
         return new GeometricSquareAnnotator(imageService, parent, combinedOptions);
       case "circle":
         return new GeometricCircleAnnotator(imageService, parent, combinedOptions);
+      case "polyline":
+        return new GeometricPolylineAnnotator(imageService, parent, combinedOptions);
       // case "line":
       //   return new GeometricLineAnnotator(imageService, parent, combinedOptions);
       // case "arrow":
       //   return new GeometricArrowAnnotator(imageService, parent, combinedOptions);
-      // case "polyline":
-      //   return new GeometricPolylineAnnotator(imageService, parent, combinedOptions);
       // case "polygon":
       //   return new GeometricPolygonAnnotator(imageService, parent, combinedOptions);
       default:
