@@ -17,6 +17,7 @@ export const CLOUD_ARC_RATIO = 0.02;
 /**defines how many times the line ending size is larger than the line width */
 export const LINE_END_MULTIPLIER = 3;
 export const LINE_END_MIN_SIZE = 10;
+export const LINE_CAPTION_SIZE = 14;
 
 export const lineEndingTypes = {
   SQUARE: "square",
@@ -84,6 +85,102 @@ export interface AppearanceRenderResult {
    * they are intended to use in user interaction layer to simplify narrow items selection
    */
   pickHelpers: SVGGraphicsElement[];
+}
+
+export function buildLineEndingPath(point: Vec2, type: LineEndingType, 
+  strokeWidth: number, side: "left" | "right"): string {
+  const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, 
+    LINE_END_MIN_SIZE);
+  let text = "";
+  switch (type) {
+    case lineEndingTypes.ARROW_OPEN:
+      if (side === "left") {      
+        text += `M${point.x + size},${point.y + size / 2}`;
+        text += ` L${point.x},${point.y}`;
+        text += ` L${point.x + size},${point.y - size / 2}`;
+      } else {
+        text += `M${point.x - size},${point.y + size / 2}`;
+        text += ` L${point.x},${point.y}`;
+        text += ` L${point.x - size},${point.y - size / 2}`;
+      }
+      return text;
+    case lineEndingTypes.ARROW_OPEN_R:
+      if (side === "left") {      
+        text += `M${point.x},${point.y + size / 2}`;
+        text += ` L${point.x + size},${point.y}`;
+        text += ` L${point.x},${point.y - size / 2}`;
+      } else {
+        text += `M${point.x},${point.y + size / 2}`;
+        text += ` L${point.x - size},${point.y}`;
+        text += ` L${point.x},${point.y - size / 2}`;
+      }
+      return text;
+    case lineEndingTypes.ARROW_CLOSED:
+      if (side === "left") {      
+        text += `M${point.x + size},${point.y + size / 2}`;
+        text += ` L${point.x},${point.y}`;
+        text += ` L${point.x + size},${point.y - size / 2}`;
+      } else {
+        text += `M${point.x - size},${point.y + size / 2}`;
+        text += ` L${point.x},${point.y}`;
+        text += ` L${point.x - size},${point.y - size / 2}`;
+      }
+      text += " Z";
+      return text;
+    case lineEndingTypes.ARROW_CLOSED_R:
+      if (side === "left") {  
+        text += `M${point.x + size},${point.y}`; 
+        text += ` L${point.x},${point.y + size / 2}`;
+        text += ` L${point.x},${point.y - size / 2}`;
+      } else { 
+        text += `M${point.x - size},${point.y}`;
+        text += ` L${point.x},${point.y - size / 2}`;
+        text += ` L${point.x},${point.y + size / 2}`;
+      }
+      text += " Z";
+      return text;
+    case lineEndingTypes.BUTT:     
+      text += `M${point.x},${point.y + size / 2}`;
+      text += ` L${point.x},${point.y - size / 2}`;
+      return text;
+    case lineEndingTypes.SLASH:     
+      text += `M${point.x + size / 2},${point.y + size / 2}`;
+      text += ` L${point.x - size / 2},${point.y - size / 2}`;
+      return text;        
+    case lineEndingTypes.DIAMOND:     
+      text += `M${point.x},${point.y + size / 2}`;
+      text += ` L${point.x + size / 2},${point.y}`;
+      text += ` L${point.x},${point.y - size / 2}`;
+      text += ` L${point.x - size / 2},${point.y}`;
+      text += " Z";
+      return text;       
+    case lineEndingTypes.SQUARE:     
+      text += `M${point.x - size / 2},${point.y + size / 2}`;
+      text += ` L${point.x + size / 2},${point.y + size / 2}`;
+      text += ` L${point.x + size / 2},${point.y - size / 2}`;
+      text += ` L${point.x - size / 2},${point.y - size / 2}`;
+      text += " Z";
+      return text;       
+    case lineEndingTypes.CIRCLE:
+      const c = BEZIER_CONSTANT;
+      const r = size / 2;       
+      const cw = c * r;
+      const xmin = point.x - r;
+      const ymin = point.y - r;
+      const xmax = point.x + r;
+      const ymax = point.y + r;
+      // drawing four cubic bezier curves starting at the top tangent
+      text += `M${point.x},${ymax}`;
+      text += ` C${point.x + cw},${ymax} ${xmax},${point.y + cw} ${xmax},${point.y}`;
+      text += ` C${xmax},${point.y - cw} ${point.x + cw},${ymin} ${point.x},${ymin}`;
+      text += ` C${point.x - cw},${ymin} ${xmin},${point.y - cw} ${xmin},${point.y}`;
+      text += ` C${xmin},${point.y + cw} ${point.x - cw},${ymax} ${point.x},${ymax}`;
+      text += " Z";
+      return text;
+    case lineEndingTypes.NONE:
+    default:
+      return "";
+  }
 }
 
 export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): Vec2[] {

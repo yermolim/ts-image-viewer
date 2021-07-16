@@ -161,7 +161,10 @@ export class SquareAnnotation extends GeometricAnnotation {
       const tr = new Vec2(w, h);
       const tl = new Vec2(-w, h);
       
-      if (this._cloud) {        
+      if (this._cloud) {   
+        path.setAttribute("stroke-linecap", "round");      
+        path.setAttribute("stroke-linejoin", "round");   
+             
         const curveData = buildCloudCurveFromPolyline([
           bl.clone(),
           br.clone(),
@@ -174,6 +177,9 @@ export class SquareAnnotation extends GeometricAnnotation {
           d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
         });
       } else {
+        path.setAttribute("stroke-linecap", "square");      
+        path.setAttribute("stroke-linejoin", "miter");
+
         d += `M${bl.x},${bl.y}`;
         d += ` L${br.x},${br.y}`;
         d += ` L${tr.x},${tr.y}`;

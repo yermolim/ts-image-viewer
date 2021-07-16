@@ -21,14 +21,11 @@ export class PolygonAnnotation extends PolyAnnotation {
   protected _cloudArcSize: number;
 
   constructor(eventService: EventService, dto: PolygonAnnotationDto) {
-    if (!dto) {
-      throw new Error("No source object passed to the constructor");
-    }
+    super(eventService, dto);
+
     if (dto.annotationType !== "polygon") {
       throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'polygon')`);
     }
-
-    super(eventService, dto);
 
     this._cloud = dto.cloud ?? false;
     this._cloudArcSize = dto.cloudArcSize ?? 20;
@@ -119,6 +116,9 @@ export class PolygonAnnotation extends PolyAnnotation {
       let d: string;
       
       if (this._cloud) {
+        path.setAttribute("stroke-linecap", "round");      
+        path.setAttribute("stroke-linejoin", "round");   
+        
         const vertices: Vec2[] = [...this._vertices];
         vertices.push(this._vertices[0]); // close the polygon
         const curveData = buildCloudCurveFromPolyline(vertices, this._cloudArcSize);
@@ -128,6 +128,9 @@ export class PolygonAnnotation extends PolyAnnotation {
           d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
         });
       } else {
+        path.setAttribute("stroke-linecap", "square");      
+        path.setAttribute("stroke-linejoin", "miter");
+
         const zeroVertex = this._vertices?.length
           ? this._vertices[0] 
           : new Vec2();      

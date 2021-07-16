@@ -18,14 +18,11 @@ export class PolylineAnnotation extends PolyAnnotation {
   }
 
   constructor(eventService: EventService, dto: PolylineAnnotationDto) {
-    if (!dto) {
-      throw new Error("No source object passed to the constructor");
-    }
+    super(eventService, dto);
+
     if (dto.annotationType !== "polyline") {
       throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'polyline')`);
     }
-
-    super(eventService, dto);
 
     this._endings = [lineEndingTypes.NONE, lineEndingTypes.NONE];
   }
@@ -112,6 +109,8 @@ export class PolylineAnnotation extends PolyAnnotation {
       if (this._strokeDashGap) {
         path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));       
       }     
+      path.setAttribute("stroke-linecap", "square");      
+      path.setAttribute("stroke-linejoin", "miter");
       
       const zeroVertex = (this._vertices && this._vertices[0]) || new Vec2();      
       let d = `M${zeroVertex.x},${zeroVertex.y}`;

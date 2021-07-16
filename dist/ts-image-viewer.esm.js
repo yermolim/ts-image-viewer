@@ -1320,7 +1320,7 @@ const styles = `
 </style>
 `;
 
-var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1351,7 +1351,7 @@ function downloadFile(blob, name) {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function loadImageAsync(url, revoke = false) {
-    return __awaiter$i(this, void 0, void 0, function* () {
+    return __awaiter$k(this, void 0, void 0, function* () {
         const loadedImage = yield new Promise((resolve, reject) => {
             const image = new Image();
             image.onerror = (e) => {
@@ -1869,7 +1869,7 @@ class SvgSmoothPath extends SmoothPath {
 SvgSmoothPath._defaultStrokeWidth = 3;
 SvgSmoothPath._defaultColor = [0, 0, 0, 0.8];
 
-var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2157,7 +2157,7 @@ class AnnotationBase {
         };
     }
     renderAsync(imageInfo) {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             if (!imageInfo) {
                 throw new Error("Can't render the annotation: image dimensions is not defined");
             }
@@ -2166,7 +2166,7 @@ class AnnotationBase {
                 this._renderedControls = this.renderControls();
             }
             yield new Promise((resolve, reject) => {
-                setTimeout(() => __awaiter$h(this, void 0, void 0, function* () {
+                setTimeout(() => __awaiter$j(this, void 0, void 0, function* () {
                     yield this.updateRenderAsync();
                     resolve();
                 }), 0);
@@ -2175,7 +2175,7 @@ class AnnotationBase {
         });
     }
     moveToAsync(point) {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             const aabb = this.aabb;
             const width = aabb[1].x - aabb[0].x;
             const height = aabb[1].y - aabb[0].y;
@@ -2186,7 +2186,7 @@ class AnnotationBase {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             if (!center) {
                 const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this.aabb;
                 center = new Vec2((xmin + xmax) / 2, (ymin + ymax) / 2);
@@ -2211,12 +2211,12 @@ class AnnotationBase {
         };
     }
     setTextContentAsync(text, undoable = true) {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             const oldText = this._textContent;
             this._textContent = text;
             this._dateModified = new Date();
             const undoAction = undoable
-                ? () => __awaiter$h(this, void 0, void 0, function* () {
+                ? () => __awaiter$j(this, void 0, void 0, function* () {
                     yield this.setTextContentAsync(oldText, false);
                 })
                 : undefined;
@@ -2224,7 +2224,7 @@ class AnnotationBase {
         });
     }
     toImageAsync() {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             const renderedContent = this._renderedContent;
             if (!renderedContent) {
                 return null;
@@ -2377,13 +2377,13 @@ class AnnotationBase {
         return mat;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             this._dateModified = new Date();
             this._aabbIsActual = false;
             yield this.updateRenderAsync();
             const invertedMat = Mat3.invert(matrix);
             const undoAction = undoable
-                ? () => __awaiter$h(this, void 0, void 0, function* () {
+                ? () => __awaiter$j(this, void 0, void 0, function* () {
                     yield this.applyCommonTransformAsync(invertedMat, false);
                 })
                 : undefined;
@@ -2391,7 +2391,7 @@ class AnnotationBase {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -2400,7 +2400,7 @@ class AnnotationBase {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$h(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$j(this, void 0, void 0, function* () {
                 this._svgContentCopy.remove();
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 if (this._moved) {
@@ -2526,7 +2526,7 @@ class AnnotationBase {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -2565,6 +2565,7 @@ const BEZIER_CONSTANT = 0.551915;
 const CLOUD_ARC_RATIO = 0.02;
 const LINE_END_MULTIPLIER = 3;
 const LINE_END_MIN_SIZE = 10;
+const LINE_CAPTION_SIZE = 14;
 const lineEndingTypes = {
     SQUARE: "square",
     CIRCLE: "circle",
@@ -2577,8 +2578,104 @@ const lineEndingTypes = {
     ARROW_CLOSED_R: "rclosedArrow",
     SLASH: "slash",
 };
+function buildLineEndingPath(point, type, strokeWidth, side) {
+    const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
+    let text = "";
+    switch (type) {
+        case lineEndingTypes.ARROW_OPEN:
+            if (side === "left") {
+                text += `M${point.x + size},${point.y + size / 2}`;
+                text += ` L${point.x},${point.y}`;
+                text += ` L${point.x + size},${point.y - size / 2}`;
+            }
+            else {
+                text += `M${point.x - size},${point.y + size / 2}`;
+                text += ` L${point.x},${point.y}`;
+                text += ` L${point.x - size},${point.y - size / 2}`;
+            }
+            return text;
+        case lineEndingTypes.ARROW_OPEN_R:
+            if (side === "left") {
+                text += `M${point.x},${point.y + size / 2}`;
+                text += ` L${point.x + size},${point.y}`;
+                text += ` L${point.x},${point.y - size / 2}`;
+            }
+            else {
+                text += `M${point.x},${point.y + size / 2}`;
+                text += ` L${point.x - size},${point.y}`;
+                text += ` L${point.x},${point.y - size / 2}`;
+            }
+            return text;
+        case lineEndingTypes.ARROW_CLOSED:
+            if (side === "left") {
+                text += `M${point.x + size},${point.y + size / 2}`;
+                text += ` L${point.x},${point.y}`;
+                text += ` L${point.x + size},${point.y - size / 2}`;
+            }
+            else {
+                text += `M${point.x - size},${point.y + size / 2}`;
+                text += ` L${point.x},${point.y}`;
+                text += ` L${point.x - size},${point.y - size / 2}`;
+            }
+            text += " Z";
+            return text;
+        case lineEndingTypes.ARROW_CLOSED_R:
+            if (side === "left") {
+                text += `M${point.x + size},${point.y}`;
+                text += ` L${point.x},${point.y + size / 2}`;
+                text += ` L${point.x},${point.y - size / 2}`;
+            }
+            else {
+                text += `M${point.x - size},${point.y}`;
+                text += ` L${point.x},${point.y - size / 2}`;
+                text += ` L${point.x},${point.y + size / 2}`;
+            }
+            text += " Z";
+            return text;
+        case lineEndingTypes.BUTT:
+            text += `M${point.x},${point.y + size / 2}`;
+            text += ` L${point.x},${point.y - size / 2}`;
+            return text;
+        case lineEndingTypes.SLASH:
+            text += `M${point.x + size / 2},${point.y + size / 2}`;
+            text += ` L${point.x - size / 2},${point.y - size / 2}`;
+            return text;
+        case lineEndingTypes.DIAMOND:
+            text += `M${point.x},${point.y + size / 2}`;
+            text += ` L${point.x + size / 2},${point.y}`;
+            text += ` L${point.x},${point.y - size / 2}`;
+            text += ` L${point.x - size / 2},${point.y}`;
+            text += " Z";
+            return text;
+        case lineEndingTypes.SQUARE:
+            text += `M${point.x - size / 2},${point.y + size / 2}`;
+            text += ` L${point.x + size / 2},${point.y + size / 2}`;
+            text += ` L${point.x + size / 2},${point.y - size / 2}`;
+            text += ` L${point.x - size / 2},${point.y - size / 2}`;
+            text += " Z";
+            return text;
+        case lineEndingTypes.CIRCLE:
+            const c = BEZIER_CONSTANT;
+            const r = size / 2;
+            const cw = c * r;
+            const xmin = point.x - r;
+            const ymin = point.y - r;
+            const xmax = point.x + r;
+            const ymax = point.y + r;
+            text += `M${point.x},${ymax}`;
+            text += ` C${point.x + cw},${ymax} ${xmax},${point.y + cw} ${xmax},${point.y}`;
+            text += ` C${xmax},${point.y - cw} ${point.x + cw},${ymin} ${point.x},${ymin}`;
+            text += ` C${point.x - cw},${ymin} ${xmin},${point.y - cw} ${xmin},${point.y}`;
+            text += ` C${xmin},${point.y + cw} ${point.x - cw},${ymax} ${point.x},${ymax}`;
+            text += " Z";
+            return text;
+        case lineEndingTypes.NONE:
+        default:
+            return "";
+    }
+}
 
-var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2592,10 +2689,10 @@ class PenAnnotation extends AnnotationBase {
         if (!dto) {
             throw new Error("No source object passed to the constructor");
         }
+        super(eventService, dto);
         if (dto.annotationType !== "pen") {
             throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'pen')`);
         }
-        super(eventService, dto);
         this._pathList = dto.pathList || [];
         this._strokeColor = dto.strokeColor || [0, 0, 0, 1];
         this._strokeWidth = dto.strokeWidth || 3;
@@ -2633,7 +2730,7 @@ class PenAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$g(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             let x;
             let y;
             const vec = new Vec2();
@@ -2747,7 +2844,7 @@ class PenAnnotation extends AnnotationBase {
     }
 }
 
-var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2824,7 +2921,7 @@ class PenAnnotator extends Annotator {
         this.removeTempPenData();
     }
     saveAnnotationAsync() {
-        return __awaiter$f(this, void 0, void 0, function* () {
+        return __awaiter$h(this, void 0, void 0, function* () {
             if (!this._annotationPathData) {
                 return;
             }
@@ -3002,7 +3099,7 @@ class GeometricAnnotation extends AnnotationBase {
     }
 }
 
-var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3064,7 +3161,7 @@ class SquareAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$g(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners(false);
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -3124,6 +3221,8 @@ class SquareAnnotation extends GeometricAnnotation {
             const tr = new Vec2(w, h);
             const tl = new Vec2(-w, h);
             if (this._cloud) {
+                path.setAttribute("stroke-linecap", "round");
+                path.setAttribute("stroke-linejoin", "round");
                 const curveData = buildCloudCurveFromPolyline([
                     bl.clone(),
                     br.clone(),
@@ -3137,6 +3236,8 @@ class SquareAnnotation extends GeometricAnnotation {
                 });
             }
             else {
+                path.setAttribute("stroke-linecap", "square");
+                path.setAttribute("stroke-linejoin", "miter");
                 d += `M${bl.x},${bl.y}`;
                 d += ` L${br.x},${br.y}`;
                 d += ` L${tr.x},${tr.y}`;
@@ -3259,7 +3360,7 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
-var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3333,7 +3434,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$d(this, void 0, void 0, function* () {
+        return __awaiter$f(this, void 0, void 0, function* () {
             if (!this._center) {
                 return;
             }
@@ -3419,7 +3520,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3431,13 +3532,10 @@ var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _argu
 class CircleAnnotation extends GeometricAnnotation {
     constructor(eventService, dto) {
         var _a, _b, _c, _d;
-        if (!dto) {
-            throw new Error("No source object passed to the constructor");
-        }
+        super(eventService, dto);
         if (dto.annotationType !== "circle") {
             throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'circle')`);
         }
-        super(eventService, dto);
         this._rx = (_a = dto.rx) !== null && _a !== void 0 ? _a : 0;
         this._ry = (_b = dto.ry) !== null && _b !== void 0 ? _b : 0;
         this._center = dto.center
@@ -3481,7 +3579,7 @@ class CircleAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$e(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners(false);
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -3542,6 +3640,8 @@ class CircleAnnotation extends GeometricAnnotation {
             const rightV = new Vec2(rx, 0);
             const zeroV = new Vec2();
             if (this._cloud) {
+                path.setAttribute("stroke-linecap", "round");
+                path.setAttribute("stroke-linejoin", "round");
                 const curveData = buildCloudCurveFromEllipse(rx, ry, this._cloudArcSize, new Mat3());
                 d += `M${curveData.start.x},${curveData.start.y}`;
                 curveData.curves.forEach(x => {
@@ -3628,7 +3728,7 @@ class CircleAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3702,7 +3802,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$b(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             if (!this._center) {
                 return;
             }
@@ -3785,9 +3885,6 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
 
 class PolyAnnotation extends GeometricAnnotation {
     constructor(eventService, dto) {
-        if (!dto) {
-            throw new Error("No source object passed to the constructor");
-        }
         super(eventService, dto);
         this._vertices = (dto.vertices || []).map(x => new Vec2(x[0], x[1]));
     }
@@ -3796,7 +3893,7 @@ class PolyAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3807,13 +3904,10 @@ var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class PolylineAnnotation extends PolyAnnotation {
     constructor(eventService, dto) {
-        if (!dto) {
-            throw new Error("No source object passed to the constructor");
-        }
+        super(eventService, dto);
         if (dto.annotationType !== "polyline") {
             throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'polyline')`);
         }
-        super(eventService, dto);
         this._endings = [lineEndingTypes.NONE, lineEndingTypes.NONE];
     }
     get endings() {
@@ -3840,7 +3934,7 @@ class PolylineAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$c(this, void 0, void 0, function* () {
             this._vertices.forEach(x => x.applyMat3(matrix));
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
@@ -3886,6 +3980,8 @@ class PolylineAnnotation extends PolyAnnotation {
             if (this._strokeDashGap) {
                 path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
             }
+            path.setAttribute("stroke-linecap", "square");
+            path.setAttribute("stroke-linejoin", "miter");
             const zeroVertex = (this._vertices && this._vertices[0]) || new Vec2();
             let d = `M${zeroVertex.x},${zeroVertex.y}`;
             for (let i = 1; i < this._vertices.length; i++) {
@@ -3920,7 +4016,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
 }
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4001,7 +4097,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             if (this._points.length < 2) {
                 return;
             }
@@ -4062,7 +4158,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4074,13 +4170,10 @@ var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 class PolygonAnnotation extends PolyAnnotation {
     constructor(eventService, dto) {
         var _a, _b;
-        if (!dto) {
-            throw new Error("No source object passed to the constructor");
-        }
+        super(eventService, dto);
         if (dto.annotationType !== "polygon") {
             throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'polygon')`);
         }
-        super(eventService, dto);
         this._cloud = (_a = dto.cloud) !== null && _a !== void 0 ? _a : false;
         this._cloudArcSize = (_b = dto.cloudArcSize) !== null && _b !== void 0 ? _b : 20;
     }
@@ -4109,7 +4202,7 @@ class PolygonAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             this._vertices.forEach(x => x.applyMat3(matrix));
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
@@ -4156,6 +4249,8 @@ class PolygonAnnotation extends PolyAnnotation {
             }
             let d;
             if (this._cloud) {
+                path.setAttribute("stroke-linecap", "round");
+                path.setAttribute("stroke-linejoin", "round");
                 const vertices = [...this._vertices];
                 vertices.push(this._vertices[0]);
                 const curveData = buildCloudCurveFromPolyline(vertices, this._cloudArcSize);
@@ -4165,6 +4260,8 @@ class PolygonAnnotation extends PolyAnnotation {
                 });
             }
             else {
+                path.setAttribute("stroke-linecap", "square");
+                path.setAttribute("stroke-linejoin", "miter");
                 const zeroVertex = ((_b = this._vertices) === null || _b === void 0 ? void 0 : _b.length)
                     ? this._vertices[0]
                     : new Vec2();
@@ -4203,7 +4300,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
 }
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4284,7 +4381,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (this._points.length < 3) {
                 return;
             }
@@ -4361,6 +4458,472 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
     }
 }
 
+class SvgTempPath {
+    constructor() {
+        this._path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    }
+    get path() {
+        return this._path;
+    }
+    set(fill, stroke, w, points, close = false) {
+        let d = "";
+        if ((points === null || points === void 0 ? void 0 : points.length) > 1) {
+            d += `M${points[0].x},${points[0].y} `;
+            for (let i = 1; i < points.length; i++) {
+                d += `L${points[i].x},${points[i].y} `;
+            }
+            if (close) {
+                d += "Z";
+            }
+        }
+        this._path.classList.add("annotation-temp-copy");
+        this._path.setAttribute("d", d);
+        this._path.style.fill = fill;
+        this._path.style.stroke = stroke;
+        this._path.style.strokeWidth = w + "";
+    }
+    insertAfter(element) {
+        element.after(this._path);
+    }
+    remove() {
+        this._path.setAttribute("d", "");
+        this._path.remove();
+    }
+}
+
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class LineAnnotation extends GeometricAnnotation {
+    constructor(eventService, dto) {
+        var _a, _b, _c;
+        super(eventService, dto);
+        this._svgTemp = new SvgTempPath();
+        this.onLineEndHandlePointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointerup", this.onLineEndHandlePointerUp);
+            target.addEventListener("pointerout", this.onLineEndHandlePointerUp);
+            const handleName = target.dataset.handleName;
+            switch (handleName) {
+                case "start":
+                    this._scaleHandleActive = "start";
+                    break;
+                case "end":
+                    this._scaleHandleActive = "end";
+                    break;
+                default:
+                    throw new Error(`Invalid handle name: ${handleName}`);
+            }
+            this._moved = false;
+            this._transformationTimer = setTimeout(() => {
+                this._transformationTimer = null;
+                this._svgTemp.insertAfter(this._renderedControls);
+                target.addEventListener("pointermove", this.onLineEndHandlePointerMove);
+            }, 200);
+            e.stopPropagation();
+        };
+        this.onLineEndHandlePointerMove = (e) => {
+            if (!e.isPrimary || !this._scaleHandleActive) {
+                return;
+            }
+            const [start, end] = this._vertices;
+            let startTemp;
+            let endTemp;
+            if (this._scaleHandleActive === "start") {
+                startTemp = this.convertClientCoordsToImage(e.clientX, e.clientY);
+                endTemp = end.clone();
+            }
+            else {
+                startTemp = start.clone();
+                endTemp = this.convertClientCoordsToImage(e.clientX, e.clientY);
+            }
+            this._tempTransformationMatrix = Mat3.from4Vec2(start, end, startTemp, endTemp);
+            this._svgTemp.set("none", "blue", this.strokeWidth, [startTemp, endTemp]);
+            this._moved = true;
+        };
+        this.onLineEndHandlePointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onLineEndHandlePointerMove);
+            target.removeEventListener("pointerup", this.onLineEndHandlePointerUp);
+            target.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this._svgTemp.remove();
+            this.applyTempTransformAsync();
+        };
+        if (dto.annotationType !== "line") {
+            throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'line')`);
+        }
+        this._vertices = ((_a = dto.vertices) === null || _a === void 0 ? void 0 : _a.length) === 2
+            ? [
+                new Vec2(dto.vertices[0][0], dto.vertices[0][1]),
+                new Vec2(dto.vertices[1][0], dto.vertices[1][1]),
+            ]
+            : [new Vec2(), new Vec2()];
+        this._endings = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+        this._caption = dto.caption;
+        this._leaderLinePosHeight = (_b = dto.leaderLinePosHeight) !== null && _b !== void 0 ? _b : 0;
+        this._leaderLineNegHeight = (_c = dto.leaderLineNegHeight) !== null && _c !== void 0 ? _c : 0;
+    }
+    get vertices() {
+        return this._vertices;
+    }
+    get endings() {
+        return this._endings;
+    }
+    get caption() {
+        return this._caption;
+    }
+    get leaderLinePosHeight() {
+        return this._leaderLinePosHeight;
+    }
+    get leaderLineNegHeight() {
+        return this._leaderLineNegHeight;
+    }
+    get matrix() {
+        return this.getRenderHelpers().matrix;
+    }
+    toDto() {
+        return {
+            annotationType: this.type,
+            uuid: this.uuid,
+            imageUuid: this._imageUuid,
+            dateCreated: this._dateCreated.toISOString(),
+            dateModified: this._dateModified.toISOString(),
+            author: this._author,
+            rotation: this._rotation,
+            textContent: this._textContent,
+            strokeColor: this._strokeColor,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: this._strokeDashGap,
+            caption: this._caption,
+            vertices: [
+                [this._vertices[0].x, this._vertices[0].y],
+                [this._vertices[1].x, this._vertices[1].y],
+            ],
+            endings: this._endings,
+            leaderLinePosHeight: this._leaderLinePosHeight,
+            leaderLineNegHeight: this._leaderLineNegHeight,
+        };
+    }
+    setTextContentAsync(text, undoable = true) {
+        const _super = Object.create(null, {
+            setTextContentAsync: { get: () => super.setTextContentAsync }
+        });
+        return __awaiter$8(this, void 0, void 0, function* () {
+            this._caption = text;
+            yield _super.setTextContentAsync.call(this, text, undoable);
+            yield this.updateRenderAsync();
+        });
+    }
+    applyCommonTransformAsync(matrix, undoable = true) {
+        const _super = Object.create(null, {
+            applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
+        });
+        return __awaiter$8(this, void 0, void 0, function* () {
+            this._vertices.forEach(x => x.applyMat3(matrix));
+            yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
+        });
+    }
+    renderAppearance() {
+        try {
+            const clipPaths = [];
+            const elements = [];
+            const pickHelpers = [];
+            const [min, max] = this.aabb;
+            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+            clipPath.id = `clip0_${this.uuid}`;
+            clipPath.innerHTML = "<path d=\""
+                + `M${min.x},${min.y} `
+                + `L${max.x},${min.y} `
+                + `L${max.x},${max.y} `
+                + `L${min.x},${max.y} `
+                + "z"
+                + "\"/>";
+            clipPaths.push(clipPath);
+            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            group.setAttribute("clip-path", `url(#${clipPath.id})`);
+            const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            clonedGroup.classList.add("annotation-pick-helper");
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("fill", "none");
+            const [r, g, b, a] = this._strokeColor;
+            path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+            path.setAttribute("stroke-width", this._strokeWidth + "");
+            if (this._strokeDashGap) {
+                path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+            }
+            path.setAttribute("stroke-linecap", "square");
+            path.setAttribute("stroke-linejoin", "miter");
+            const { matrix, alignedStart, alignedEnd } = this.getRenderHelpers();
+            let d = `M${alignedStart.x},${alignedStart.y}`;
+            d += ` L${alignedEnd.x},${alignedEnd.y}`;
+            if (this._leaderLinePosHeight || this._leaderLineNegHeight) {
+                const llBottom = new Vec2(0, -Math.abs(this._leaderLineNegHeight));
+                const llTop = new Vec2(0, Math.abs(this._leaderLinePosHeight));
+                const llLeftStart = Vec2.add(alignedStart, llBottom);
+                const llLeftEnd = Vec2.add(alignedStart, llTop);
+                const llRightStart = Vec2.add(alignedEnd, llBottom);
+                const llRightEnd = Vec2.add(alignedEnd, llTop);
+                d += ` M${llLeftStart.x},${llLeftStart.y}`;
+                d += ` L${llLeftEnd.x},${llLeftEnd.y}`;
+                d += ` M${llRightStart.x},${llRightStart.y}`;
+                d += ` L${llRightEnd.x},${llRightEnd.y}`;
+            }
+            if (this._endings) {
+                if (this._endings[0] !== lineEndingTypes.NONE) {
+                    const endingPathString = buildLineEndingPath(alignedStart, this._endings[0], this._strokeWidth, "left");
+                    d += " " + endingPathString;
+                }
+                if (this._endings[1] !== lineEndingTypes.NONE) {
+                    const endingPathString = buildLineEndingPath(alignedEnd, this._endings[1], this._strokeWidth, "right");
+                    d += " " + endingPathString;
+                }
+            }
+            path.setAttribute("d", d);
+            path.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
+            group.append(path);
+            const clonedPath = path.cloneNode(true);
+            const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+                ? SELECTION_STROKE_WIDTH
+                : this._strokeWidth;
+            clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+            clonedPath.setAttribute("stroke", "transparent");
+            clonedPath.setAttribute("fill", "none");
+            clonedGroup.append(clonedPath);
+            elements.push({
+                element: group,
+                blendMode: "normal",
+            });
+            pickHelpers.push(clonedGroup);
+            return {
+                elements,
+                clipPaths,
+                pickHelpers,
+            };
+        }
+        catch (e) {
+            console.log(`Annotation render error: ${e.message}`);
+            return null;
+        }
+    }
+    updateAABB() {
+        const bbox = this.getBoxCorners();
+        const { ll, lr, ur, ul } = bbox;
+        const { min, max } = Vec2.minMax(ll, lr, ur, ul);
+        this._bbox = bbox;
+        this._aabb[0].setFromVec2(min);
+        this._aabb[1].setFromVec2(max);
+    }
+    getRenderHelpers() {
+        const start = this._vertices[0].clone();
+        const end = this._vertices[1].clone();
+        const length = Vec2.subtract(end, start).getMagnitude();
+        const alignedStart = new Vec2();
+        const alignedEnd = new Vec2(length, 0);
+        const matrix = Mat3.from4Vec2(alignedStart, alignedEnd, start, end);
+        return {
+            matrix,
+            alignedStart,
+            alignedEnd,
+        };
+    }
+    getBoxCorners(helpers) {
+        const { matrix, alignedStart, alignedEnd } = helpers !== null && helpers !== void 0 ? helpers : this.getRenderHelpers();
+        const endingNotNone = this._endings &&
+            (this._endings[0] && this._endings[0] !== lineEndingTypes.NONE
+                || this._endings[1] && this._endings[1] !== lineEndingTypes.NONE);
+        const margin = endingNotNone
+            ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_MULTIPLIER * this._strokeWidth)
+            : this._strokeWidth / 2;
+        const marginTop = Math.max(Math.abs(this._leaderLinePosHeight), margin, this._caption ? LINE_CAPTION_SIZE : 0);
+        const marginBottom = Math.max(Math.abs(this._leaderLineNegHeight), margin);
+        const min = Vec2.add(alignedStart, new Vec2(-margin, -marginBottom));
+        const max = Vec2.add(alignedEnd, new Vec2(margin, marginTop));
+        const bl = new Vec2(min.x, min.y).applyMat3(matrix);
+        const br = new Vec2(max.x, min.y).applyMat3(matrix);
+        const tr = new Vec2(max.x, max.y).applyMat3(matrix);
+        const tl = new Vec2(min.x, max.y).applyMat3(matrix);
+        return {
+            ll: bl,
+            lr: br,
+            ur: tr,
+            ul: tl,
+        };
+    }
+    renderHandles() {
+        return [...this.renderLineEndHandles(), this.renderRotationHandle()];
+    }
+    renderLineEndHandles() {
+        const [start, end] = this._vertices;
+        const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        startHandle.classList.add("annotation-handle", "scale");
+        startHandle.setAttribute("data-handle-name", "start");
+        startHandle.setAttribute("x1", start.x + "");
+        startHandle.setAttribute("y1", start.y + "");
+        startHandle.setAttribute("x2", start.x + "");
+        startHandle.setAttribute("y2", start.y + 0.1 + "");
+        startHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
+        const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        endHandle.classList.add("annotation-handle", "scale");
+        endHandle.setAttribute("data-handle-name", "end");
+        endHandle.setAttribute("x1", end.x + "");
+        endHandle.setAttribute("y1", end.y + "");
+        endHandle.setAttribute("x2", end.x + "");
+        endHandle.setAttribute("y2", end.y + 0.1 + "");
+        endHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
+        return [startHandle, endHandle];
+    }
+}
+
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class GeometricLineAnnotator extends GeometricAnnotator {
+    constructor(imageService, parent, options) {
+        super(imageService, parent, options || {});
+        this._points = [];
+        this.onPointerDown = (e) => {
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const imageCoords = this._pointerCoordsInImageCS;
+            if (!imageCoords) {
+                return;
+            }
+            const { x: ix, y: iy, info: { uuid } } = imageCoords;
+            this._imageUuid = uuid;
+            this._down = new Vec2(ix, iy);
+            this.clear();
+            this.refreshGroupPosition();
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary
+                || !this._down) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const imageCoords = this._pointerCoordsInImageCS;
+            if (!imageCoords) {
+                return;
+            }
+            const { x: ix, y: iy } = imageCoords;
+            const start = this._down.clone();
+            const end = new Vec2(ix, iy);
+            this._points[0] = start;
+            this._points[1] = end;
+            this.redraw(this._down, end);
+        };
+        this.onPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
+            target.releasePointerCapture(e.pointerId);
+            if (this._points.length > 1) {
+                this.emitDataChanged(2, true, true);
+            }
+        };
+        this.init();
+    }
+    destroy() {
+        super.destroy();
+    }
+    undo() {
+        this.clear();
+    }
+    clear() {
+        this._points.length = 0;
+        this.clearGroup();
+    }
+    saveAnnotationAsync() {
+        return __awaiter$7(this, void 0, void 0, function* () {
+            if (this._points.length < 2) {
+                return;
+            }
+            const imageUuid = this._imageUuid;
+            const dto = this.buildAnnotationDto();
+            const annotation = new LineAnnotation(this._imageService.eventService, dto);
+            this._imageService.appendAnnotationToImage(imageUuid, annotation);
+            this.clear();
+        });
+    }
+    init() {
+        super.init();
+        this._overlay.addEventListener("pointerdown", this.onPointerDown);
+    }
+    redraw(min, max) {
+        this._svgGroup.innerHTML = "";
+        if (this._points.length < 2) {
+            return;
+        }
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
+        path.setAttribute("stroke-linecap", "square");
+        path.setAttribute("stroke-linejoin", "miter");
+        const pathString = `M ${min.x},${min.y} L ${max.x},${max.y}`;
+        path.setAttribute("d", pathString);
+        this._svgGroup.append(path);
+    }
+    buildAnnotationDto() {
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "line",
+            imageUuid: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._imageService.userName || "unknown",
+            textContent: null,
+            strokeColor: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+            rotation: 0,
+            vertices: [
+                [this._points[0].x, this._points[0].y],
+                [this._points[1].x, this._points[1].y],
+            ],
+            endings: [lineEndingTypes.NONE, lineEndingTypes.NONE],
+            leaderLinePosHeight: 0,
+            leaderLineNegHeight: 0,
+            caption: null,
+        };
+        return dto;
+    }
+}
+
 const geometricAnnotatorTypes = ["square", "circle",
     "polyline", "polygon", "line", "arrow"];
 class GeometricAnnotatorFactory {
@@ -4394,6 +4957,8 @@ class GeometricAnnotatorFactory {
                 return new GeometricPolylineAnnotator(imageService, parent, combinedOptions);
             case "polygon":
                 return new GeometricPolygonAnnotator(imageService, parent, combinedOptions);
+            case "line":
+                return new GeometricLineAnnotator(imageService, parent, combinedOptions);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
@@ -4523,7 +5088,7 @@ class AnnotatorService {
         submodePicker.classList.add("context-menu-content", "row");
         geometricAnnotatorTypes.forEach(x => {
             const item = document.createElement("div");
-            if (x !== "circle" && x !== "square" && x !== "polyline" && x !== "polygon") {
+            if (x === "arrow") {
                 item.classList.add("disabled");
             }
             item.classList.add("panel-button");

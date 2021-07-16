@@ -51,11 +51,12 @@ export class PenAnnotation extends AnnotationBase {
     if (!dto) {
       throw new Error("No source object passed to the constructor");
     }
+
+    super(eventService, dto);
+    
     if (dto.annotationType !== "pen") {
       throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'pen')`);
     }
-
-    super(eventService, dto);
 
     this._pathList = dto.pathList || [];
     this._strokeColor = dto.strokeColor || [0, 0, 0, 1];

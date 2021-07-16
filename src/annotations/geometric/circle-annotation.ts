@@ -38,14 +38,11 @@ export class CircleAnnotation extends GeometricAnnotation {
   }
   
   constructor(eventService: EventService, dto: CircleAnnotationDto) {
-    if (!dto) {
-      throw new Error("No source object passed to the constructor");
-    }
+    super(eventService, dto);
+    
     if (dto.annotationType !== "circle") {
       throw new Error(`Invalid annotation type: '${dto.annotationType}' (must be 'circle')`);
     }
-
-    super(eventService, dto);
 
     this._rx = dto.rx ?? 0;
     this._ry = dto.ry ?? 0;
@@ -164,6 +161,9 @@ export class CircleAnnotation extends GeometricAnnotation {
       const zeroV = new Vec2();
       
       if (this._cloud) {
+        path.setAttribute("stroke-linecap", "round");      
+        path.setAttribute("stroke-linejoin", "round");   
+
         const curveData = buildCloudCurveFromEllipse(rx, ry, this._cloudArcSize, new Mat3()); 
         d += `M${curveData.start.x},${curveData.start.y}`;
         curveData.curves.forEach(x => {

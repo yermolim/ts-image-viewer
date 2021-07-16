@@ -16,10 +16,6 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
   }
   
   protected constructor(eventService: EventService, dto: PolyAnnotationDto) {
-    if (!dto) {
-      throw new Error("No source object passed to the constructor");
-    }
-
     super(eventService, dto);
 
     this._vertices = (dto.vertices || []).map(x => new Vec2(x[0], x[1]));
