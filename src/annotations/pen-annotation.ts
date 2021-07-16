@@ -139,7 +139,7 @@ export class PenAnnotation extends AnnotationBase {
     this._aabb[1].set(xMax, yMax);
   } 
 
-  protected renderAppearance(): AppearanceRenderResult {   
+  protected async renderAppearanceAsync(): Promise<AppearanceRenderResult> {   
     try {      
       const clipPaths: SVGClipPathElement[] = [];
       const elements: SvgElementWithBlendMode[] = [];

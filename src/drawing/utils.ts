@@ -15,9 +15,12 @@ export const BEZIER_CONSTANT = 0.551915;
 export const CLOUD_ARC_RATIO = 0.02;
 
 /**defines how many times the line ending size is larger than the line width */
-export const LINE_END_MULTIPLIER = 3;
+export const LINE_END_SIZE_RATIO = 3;
 export const LINE_END_MIN_SIZE = 10;
-export const LINE_CAPTION_SIZE = 14;
+/**defines how many times the line caption size is larger than the line width */
+export const LINE_CAPTION_SIZE_RATIO = 5;
+/**defines how many times the line font size is larger than the line width */
+export const LINE_CAPTION_FONT_RATIO = 4;
 
 export const lineEndingTypes = {
   SQUARE: "square",
@@ -95,7 +98,7 @@ export interface LineRenderHelpers {
 
 export function buildLineEndingPath(point: Vec2, type: LineEndingType, 
   strokeWidth: number, side: "left" | "right"): string {
-  const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, 
+  const size = Math.max(strokeWidth * LINE_END_SIZE_RATIO, 
     LINE_END_MIN_SIZE);
   let text = "";
   switch (type) {

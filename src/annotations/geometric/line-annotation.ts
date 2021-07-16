@@ -2,12 +2,13 @@ import { Mat3, Vec2 } from "mathador";
 
 import { Double } from "../../common/types";
 import { AppearanceRenderResult, BBox, buildLineEndingPath, getLineRenderHelpers, LineEndingType, 
-  lineEndingTypes, LineRenderHelpers, LINE_CAPTION_SIZE, LINE_END_MIN_SIZE, 
-  LINE_END_MULTIPLIER, SELECTION_STROKE_WIDTH, SvgElementWithBlendMode } from "../../drawing/utils";
+  lineEndingTypes, LineRenderHelpers, LINE_CAPTION_FONT_RATIO, LINE_CAPTION_SIZE_RATIO, LINE_END_MIN_SIZE, 
+  LINE_END_SIZE_RATIO, SELECTION_STROKE_WIDTH, SvgElementWithBlendMode } from "../../drawing/utils";
 
 import { EventService } from "../../common/event-service";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 import { SvgTempPath } from "../../drawing/paths/svg-temp-path";
+import { buildTextDataAsync } from "../../common/text-data";
 
 export interface LineAnnotationDto extends GeometricAnnotationDto {  
   vertices: [Double, Double];
@@ -15,8 +16,8 @@ export interface LineAnnotationDto extends GeometricAnnotationDto {
   endings?: [LineEndingType, LineEndingType];
   caption?: string;
 
-  leaderLinePosHeight?: number;
-  leaderLineNegHeight?: number;
+  leaderLineTopHeight?: number;
+  leaderLineBottomHeight?: number;
 }
 
 export class LineAnnotation extends GeometricAnnotation {
@@ -35,14 +36,14 @@ export class LineAnnotation extends GeometricAnnotation {
     return this._caption;
   }
   
-  protected _leaderLinePosHeight: number;
-  get leaderLinePosHeight(): number {
-    return this._leaderLinePosHeight;
+  protected _leaderLineTopHeight: number;
+  get leaderLineTopHeight(): number {
+    return this._leaderLineTopHeight;
   }
 
-  protected _leaderLineNegHeight: number;
-  get leaderLineNegHeight(): number {
-    return this._leaderLineNegHeight;
+  protected _leaderLineBottomHeight: number;
+  get leaderLineBottomHeight(): number {
+    return this._leaderLineBottomHeight;
   }
 
   get matrix(): Mat3 {
@@ -67,8 +68,8 @@ export class LineAnnotation extends GeometricAnnotation {
       : [new Vec2(), new Vec2()];
     this._endings = dto.endings || [lineEndingTypes.NONE, lineEndingTypes.NONE];
     this._caption = dto.caption;
-    this._leaderLinePosHeight = dto.leaderLinePosHeight ?? 0;
-    this._leaderLineNegHeight = dto.leaderLineNegHeight ?? 0;
+    this._leaderLineTopHeight = dto.leaderLineTopHeight ?? 0;
+    this._leaderLineBottomHeight = dto.leaderLineBottomHeight ?? 0;
   } 
     
   override toDto(): LineAnnotationDto {
@@ -95,13 +96,14 @@ export class LineAnnotation extends GeometricAnnotation {
         [this._vertices[1].x, this._vertices[1].y],
       ],
       endings: this._endings,
-      leaderLinePosHeight: this._leaderLinePosHeight,
-      leaderLineNegHeight: this._leaderLineNegHeight,
+      leaderLineTopHeight: this._leaderLineTopHeight,
+      leaderLineBottomHeight: this._leaderLineBottomHeight,
     };
   }  
 
   override async setTextContentAsync(text: string, undoable = true) {
     this._caption = text; // TODO: separate caption edit from text content (description) edit
+    this.updateAABB();
     await super.setTextContentAsync(text, undoable);
     await this.updateRenderAsync();
   }
@@ -112,11 +114,13 @@ export class LineAnnotation extends GeometricAnnotation {
     await super.applyCommonTransformAsync(matrix, undoable);
   } 
   
-  protected renderAppearance(): AppearanceRenderResult {   
+  protected async renderAppearanceAsync(): Promise<AppearanceRenderResult> {   
     try {
       const clipPaths: SVGClipPathElement[] = [];
       const elements: SvgElementWithBlendMode[] = [];
       const pickHelpers: SVGGraphicsElement[] = [];
+
+      const sw = this._strokeWidth;
       
       // clip paths
       const [min, max] = this.aabb;
@@ -155,10 +159,10 @@ export class LineAnnotation extends GeometricAnnotation {
       let d = `M${alignedStart.x},${alignedStart.y}`;
       d += ` L${alignedEnd.x},${alignedEnd.y}`;
 
-      if (this._leaderLinePosHeight || this._leaderLineNegHeight) {
-        // draw leader lines if present
-        const llBottom = new Vec2(0, -Math.abs(this._leaderLineNegHeight));
-        const llTop = new Vec2(0, Math.abs(this._leaderLinePosHeight));
+      // draw leader lines if present
+      if (this._leaderLineTopHeight || this._leaderLineBottomHeight) {
+        const llTop = new Vec2(0, -Math.abs(this._leaderLineTopHeight));
+        const llBottom = new Vec2(0, Math.abs(this._leaderLineBottomHeight));
         const llLeftStart = Vec2.add(alignedStart, llBottom);
         const llLeftEnd = Vec2.add(alignedStart, llTop);
         const llRightStart = Vec2.add(alignedEnd, llBottom);
@@ -169,41 +173,75 @@ export class LineAnnotation extends GeometricAnnotation {
         d += ` L${llRightEnd.x},${llRightEnd.y}`;
       }
 
-      // draw line endings if present
-      console.log(this._endings);
-      
-
+      // draw line endings if present 
       if (this._endings) {
         if (this._endings[0] !== lineEndingTypes.NONE) {
           const endingPathString = buildLineEndingPath(alignedStart, 
-            this._endings[0], this._strokeWidth, "left");
+            this._endings[0], sw, "left");
           d += " " + endingPathString;
         }
         if (this._endings[1] !== lineEndingTypes.NONE) {
           const endingPathString = buildLineEndingPath(alignedEnd, 
-            this._endings[1], this._strokeWidth, "right");
+            this._endings[1], sw, "right");
           d += " " + endingPathString;
         }
-      }      
+      }  
 
-      path.setAttribute("d", d);    
-
-      // apply transformation matrix
-      path.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
-
+      path.setAttribute("d", d);
       group.append(path);
 
-      // TODO: draw caption
+      if (this._caption) {
+        const fontSize = LINE_CAPTION_FONT_RATIO * sw;
+        const captionHeight = LINE_CAPTION_SIZE_RATIO * sw;
+        const sidePadding = Math.max(sw * LINE_END_SIZE_RATIO, 
+          LINE_END_MIN_SIZE);
+        const maxTextWidth = alignedEnd.getMagnitude() - 2 * sidePadding;
+        const textPivot = new Vec2(alignedEnd.getMagnitude() / 2, - captionHeight / 2 - sw / 2);
+        if (maxTextWidth > 0) {
+          const textData = await buildTextDataAsync(this._caption, {
+            maxWidth: maxTextWidth,
+            fontSize: fontSize,
+            strokeWidth: sw,
+            textAlign: "center",
+            pivotPoint: "center",
+          });
+          const firstLine = textData.lines[0]; // only one-liners are supported for line annotation
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", textPivot.x + firstLine.relativeRect[0] + ""); // TODO: test
+          rect.setAttribute("y", textPivot.y - captionHeight / 2 + "");
+          rect.setAttribute("width", firstLine.relativeRect[2] - firstLine.relativeRect[0] + "");
+          rect.setAttribute("height", captionHeight + "");
+          rect.setAttribute("fill", "rgba(255,255,255,0.5)");
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", textPivot.x + ""); // TODO: test
+          text.setAttribute("y", textPivot.y + "");
+          text.setAttribute("fill", "black");
+          text.setAttribute("dominant-baseline", "middle");
+          text.setAttribute("text-anchor", "middle");
+          text.style.fontSize = fontSize + "px";
+          text.style.fontFamily = "sans-serif";
+          text.textContent = firstLine.text;  
+          group.append(rect, text);
+        }
+      }
+
+      // apply transformation matrix
+      const matrixString = `matrix(${matrix.truncate(5).toFloatShortArray().join(",")})`;
+      group.childNodes.forEach(x => {
+        if (x instanceof SVGGraphicsElement) {          
+          x.setAttribute("transform", matrixString);
+        }
+      });
 
       // create a transparent path copy with large stroke width to simplify user interaction  
       const clonedPath = path.cloneNode(true) as SVGPathElement;
-      const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+      const clonedPathStrokeWidth = sw < SELECTION_STROKE_WIDTH
         ? SELECTION_STROKE_WIDTH
-        : this._strokeWidth;
+        : sw;
       clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
       clonedPath.setAttribute("stroke", "transparent");
       clonedPath.setAttribute("fill", "none");
-      clonedPath.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
+      clonedPath.setAttribute("transform", `matrix(${matrix.truncate(5).toFloatShortArray().join(",")})`);
       clonedGroup.append(clonedPath);
 
       elements.push({
@@ -247,20 +285,21 @@ export class LineAnnotation extends GeometricAnnotation {
 
   protected getBoxCorners(helpers?: LineRenderHelpers): BBox {
     const {matrix, alignedStart, alignedEnd} = helpers ?? this.getRenderHelpers();  
+    const sw = this._strokeWidth;
 
     // get box margins taking into account stroke width
     const endingNotNone = this._endings &&
       (this._endings[0] && this._endings[0] !== lineEndingTypes.NONE
         || this._endings[1] && this._endings[1] !== lineEndingTypes.NONE);
     const margin = endingNotNone
-      ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_MULTIPLIER * this._strokeWidth)
-      : this._strokeWidth / 2;
-    const marginTop = Math.max(Math.abs(this._leaderLinePosHeight), 
-      margin, this._caption ? LINE_CAPTION_SIZE : 0);
-    const marginBottom = Math.max(Math.abs(this._leaderLineNegHeight), margin);
+      ? sw / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_SIZE_RATIO * sw)
+      : sw / 2;
+    const marginTop = Math.max(Math.abs(this._leaderLineTopHeight), 
+      margin, this._caption ? LINE_CAPTION_SIZE_RATIO * sw + sw / 2 : 0);
+    const marginBottom = Math.max(Math.abs(this._leaderLineBottomHeight), margin);
 
-    const min = Vec2.add(alignedStart, new Vec2(-margin, -marginBottom));
-    const max = Vec2.add(alignedEnd, new Vec2(margin, marginTop));
+    const min = Vec2.add(alignedStart, new Vec2(-margin, -marginTop));
+    const max = Vec2.add(alignedEnd, new Vec2(margin, marginBottom));
 
     // create vectors for box corners
     const bl = new Vec2(min.x, min.y).applyMat3(matrix);
@@ -275,51 +314,6 @@ export class LineAnnotation extends GeometricAnnotation {
       ul: tl,
     };
   }
-
-  // protected async getTextStreamPartAsync(pivotPoint: Vec2, font: FontDict): Promise<string> {
-  //   const textData = this._textData;
-  //   if (!textData) {
-  //     return "";
-  //   }
-    
-  //   const [xMin, yMin, xMax, yMax] = textData.relativeRect;
-  //   // the text corner coordinates in annotation-local CS
-  //   const bottomLeftLCS = new Vec2(xMin, yMin).add(pivotPoint);
-  //   const topRightLCS = new Vec2(xMax, yMax).add(pivotPoint);
-
-  //   // draw text background rect
-  //   const textBgRectStream = 
-  //     "\nq 1 g 1 G" // push the graphics state onto the stack and set bg color
-  //     + `\n${bottomLeftLCS.x} ${bottomLeftLCS.y} m`
-  //     + `\n${bottomLeftLCS.x} ${topRightLCS.y} l`
-  //     + `\n${topRightLCS.x} ${topRightLCS.y} l`
-  //     + `\n${topRightLCS.x} ${bottomLeftLCS.y} l`
-  //     + "\nf"
-  //     + "\nQ"; // pop the graphics state back from the stack
-
-  //   let textStream = "\nq 0 g 0 G"; // push the graphics state onto the stack and set text color
-  //   const fontSize = 9;
-  //   for (const line of textData.lines) {
-  //     if (!line.text) {
-  //       continue;
-  //     }      
-  //     const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(pivotPoint);
-  //     let lineHex = "";
-  //     for (const char of line.text) {
-  //       const code = font.encoding.codeMap.get(char);
-  //       if (code) {
-  //         lineHex += code.toString(16).padStart(2, "0");
-  //       }
-  //     }
-  //     textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
-  //     textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
-  //     textStream += `\n<${lineHex}> Tj`;
-  //     textStream += "\nET";
-  //   };
-  //   textStream += "\nQ"; // pop the graphics state back from the stack
-      
-  //   return textBgRectStream + textStream;
-  // }
   
   //#region overriding handles
   protected override renderHandles(): SVGGraphicsElement[] {   

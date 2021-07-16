@@ -74,7 +74,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     this._aabb[1].setFromVec2(max);
   }
 
-  protected renderAppearance(): AppearanceRenderResult {   
+  protected async renderAppearanceAsync(): Promise<AppearanceRenderResult> {   
     try {
       if (!this._vertices?.length || this._vertices.length < 3) {
         throw new Error("Any polygon can't have less than 3 vertices");

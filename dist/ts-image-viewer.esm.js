@@ -1320,7 +1320,7 @@ const styles = `
 </style>
 `;
 
-var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1340,6 +1340,21 @@ function htmlToElements(html) {
     });
     return nodes;
 }
+function promisify(callback) {
+    return __awaiter$l(this, void 0, void 0, function* () {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const result = callback();
+                resolve(result);
+            }, 0);
+        });
+    });
+}
+function runEmptyTimeout() {
+    return __awaiter$l(this, void 0, void 0, function* () {
+        yield promisify(() => undefined);
+    });
+}
 function downloadFile(blob, name) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1351,7 +1366,7 @@ function downloadFile(blob, name) {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function loadImageAsync(url, revoke = false) {
-    return __awaiter$k(this, void 0, void 0, function* () {
+    return __awaiter$l(this, void 0, void 0, function* () {
         const loadedImage = yield new Promise((resolve, reject) => {
             const image = new Image();
             image.onerror = (e) => {
@@ -1869,7 +1884,7 @@ class SvgSmoothPath extends SmoothPath {
 SvgSmoothPath._defaultStrokeWidth = 3;
 SvgSmoothPath._defaultColor = [0, 0, 0, 0.8];
 
-var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2157,7 +2172,7 @@ class AnnotationBase {
         };
     }
     renderAsync(imageInfo) {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (!imageInfo) {
                 throw new Error("Can't render the annotation: image dimensions is not defined");
             }
@@ -2166,7 +2181,7 @@ class AnnotationBase {
                 this._renderedControls = this.renderControls();
             }
             yield new Promise((resolve, reject) => {
-                setTimeout(() => __awaiter$j(this, void 0, void 0, function* () {
+                setTimeout(() => __awaiter$k(this, void 0, void 0, function* () {
                     yield this.updateRenderAsync();
                     resolve();
                 }), 0);
@@ -2175,7 +2190,7 @@ class AnnotationBase {
         });
     }
     moveToAsync(point) {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             const aabb = this.aabb;
             const width = aabb[1].x - aabb[0].x;
             const height = aabb[1].y - aabb[0].y;
@@ -2186,7 +2201,7 @@ class AnnotationBase {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (!center) {
                 const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this.aabb;
                 center = new Vec2((xmin + xmax) / 2, (ymin + ymax) / 2);
@@ -2211,12 +2226,12 @@ class AnnotationBase {
         };
     }
     setTextContentAsync(text, undoable = true) {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             const oldText = this._textContent;
             this._textContent = text;
             this._dateModified = new Date();
             const undoAction = undoable
-                ? () => __awaiter$j(this, void 0, void 0, function* () {
+                ? () => __awaiter$k(this, void 0, void 0, function* () {
                     yield this.setTextContentAsync(oldText, false);
                 })
                 : undefined;
@@ -2224,7 +2239,7 @@ class AnnotationBase {
         });
     }
     toImageAsync() {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             const renderedContent = this._renderedContent;
             if (!renderedContent) {
                 return null;
@@ -2377,13 +2392,13 @@ class AnnotationBase {
         return mat;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             this._dateModified = new Date();
             this._aabbIsActual = false;
             yield this.updateRenderAsync();
             const invertedMat = Mat3.invert(matrix);
             const undoAction = undoable
-                ? () => __awaiter$j(this, void 0, void 0, function* () {
+                ? () => __awaiter$k(this, void 0, void 0, function* () {
                     yield this.applyCommonTransformAsync(invertedMat, false);
                 })
                 : undefined;
@@ -2391,7 +2406,7 @@ class AnnotationBase {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -2400,7 +2415,7 @@ class AnnotationBase {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$j(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$k(this, void 0, void 0, function* () {
                 this._svgContentCopy.remove();
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 if (this._moved) {
@@ -2526,12 +2541,12 @@ class AnnotationBase {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
             this._renderedControls.innerHTML = "";
-            const contentRenderResult = this.renderAppearance();
+            const contentRenderResult = yield this.renderAppearanceAsync();
             if (!contentRenderResult || !((_a = contentRenderResult.elements) === null || _a === void 0 ? void 0 : _a.length)) {
                 this._renderedBox = null;
                 this._svgContentCopy = null;
@@ -2563,9 +2578,10 @@ class AnnotationBase {
 const SELECTION_STROKE_WIDTH = 20;
 const BEZIER_CONSTANT = 0.551915;
 const CLOUD_ARC_RATIO = 0.02;
-const LINE_END_MULTIPLIER = 3;
+const LINE_END_SIZE_RATIO = 3;
 const LINE_END_MIN_SIZE = 10;
-const LINE_CAPTION_SIZE = 14;
+const LINE_CAPTION_SIZE_RATIO = 5;
+const LINE_CAPTION_FONT_RATIO = 4;
 const lineEndingTypes = {
     SQUARE: "square",
     CIRCLE: "circle",
@@ -2579,7 +2595,7 @@ const lineEndingTypes = {
     SLASH: "slash",
 };
 function buildLineEndingPath(point, type, strokeWidth, side) {
-    const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
+    const size = Math.max(strokeWidth * LINE_END_SIZE_RATIO, LINE_END_MIN_SIZE);
     let text = "";
     switch (type) {
         case lineEndingTypes.ARROW_OPEN:
@@ -2686,7 +2702,7 @@ function getLineRenderHelpers(start, end) {
     };
 }
 
-var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2741,7 +2757,7 @@ class PenAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$i(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             let x;
             let y;
             const vec = new Vec2();
@@ -2790,72 +2806,74 @@ class PenAnnotation extends AnnotationBase {
         this._aabb[0].set(xMin, yMin);
         this._aabb[1].set(xMax, yMax);
     }
-    renderAppearance() {
-        try {
-            const clipPaths = [];
-            const elements = [];
-            const pickHelpers = [];
-            const [min, max] = this.aabb;
-            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            clipPath.id = `clip0_${this.uuid}`;
-            clipPath.innerHTML = "<path d=\""
-                + `M${min.x},${min.y} `
-                + `L${max.x},${min.y} `
-                + `L${max.x},${max.y} `
-                + `L${min.x},${max.y} `
-                + "z"
-                + "\"/>";
-            clipPaths.push(clipPath);
-            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            group.setAttribute("clip-path", `url(#${clipPath.id})`);
-            const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            clonedGroup.classList.add("annotation-pick-helper");
-            for (const pathCoords of this.pathList) {
-                if (!(pathCoords === null || pathCoords === void 0 ? void 0 : pathCoords.length)) {
-                    continue;
+    renderAppearanceAsync() {
+        return __awaiter$j(this, void 0, void 0, function* () {
+            try {
+                const clipPaths = [];
+                const elements = [];
+                const pickHelpers = [];
+                const [min, max] = this.aabb;
+                const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                clipPath.id = `clip0_${this.uuid}`;
+                clipPath.innerHTML = "<path d=\""
+                    + `M${min.x},${min.y} `
+                    + `L${max.x},${min.y} `
+                    + `L${max.x},${max.y} `
+                    + `L${min.x},${max.y} `
+                    + "z"
+                    + "\"/>";
+                clipPaths.push(clipPath);
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("clip-path", `url(#${clipPath.id})`);
+                const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                clonedGroup.classList.add("annotation-pick-helper");
+                for (const pathCoords of this.pathList) {
+                    if (!(pathCoords === null || pathCoords === void 0 ? void 0 : pathCoords.length)) {
+                        continue;
+                    }
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("fill", "none");
+                    const [r, g, b, a] = this._strokeColor;
+                    path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                    path.setAttribute("stroke-width", this._strokeWidth + "");
+                    if (this._strokeDashGap) {
+                        path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+                    }
+                    let d = `M ${pathCoords[0]} ${pathCoords[1]}`;
+                    for (let i = 2; i < pathCoords.length;) {
+                        d += ` L ${pathCoords[i++]} ${pathCoords[i++]}`;
+                    }
+                    path.setAttribute("d", d);
+                    group.append(path);
+                    const clonedPath = path.cloneNode(true);
+                    const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+                        ? SELECTION_STROKE_WIDTH
+                        : this._strokeWidth;
+                    clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+                    clonedPath.setAttribute("stroke", "transparent");
+                    clonedPath.setAttribute("fill", "none");
+                    clonedGroup.append(clonedPath);
                 }
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("fill", "none");
-                const [r, g, b, a] = this._strokeColor;
-                path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-                path.setAttribute("stroke-width", this._strokeWidth + "");
-                if (this._strokeDashGap) {
-                    path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
-                }
-                let d = `M ${pathCoords[0]} ${pathCoords[1]}`;
-                for (let i = 2; i < pathCoords.length;) {
-                    d += ` L ${pathCoords[i++]} ${pathCoords[i++]}`;
-                }
-                path.setAttribute("d", d);
-                group.append(path);
-                const clonedPath = path.cloneNode(true);
-                const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
-                    ? SELECTION_STROKE_WIDTH
-                    : this._strokeWidth;
-                clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-                clonedPath.setAttribute("stroke", "transparent");
-                clonedPath.setAttribute("fill", "none");
-                clonedGroup.append(clonedPath);
+                elements.push({
+                    element: group,
+                    blendMode: "normal",
+                });
+                pickHelpers.push(clonedGroup);
+                return {
+                    elements,
+                    clipPaths,
+                    pickHelpers,
+                };
             }
-            elements.push({
-                element: group,
-                blendMode: "normal",
-            });
-            pickHelpers.push(clonedGroup);
-            return {
-                elements,
-                clipPaths,
-                pickHelpers,
-            };
-        }
-        catch (e) {
-            console.log(`Annotation render error: ${e.message}`);
-            return null;
-        }
+            catch (e) {
+                console.log(`Annotation render error: ${e.message}`);
+                return null;
+            }
+        });
     }
 }
 
-var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2932,7 +2950,7 @@ class PenAnnotator extends Annotator {
         this.removeTempPenData();
     }
     saveAnnotationAsync() {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             if (!this._annotationPathData) {
                 return;
             }
@@ -3110,7 +3128,7 @@ class GeometricAnnotation extends AnnotationBase {
     }
 }
 
-var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3172,7 +3190,7 @@ class SquareAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$g(this, void 0, void 0, function* () {
+        return __awaiter$h(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners(false);
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -3196,93 +3214,95 @@ class SquareAnnotation extends GeometricAnnotation {
         this._aabb[0].setFromVec2(min);
         this._aabb[1].setFromVec2(max);
     }
-    renderAppearance() {
-        try {
-            const clipPaths = [];
-            const elements = [];
-            const pickHelpers = [];
-            const [min, max] = this.aabb;
-            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            clipPath.id = `clip0_${this.uuid}`;
-            clipPath.innerHTML = "<path d=\""
-                + `M${min.x},${min.y} `
-                + `L${max.x},${min.y} `
-                + `L${max.x},${max.y} `
-                + `L${min.x},${max.y} `
-                + "Z"
-                + "\"/>";
-            clipPaths.push(clipPath);
-            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            group.setAttribute("clip-path", `url(#${clipPath.id})`);
-            const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            clonedGroup.classList.add("annotation-pick-helper");
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("fill", "none");
-            const [r, g, b, a] = this._strokeColor;
-            path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-            path.setAttribute("stroke-width", this._strokeWidth + "");
-            if (this._strokeDashGap) {
-                path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
-            }
-            let d = "";
-            const w = this._width / 2;
-            const h = this._height / 2;
-            const bl = new Vec2(-w, -h);
-            const br = new Vec2(w, -h);
-            const tr = new Vec2(w, h);
-            const tl = new Vec2(-w, h);
-            if (this._cloud) {
-                path.setAttribute("stroke-linecap", "round");
-                path.setAttribute("stroke-linejoin", "round");
-                const curveData = buildCloudCurveFromPolyline([
-                    bl.clone(),
-                    br.clone(),
-                    tr.clone(),
-                    tl.clone(),
-                    bl.clone(),
-                ], this._cloudArcSize);
-                d += `M${curveData.start.x},${curveData.start.y}`;
-                curveData.curves.forEach(x => {
-                    d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+    renderAppearanceAsync() {
+        return __awaiter$h(this, void 0, void 0, function* () {
+            try {
+                const clipPaths = [];
+                const elements = [];
+                const pickHelpers = [];
+                const [min, max] = this.aabb;
+                const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                clipPath.id = `clip0_${this.uuid}`;
+                clipPath.innerHTML = "<path d=\""
+                    + `M${min.x},${min.y} `
+                    + `L${max.x},${min.y} `
+                    + `L${max.x},${max.y} `
+                    + `L${min.x},${max.y} `
+                    + "Z"
+                    + "\"/>";
+                clipPaths.push(clipPath);
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("clip-path", `url(#${clipPath.id})`);
+                const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                clonedGroup.classList.add("annotation-pick-helper");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("fill", "none");
+                const [r, g, b, a] = this._strokeColor;
+                path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                path.setAttribute("stroke-width", this._strokeWidth + "");
+                if (this._strokeDashGap) {
+                    path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+                }
+                let d = "";
+                const w = this._width / 2;
+                const h = this._height / 2;
+                const bl = new Vec2(-w, -h);
+                const br = new Vec2(w, -h);
+                const tr = new Vec2(w, h);
+                const tl = new Vec2(-w, h);
+                if (this._cloud) {
+                    path.setAttribute("stroke-linecap", "round");
+                    path.setAttribute("stroke-linejoin", "round");
+                    const curveData = buildCloudCurveFromPolyline([
+                        bl.clone(),
+                        br.clone(),
+                        tr.clone(),
+                        tl.clone(),
+                        bl.clone(),
+                    ], this._cloudArcSize);
+                    d += `M${curveData.start.x},${curveData.start.y}`;
+                    curveData.curves.forEach(x => {
+                        d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+                    });
+                }
+                else {
+                    path.setAttribute("stroke-linecap", "square");
+                    path.setAttribute("stroke-linejoin", "miter");
+                    d += `M${bl.x},${bl.y}`;
+                    d += ` L${br.x},${br.y}`;
+                    d += ` L${tr.x},${tr.y}`;
+                    d += ` L${tl.x},${tl.y}`;
+                    d += " Z";
+                }
+                const { x: tx, y: ty } = this._center.clone().truncate(1);
+                const angle = this._rotation * 180 / Math.PI;
+                path.setAttribute("transform", `translate(${tx} ${ty}) rotate(${-angle})`);
+                path.setAttribute("d", d);
+                group.append(path);
+                const clonedPath = path.cloneNode(true);
+                const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+                    ? SELECTION_STROKE_WIDTH
+                    : this._strokeWidth;
+                clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+                clonedPath.setAttribute("stroke", "transparent");
+                clonedPath.setAttribute("fill", "none");
+                clonedGroup.append(clonedPath);
+                elements.push({
+                    element: group,
+                    blendMode: "normal",
                 });
+                pickHelpers.push(clonedGroup);
+                return {
+                    elements,
+                    clipPaths,
+                    pickHelpers,
+                };
             }
-            else {
-                path.setAttribute("stroke-linecap", "square");
-                path.setAttribute("stroke-linejoin", "miter");
-                d += `M${bl.x},${bl.y}`;
-                d += ` L${br.x},${br.y}`;
-                d += ` L${tr.x},${tr.y}`;
-                d += ` L${tl.x},${tl.y}`;
-                d += " Z";
+            catch (e) {
+                console.log(`Annotation render error: ${e.message}`);
+                return null;
             }
-            const { x: tx, y: ty } = this._center.clone().truncate(1);
-            const angle = this._rotation * 180 / Math.PI;
-            path.setAttribute("transform", `translate(${tx} ${ty}) rotate(${-angle})`);
-            path.setAttribute("d", d);
-            group.append(path);
-            const clonedPath = path.cloneNode(true);
-            const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
-                ? SELECTION_STROKE_WIDTH
-                : this._strokeWidth;
-            clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-            clonedPath.setAttribute("stroke", "transparent");
-            clonedPath.setAttribute("fill", "none");
-            clonedGroup.append(clonedPath);
-            elements.push({
-                element: group,
-                blendMode: "normal",
-            });
-            pickHelpers.push(clonedGroup);
-            return {
-                elements,
-                clipPaths,
-                pickHelpers,
-            };
-        }
-        catch (e) {
-            console.log(`Annotation render error: ${e.message}`);
-            return null;
-        }
+        });
     }
     getBoxCorners(withMargins) {
         const margin = withMargins
@@ -3371,7 +3391,7 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
-var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3445,7 +3465,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$f(this, void 0, void 0, function* () {
+        return __awaiter$g(this, void 0, void 0, function* () {
             if (!this._center) {
                 return;
             }
@@ -3531,7 +3551,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3590,7 +3610,7 @@ class CircleAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$f(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners(false);
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -3614,97 +3634,99 @@ class CircleAnnotation extends GeometricAnnotation {
         this._aabb[0].setFromVec2(min);
         this._aabb[1].setFromVec2(max);
     }
-    renderAppearance() {
-        try {
-            const clipPaths = [];
-            const elements = [];
-            const pickHelpers = [];
-            const [min, max] = this.aabb;
-            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            clipPath.id = `clip0_${this.uuid}`;
-            clipPath.innerHTML = "<path d=\""
-                + `M${min.x},${min.y} `
-                + `L${max.x},${min.y} `
-                + `L${max.x},${max.y} `
-                + `L${min.x},${max.y} `
-                + "Z"
-                + "\"/>";
-            clipPaths.push(clipPath);
-            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            group.setAttribute("clip-path", `url(#${clipPath.id})`);
-            const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            clonedGroup.classList.add("annotation-pick-helper");
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("fill", "none");
-            const [r, g, b, a] = this._strokeColor;
-            path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-            path.setAttribute("stroke-width", this._strokeWidth + "");
-            if (this._strokeDashGap) {
-                path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
-            }
-            let d = "";
-            const rx = this._rx;
-            const ry = this._ry;
-            const topV = new Vec2(0, ry);
-            const bottomV = new Vec2(0, -ry);
-            const leftV = new Vec2(-rx, 0);
-            const rightV = new Vec2(rx, 0);
-            const zeroV = new Vec2();
-            if (this._cloud) {
-                path.setAttribute("stroke-linecap", "round");
-                path.setAttribute("stroke-linejoin", "round");
-                const curveData = buildCloudCurveFromEllipse(rx, ry, this._cloudArcSize, new Mat3());
-                d += `M${curveData.start.x},${curveData.start.y}`;
-                curveData.curves.forEach(x => {
-                    d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+    renderAppearanceAsync() {
+        return __awaiter$f(this, void 0, void 0, function* () {
+            try {
+                const clipPaths = [];
+                const elements = [];
+                const pickHelpers = [];
+                const [min, max] = this.aabb;
+                const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                clipPath.id = `clip0_${this.uuid}`;
+                clipPath.innerHTML = "<path d=\""
+                    + `M${min.x},${min.y} `
+                    + `L${max.x},${min.y} `
+                    + `L${max.x},${max.y} `
+                    + `L${min.x},${max.y} `
+                    + "Z"
+                    + "\"/>";
+                clipPaths.push(clipPath);
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("clip-path", `url(#${clipPath.id})`);
+                const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                clonedGroup.classList.add("annotation-pick-helper");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("fill", "none");
+                const [r, g, b, a] = this._strokeColor;
+                path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                path.setAttribute("stroke-width", this._strokeWidth + "");
+                if (this._strokeDashGap) {
+                    path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+                }
+                let d = "";
+                const rx = this._rx;
+                const ry = this._ry;
+                const topV = new Vec2(0, ry);
+                const bottomV = new Vec2(0, -ry);
+                const leftV = new Vec2(-rx, 0);
+                const rightV = new Vec2(rx, 0);
+                const zeroV = new Vec2();
+                if (this._cloud) {
+                    path.setAttribute("stroke-linecap", "round");
+                    path.setAttribute("stroke-linejoin", "round");
+                    const curveData = buildCloudCurveFromEllipse(rx, ry, this._cloudArcSize, new Mat3());
+                    d += `M${curveData.start.x},${curveData.start.y}`;
+                    curveData.curves.forEach(x => {
+                        d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+                    });
+                }
+                else {
+                    const c = BEZIER_CONSTANT;
+                    const cx = Vec2.multiplyByScalar(rightV, c);
+                    const cy = Vec2.multiplyByScalar(topV, c);
+                    const controlTR1 = Vec2.add(Vec2.add(zeroV, topV), cx);
+                    const controlTR2 = Vec2.add(Vec2.add(zeroV, cy), rightV);
+                    const controlRB1 = Vec2.add(Vec2.subtract(zeroV, cy), rightV);
+                    const controlRB2 = Vec2.add(Vec2.subtract(zeroV, topV), cx);
+                    const controlBL1 = Vec2.subtract(Vec2.subtract(zeroV, topV), cx);
+                    const controlBL2 = Vec2.subtract(Vec2.subtract(zeroV, cy), rightV);
+                    const controlLT1 = Vec2.subtract(Vec2.add(zeroV, cy), rightV);
+                    const controlLT2 = Vec2.subtract(Vec2.add(zeroV, topV), cx);
+                    d += `M${topV.x},${topV.y}`;
+                    d += ` C${controlTR1.x},${controlTR1.y} ${controlTR2.x},${controlTR2.y} ${rightV.x},${rightV.y}`;
+                    d += ` C${controlRB1.x},${controlRB1.y} ${controlRB2.x},${controlRB2.y} ${bottomV.x},${bottomV.y}`;
+                    d += ` C${controlBL1.x},${controlBL1.y} ${controlBL2.x},${controlBL2.y} ${leftV.x},${leftV.y}`;
+                    d += ` C${controlLT1.x},${controlLT1.y} ${controlLT2.x},${controlLT2.y} ${topV.x},${topV.y}`;
+                }
+                const { x: tx, y: ty } = this._center.clone().truncate(1);
+                const angle = this._rotation * 180 / Math.PI;
+                path.setAttribute("transform", `translate(${tx} ${ty}) rotate(${-angle})`);
+                path.setAttribute("d", d);
+                group.append(path);
+                const clonedPath = path.cloneNode(true);
+                const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+                    ? SELECTION_STROKE_WIDTH
+                    : this._strokeWidth;
+                clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+                clonedPath.setAttribute("stroke", "transparent");
+                clonedPath.setAttribute("fill", "none");
+                clonedGroup.append(clonedPath);
+                elements.push({
+                    element: group,
+                    blendMode: "normal",
                 });
+                pickHelpers.push(clonedGroup);
+                return {
+                    elements,
+                    clipPaths,
+                    pickHelpers,
+                };
             }
-            else {
-                const c = BEZIER_CONSTANT;
-                const cx = Vec2.multiplyByScalar(rightV, c);
-                const cy = Vec2.multiplyByScalar(topV, c);
-                const controlTR1 = Vec2.add(Vec2.add(zeroV, topV), cx);
-                const controlTR2 = Vec2.add(Vec2.add(zeroV, cy), rightV);
-                const controlRB1 = Vec2.add(Vec2.subtract(zeroV, cy), rightV);
-                const controlRB2 = Vec2.add(Vec2.subtract(zeroV, topV), cx);
-                const controlBL1 = Vec2.subtract(Vec2.subtract(zeroV, topV), cx);
-                const controlBL2 = Vec2.subtract(Vec2.subtract(zeroV, cy), rightV);
-                const controlLT1 = Vec2.subtract(Vec2.add(zeroV, cy), rightV);
-                const controlLT2 = Vec2.subtract(Vec2.add(zeroV, topV), cx);
-                d += `M${topV.x},${topV.y}`;
-                d += ` C${controlTR1.x},${controlTR1.y} ${controlTR2.x},${controlTR2.y} ${rightV.x},${rightV.y}`;
-                d += ` C${controlRB1.x},${controlRB1.y} ${controlRB2.x},${controlRB2.y} ${bottomV.x},${bottomV.y}`;
-                d += ` C${controlBL1.x},${controlBL1.y} ${controlBL2.x},${controlBL2.y} ${leftV.x},${leftV.y}`;
-                d += ` C${controlLT1.x},${controlLT1.y} ${controlLT2.x},${controlLT2.y} ${topV.x},${topV.y}`;
+            catch (e) {
+                console.log(`Annotation render error: ${e.message}`);
+                return null;
             }
-            const { x: tx, y: ty } = this._center.clone().truncate(1);
-            const angle = this._rotation * 180 / Math.PI;
-            path.setAttribute("transform", `translate(${tx} ${ty}) rotate(${-angle})`);
-            path.setAttribute("d", d);
-            group.append(path);
-            const clonedPath = path.cloneNode(true);
-            const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
-                ? SELECTION_STROKE_WIDTH
-                : this._strokeWidth;
-            clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-            clonedPath.setAttribute("stroke", "transparent");
-            clonedPath.setAttribute("fill", "none");
-            clonedGroup.append(clonedPath);
-            elements.push({
-                element: group,
-                blendMode: "normal",
-            });
-            pickHelpers.push(clonedGroup);
-            return {
-                elements,
-                clipPaths,
-                pickHelpers,
-            };
-        }
-        catch (e) {
-            console.log(`Annotation render error: ${e.message}`);
-            return null;
-        }
+        });
     }
     getBoxCorners(withMargins) {
         const margin = withMargins
@@ -3739,7 +3761,7 @@ class CircleAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3813,7 +3835,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$d(this, void 0, void 0, function* () {
+        return __awaiter$e(this, void 0, void 0, function* () {
             if (!this._center) {
                 return;
             }
@@ -3904,7 +3926,7 @@ class PolyAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3945,7 +3967,7 @@ class PolylineAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             this._vertices.forEach(x => x.applyMat3(matrix));
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
@@ -3956,78 +3978,80 @@ class PolylineAnnotation extends PolyAnnotation {
             (this._endings[0] && this._endings[0] !== lineEndingTypes.NONE
                 || this._endings[1] && this._endings[1] !== lineEndingTypes.NONE);
         const margin = endingNotNone
-            ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_MULTIPLIER * this._strokeWidth)
+            ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_SIZE_RATIO * this._strokeWidth)
             : this._strokeWidth / 2;
         min.addScalar(-margin);
         max.addScalar(margin);
         this._aabb[0].setFromVec2(min);
         this._aabb[1].setFromVec2(max);
     }
-    renderAppearance() {
-        try {
-            const clipPaths = [];
-            const elements = [];
-            const pickHelpers = [];
-            const [min, max] = this.aabb;
-            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            clipPath.id = `clip0_${this.uuid}`;
-            clipPath.innerHTML = "<path d=\""
-                + `M${min.x},${min.y} `
-                + `L${max.x},${min.y} `
-                + `L${max.x},${max.y} `
-                + `L${min.x},${max.y} `
-                + "z"
-                + "\"/>";
-            clipPaths.push(clipPath);
-            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            group.setAttribute("clip-path", `url(#${clipPath.id})`);
-            const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            clonedGroup.classList.add("annotation-pick-helper");
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("fill", "none");
-            const [r, g, b, a] = this._strokeColor;
-            path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-            path.setAttribute("stroke-width", this._strokeWidth + "");
-            if (this._strokeDashGap) {
-                path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+    renderAppearanceAsync() {
+        return __awaiter$d(this, void 0, void 0, function* () {
+            try {
+                const clipPaths = [];
+                const elements = [];
+                const pickHelpers = [];
+                const [min, max] = this.aabb;
+                const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                clipPath.id = `clip0_${this.uuid}`;
+                clipPath.innerHTML = "<path d=\""
+                    + `M${min.x},${min.y} `
+                    + `L${max.x},${min.y} `
+                    + `L${max.x},${max.y} `
+                    + `L${min.x},${max.y} `
+                    + "z"
+                    + "\"/>";
+                clipPaths.push(clipPath);
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("clip-path", `url(#${clipPath.id})`);
+                const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                clonedGroup.classList.add("annotation-pick-helper");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("fill", "none");
+                const [r, g, b, a] = this._strokeColor;
+                path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                path.setAttribute("stroke-width", this._strokeWidth + "");
+                if (this._strokeDashGap) {
+                    path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+                }
+                path.setAttribute("stroke-linecap", "square");
+                path.setAttribute("stroke-linejoin", "miter");
+                const zeroVertex = (this._vertices && this._vertices[0]) || new Vec2();
+                let d = `M${zeroVertex.x},${zeroVertex.y}`;
+                for (let i = 1; i < this._vertices.length; i++) {
+                    const vertex = this._vertices[i];
+                    d += ` L${vertex.x},${vertex.y}`;
+                }
+                path.setAttribute("d", d);
+                group.append(path);
+                const clonedPath = path.cloneNode(true);
+                const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+                    ? SELECTION_STROKE_WIDTH
+                    : this._strokeWidth;
+                clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+                clonedPath.setAttribute("stroke", "transparent");
+                clonedPath.setAttribute("fill", "none");
+                clonedGroup.append(clonedPath);
+                elements.push({
+                    element: group,
+                    blendMode: "normal",
+                });
+                pickHelpers.push(clonedGroup);
+                return {
+                    elements,
+                    clipPaths,
+                    pickHelpers,
+                };
             }
-            path.setAttribute("stroke-linecap", "square");
-            path.setAttribute("stroke-linejoin", "miter");
-            const zeroVertex = (this._vertices && this._vertices[0]) || new Vec2();
-            let d = `M${zeroVertex.x},${zeroVertex.y}`;
-            for (let i = 1; i < this._vertices.length; i++) {
-                const vertex = this._vertices[i];
-                d += ` L${vertex.x},${vertex.y}`;
+            catch (e) {
+                console.log(`Annotation render error: ${e.message}`);
+                return null;
             }
-            path.setAttribute("d", d);
-            group.append(path);
-            const clonedPath = path.cloneNode(true);
-            const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
-                ? SELECTION_STROKE_WIDTH
-                : this._strokeWidth;
-            clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-            clonedPath.setAttribute("stroke", "transparent");
-            clonedPath.setAttribute("fill", "none");
-            clonedGroup.append(clonedPath);
-            elements.push({
-                element: group,
-                blendMode: "normal",
-            });
-            pickHelpers.push(clonedGroup);
-            return {
-                elements,
-                clipPaths,
-                pickHelpers,
-            };
-        }
-        catch (e) {
-            console.log(`Annotation render error: ${e.message}`);
-            return null;
-        }
+        });
     }
 }
 
-var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4108,7 +4132,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$b(this, void 0, void 0, function* () {
+        return __awaiter$c(this, void 0, void 0, function* () {
             if (this._points.length < 2) {
                 return;
             }
@@ -4169,7 +4193,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4213,7 +4237,7 @@ class PolygonAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             this._vertices.forEach(x => x.applyMat3(matrix));
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
@@ -4226,92 +4250,94 @@ class PolygonAnnotation extends PolyAnnotation {
         this._aabb[0].setFromVec2(min);
         this._aabb[1].setFromVec2(max);
     }
-    renderAppearance() {
+    renderAppearanceAsync() {
         var _a, _b;
-        try {
-            if (!((_a = this._vertices) === null || _a === void 0 ? void 0 : _a.length) || this._vertices.length < 3) {
-                throw new Error("Any polygon can't have less than 3 vertices");
-            }
-            const clipPaths = [];
-            const elements = [];
-            const pickHelpers = [];
-            const [min, max] = this.aabb;
-            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            clipPath.id = `clip0_${this.uuid}`;
-            clipPath.innerHTML = "<path d=\""
-                + `M${min.x},${min.y} `
-                + `L${max.x},${min.y} `
-                + `L${max.x},${max.y} `
-                + `L${min.x},${max.y} `
-                + "z"
-                + "\"/>";
-            clipPaths.push(clipPath);
-            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            group.setAttribute("clip-path", `url(#${clipPath.id})`);
-            const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            clonedGroup.classList.add("annotation-pick-helper");
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("fill", "none");
-            const [r, g, b, a] = this._strokeColor;
-            path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-            path.setAttribute("stroke-width", this._strokeWidth + "");
-            if (this._strokeDashGap) {
-                path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
-            }
-            let d;
-            if (this._cloud) {
-                path.setAttribute("stroke-linecap", "round");
-                path.setAttribute("stroke-linejoin", "round");
-                const vertices = [...this._vertices];
-                vertices.push(this._vertices[0]);
-                const curveData = buildCloudCurveFromPolyline(vertices, this._cloudArcSize);
-                d = `M${curveData.start.x},${curveData.start.y}`;
-                curveData.curves.forEach(x => {
-                    d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
-                });
-            }
-            else {
-                path.setAttribute("stroke-linecap", "square");
-                path.setAttribute("stroke-linejoin", "miter");
-                const zeroVertex = ((_b = this._vertices) === null || _b === void 0 ? void 0 : _b.length)
-                    ? this._vertices[0]
-                    : new Vec2();
-                d = `M${zeroVertex.x},${zeroVertex.y}`;
-                for (let i = 1; i < this._vertices.length; i++) {
-                    const vertex = this._vertices[i];
-                    d += ` L${vertex.x},${vertex.y}`;
+        return __awaiter$b(this, void 0, void 0, function* () {
+            try {
+                if (!((_a = this._vertices) === null || _a === void 0 ? void 0 : _a.length) || this._vertices.length < 3) {
+                    throw new Error("Any polygon can't have less than 3 vertices");
                 }
-                d += " Z";
+                const clipPaths = [];
+                const elements = [];
+                const pickHelpers = [];
+                const [min, max] = this.aabb;
+                const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                clipPath.id = `clip0_${this.uuid}`;
+                clipPath.innerHTML = "<path d=\""
+                    + `M${min.x},${min.y} `
+                    + `L${max.x},${min.y} `
+                    + `L${max.x},${max.y} `
+                    + `L${min.x},${max.y} `
+                    + "z"
+                    + "\"/>";
+                clipPaths.push(clipPath);
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("clip-path", `url(#${clipPath.id})`);
+                const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                clonedGroup.classList.add("annotation-pick-helper");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("fill", "none");
+                const [r, g, b, a] = this._strokeColor;
+                path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                path.setAttribute("stroke-width", this._strokeWidth + "");
+                if (this._strokeDashGap) {
+                    path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
+                }
+                let d;
+                if (this._cloud) {
+                    path.setAttribute("stroke-linecap", "round");
+                    path.setAttribute("stroke-linejoin", "round");
+                    const vertices = [...this._vertices];
+                    vertices.push(this._vertices[0]);
+                    const curveData = buildCloudCurveFromPolyline(vertices, this._cloudArcSize);
+                    d = `M${curveData.start.x},${curveData.start.y}`;
+                    curveData.curves.forEach(x => {
+                        d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+                    });
+                }
+                else {
+                    path.setAttribute("stroke-linecap", "square");
+                    path.setAttribute("stroke-linejoin", "miter");
+                    const zeroVertex = ((_b = this._vertices) === null || _b === void 0 ? void 0 : _b.length)
+                        ? this._vertices[0]
+                        : new Vec2();
+                    d = `M${zeroVertex.x},${zeroVertex.y}`;
+                    for (let i = 1; i < this._vertices.length; i++) {
+                        const vertex = this._vertices[i];
+                        d += ` L${vertex.x},${vertex.y}`;
+                    }
+                    d += " Z";
+                }
+                path.setAttribute("d", d);
+                group.append(path);
+                const clonedPath = path.cloneNode(true);
+                const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
+                    ? SELECTION_STROKE_WIDTH
+                    : this._strokeWidth;
+                clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+                clonedPath.setAttribute("stroke", "transparent");
+                clonedPath.setAttribute("fill", "none");
+                clonedGroup.append(clonedPath);
+                elements.push({
+                    element: group,
+                    blendMode: "normal",
+                });
+                pickHelpers.push(clonedGroup);
+                return {
+                    elements,
+                    clipPaths,
+                    pickHelpers,
+                };
             }
-            path.setAttribute("d", d);
-            group.append(path);
-            const clonedPath = path.cloneNode(true);
-            const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
-                ? SELECTION_STROKE_WIDTH
-                : this._strokeWidth;
-            clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-            clonedPath.setAttribute("stroke", "transparent");
-            clonedPath.setAttribute("fill", "none");
-            clonedGroup.append(clonedPath);
-            elements.push({
-                element: group,
-                blendMode: "normal",
-            });
-            pickHelpers.push(clonedGroup);
-            return {
-                elements,
-                clipPaths,
-                pickHelpers,
-            };
-        }
-        catch (e) {
-            console.log(`Annotation render error: ${e.message}`);
-            return null;
-        }
+            catch (e) {
+                console.log(`Annotation render error: ${e.message}`);
+                return null;
+            }
+        });
     }
 }
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4392,7 +4418,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             if (this._points.length < 3) {
                 return;
             }
@@ -4500,6 +4526,134 @@ class SvgTempPath {
         this._path.setAttribute("d", "");
         this._path.remove();
     }
+}
+
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+function buildTextDataAsync(text, options) {
+    return __awaiter$9(this, void 0, void 0, function* () {
+        let result;
+        if (text) {
+            const pTemp = document.createElement("p");
+            pTemp.style.color = "black";
+            pTemp.style.fontSize = options.fontSize + "px";
+            pTemp.style.fontFamily = "arial";
+            pTemp.style.fontWeight = "normal";
+            pTemp.style.fontStyle = "normal";
+            pTemp.style.lineHeight = "normal";
+            pTemp.style.overflowWrap = "normal";
+            pTemp.style.textAlign = options.textAlign;
+            pTemp.style.textDecoration = "none";
+            pTemp.style.verticalAlign = "top";
+            pTemp.style.whiteSpace = "pre-wrap";
+            pTemp.style.wordBreak = "normal";
+            pTemp.style.position = "fixed";
+            pTemp.style.left = "0";
+            pTemp.style.top = "0";
+            pTemp.style.margin = "0";
+            pTemp.style.padding = "0";
+            pTemp.style.width = options.maxWidth.toFixed() + "px";
+            pTemp.style.visibility = "hidden";
+            pTemp.style.transform = "scale(0.1)";
+            pTemp.style.transformOrigin = "top left";
+            document.body.append(pTemp);
+            const words = text.split(/([- \n\r])/u);
+            const lines = [];
+            let currentLineText = "";
+            let previousHeight = 0;
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                pTemp.textContent += word;
+                yield runEmptyTimeout();
+                const currentHeight = pTemp.offsetHeight;
+                previousHeight || (previousHeight = currentHeight);
+                if (currentHeight > previousHeight) {
+                    lines.push(currentLineText);
+                    currentLineText = word;
+                    previousHeight = currentHeight;
+                }
+                else {
+                    currentLineText += word;
+                }
+            }
+            lines.push(currentLineText);
+            pTemp.innerHTML = "";
+            const lineSpans = [];
+            for (const line of lines) {
+                const lineSpan = document.createElement("span");
+                lineSpan.style.position = "relative";
+                lineSpan.textContent = line;
+                lineSpans.push(lineSpan);
+                pTemp.append(lineSpan);
+            }
+            yield runEmptyTimeout();
+            const textWidth = pTemp.offsetWidth;
+            const textHeight = pTemp.offsetHeight;
+            let pivotPoint;
+            switch (options.pivotPoint) {
+                case "top-left":
+                    pivotPoint = new Vec2(0, textHeight);
+                    break;
+                case "bottom-margin":
+                    pivotPoint = new Vec2(textWidth / 2, options.strokeWidth);
+                    break;
+                case "center":
+                default:
+                    pivotPoint = new Vec2(textWidth / 2, textHeight / 2);
+                    break;
+            }
+            const lineData = [];
+            for (let i = 0; i < lines.length; i++) {
+                const span = lineSpans[i];
+                const x = span.offsetLeft;
+                const y = span.offsetTop;
+                const width = span.offsetWidth;
+                const height = span.offsetHeight;
+                const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
+                const lineTopRightPdf = new Vec2(x + width, textHeight - y);
+                const lineRect = [
+                    lineBottomLeftPdf.x, lineBottomLeftPdf.y,
+                    lineTopRightPdf.x, lineTopRightPdf.y
+                ];
+                const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
+                const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
+                const lineRelativeRect = [
+                    lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
+                    lineTopRightPdfRel.x, lineTopRightPdfRel.y
+                ];
+                lineData.push({
+                    text: lines[i],
+                    rect: lineRect,
+                    relativeRect: lineRelativeRect,
+                });
+            }
+            const textRect = [0, 0, textWidth, textHeight];
+            const textRelativeRect = [
+                0 - pivotPoint.x, 0 - pivotPoint.y,
+                textWidth - pivotPoint.x, textHeight - pivotPoint.y
+            ];
+            const textData = {
+                width: textWidth,
+                height: textHeight,
+                rect: textRect,
+                relativeRect: textRelativeRect,
+                lines: lineData,
+            };
+            pTemp.remove();
+            result = textData;
+        }
+        else {
+            result = null;
+        }
+        return result;
+    });
 }
 
 var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -4635,6 +4789,7 @@ class LineAnnotation extends GeometricAnnotation {
         });
         return __awaiter$8(this, void 0, void 0, function* () {
             this._caption = text;
+            this.updateAABB();
             yield _super.setTextContentAsync.call(this, text, undoable);
             yield this.updateRenderAsync();
         });
@@ -4648,89 +4803,129 @@ class LineAnnotation extends GeometricAnnotation {
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
     }
-    renderAppearance() {
-        try {
-            const clipPaths = [];
-            const elements = [];
-            const pickHelpers = [];
-            const [min, max] = this.aabb;
-            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            clipPath.id = `clip0_${this.uuid}`;
-            clipPath.innerHTML = "<path d=\""
-                + `M${min.x},${min.y} `
-                + `L${max.x},${min.y} `
-                + `L${max.x},${max.y} `
-                + `L${min.x},${max.y} `
-                + "z"
-                + "\"/>";
-            clipPaths.push(clipPath);
-            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            group.setAttribute("clip-path", `url(#${clipPath.id})`);
-            const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            clonedGroup.classList.add("annotation-pick-helper");
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("fill", "none");
-            const [r, g, b, a] = this._strokeColor;
-            path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-            path.setAttribute("stroke-width", this._strokeWidth + "");
-            if (this._strokeDashGap) {
-                path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
-            }
-            path.setAttribute("stroke-linecap", "square");
-            path.setAttribute("stroke-linejoin", "miter");
-            const { matrix, alignedStart, alignedEnd } = this.getRenderHelpers();
-            let d = `M${alignedStart.x},${alignedStart.y}`;
-            d += ` L${alignedEnd.x},${alignedEnd.y}`;
-            if (this._leaderLinePosHeight || this._leaderLineNegHeight) {
-                const llBottom = new Vec2(0, -Math.abs(this._leaderLineNegHeight));
-                const llTop = new Vec2(0, Math.abs(this._leaderLinePosHeight));
-                const llLeftStart = Vec2.add(alignedStart, llBottom);
-                const llLeftEnd = Vec2.add(alignedStart, llTop);
-                const llRightStart = Vec2.add(alignedEnd, llBottom);
-                const llRightEnd = Vec2.add(alignedEnd, llTop);
-                d += ` M${llLeftStart.x},${llLeftStart.y}`;
-                d += ` L${llLeftEnd.x},${llLeftEnd.y}`;
-                d += ` M${llRightStart.x},${llRightStart.y}`;
-                d += ` L${llRightEnd.x},${llRightEnd.y}`;
-            }
-            console.log(this._endings);
-            if (this._endings) {
-                if (this._endings[0] !== lineEndingTypes.NONE) {
-                    const endingPathString = buildLineEndingPath(alignedStart, this._endings[0], this._strokeWidth, "left");
-                    d += " " + endingPathString;
+    renderAppearanceAsync() {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            try {
+                const clipPaths = [];
+                const elements = [];
+                const pickHelpers = [];
+                const sw = this._strokeWidth;
+                const [min, max] = this.aabb;
+                const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                clipPath.id = `clip0_${this.uuid}`;
+                clipPath.innerHTML = "<path d=\""
+                    + `M${min.x},${min.y} `
+                    + `L${max.x},${min.y} `
+                    + `L${max.x},${max.y} `
+                    + `L${min.x},${max.y} `
+                    + "z"
+                    + "\"/>";
+                clipPaths.push(clipPath);
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("clip-path", `url(#${clipPath.id})`);
+                const clonedGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                clonedGroup.classList.add("annotation-pick-helper");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("fill", "none");
+                const [r, g, b, a] = this._strokeColor;
+                path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                path.setAttribute("stroke-width", this._strokeWidth + "");
+                if (this._strokeDashGap) {
+                    path.setAttribute("stroke-dasharray", this._strokeDashGap.join(" "));
                 }
-                if (this._endings[1] !== lineEndingTypes.NONE) {
-                    const endingPathString = buildLineEndingPath(alignedEnd, this._endings[1], this._strokeWidth, "right");
-                    d += " " + endingPathString;
+                path.setAttribute("stroke-linecap", "square");
+                path.setAttribute("stroke-linejoin", "miter");
+                const { matrix, alignedStart, alignedEnd } = this.getRenderHelpers();
+                let d = `M${alignedStart.x},${alignedStart.y}`;
+                d += ` L${alignedEnd.x},${alignedEnd.y}`;
+                if (this._leaderLinePosHeight || this._leaderLineNegHeight) {
+                    const llTop = new Vec2(0, -Math.abs(this._leaderLinePosHeight));
+                    const llBottom = new Vec2(0, Math.abs(this._leaderLineNegHeight));
+                    const llLeftStart = Vec2.add(alignedStart, llBottom);
+                    const llLeftEnd = Vec2.add(alignedStart, llTop);
+                    const llRightStart = Vec2.add(alignedEnd, llBottom);
+                    const llRightEnd = Vec2.add(alignedEnd, llTop);
+                    d += ` M${llLeftStart.x},${llLeftStart.y}`;
+                    d += ` L${llLeftEnd.x},${llLeftEnd.y}`;
+                    d += ` M${llRightStart.x},${llRightStart.y}`;
+                    d += ` L${llRightEnd.x},${llRightEnd.y}`;
                 }
+                if (this._endings) {
+                    if (this._endings[0] !== lineEndingTypes.NONE) {
+                        const endingPathString = buildLineEndingPath(alignedStart, this._endings[0], sw, "left");
+                        d += " " + endingPathString;
+                    }
+                    if (this._endings[1] !== lineEndingTypes.NONE) {
+                        const endingPathString = buildLineEndingPath(alignedEnd, this._endings[1], sw, "right");
+                        d += " " + endingPathString;
+                    }
+                }
+                path.setAttribute("d", d);
+                group.append(path);
+                if (this._caption) {
+                    const fontSize = LINE_CAPTION_FONT_RATIO * sw;
+                    const captionHeight = LINE_CAPTION_SIZE_RATIO * sw;
+                    const sidePadding = Math.max(sw * LINE_END_SIZE_RATIO, LINE_END_MIN_SIZE);
+                    const maxTextWidth = alignedEnd.getMagnitude() - 2 * sidePadding;
+                    const textPivot = new Vec2(alignedEnd.getMagnitude() / 2, -captionHeight / 2 - sw / 2);
+                    if (maxTextWidth > 0) {
+                        const textData = yield buildTextDataAsync(this._caption, {
+                            maxWidth: maxTextWidth,
+                            fontSize: fontSize,
+                            strokeWidth: sw,
+                            textAlign: "center",
+                            pivotPoint: "center",
+                        });
+                        const firstLine = textData.lines[0];
+                        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                        rect.setAttribute("x", textPivot.x + firstLine.relativeRect[0] + "");
+                        rect.setAttribute("y", textPivot.y - captionHeight / 2 + "");
+                        rect.setAttribute("width", firstLine.relativeRect[2] - firstLine.relativeRect[0] + "");
+                        rect.setAttribute("height", captionHeight + "");
+                        rect.setAttribute("fill", "rgba(255,255,255,0.5)");
+                        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        text.setAttribute("x", textPivot.x + "");
+                        text.setAttribute("y", textPivot.y + "");
+                        text.setAttribute("fill", "black");
+                        text.setAttribute("dominant-baseline", "middle");
+                        text.setAttribute("text-anchor", "middle");
+                        text.style.fontSize = fontSize + "px";
+                        text.style.fontFamily = "sans-serif";
+                        text.textContent = firstLine.text;
+                        group.append(rect, text);
+                    }
+                }
+                const matrixString = `matrix(${matrix.truncate(5).toFloatShortArray().join(",")})`;
+                group.childNodes.forEach(x => {
+                    if (x instanceof SVGGraphicsElement) {
+                        x.setAttribute("transform", matrixString);
+                    }
+                });
+                const clonedPath = path.cloneNode(true);
+                const clonedPathStrokeWidth = sw < SELECTION_STROKE_WIDTH
+                    ? SELECTION_STROKE_WIDTH
+                    : sw;
+                clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+                clonedPath.setAttribute("stroke", "transparent");
+                clonedPath.setAttribute("fill", "none");
+                clonedPath.setAttribute("transform", `matrix(${matrix.truncate(5).toFloatShortArray().join(",")})`);
+                clonedGroup.append(clonedPath);
+                elements.push({
+                    element: group,
+                    blendMode: "normal",
+                });
+                pickHelpers.push(clonedGroup);
+                return {
+                    elements,
+                    clipPaths,
+                    pickHelpers,
+                };
             }
-            path.setAttribute("d", d);
-            path.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
-            group.append(path);
-            const clonedPath = path.cloneNode(true);
-            const clonedPathStrokeWidth = this._strokeWidth < SELECTION_STROKE_WIDTH
-                ? SELECTION_STROKE_WIDTH
-                : this._strokeWidth;
-            clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-            clonedPath.setAttribute("stroke", "transparent");
-            clonedPath.setAttribute("fill", "none");
-            clonedPath.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
-            clonedGroup.append(clonedPath);
-            elements.push({
-                element: group,
-                blendMode: "normal",
-            });
-            pickHelpers.push(clonedGroup);
-            return {
-                elements,
-                clipPaths,
-                pickHelpers,
-            };
-        }
-        catch (e) {
-            console.log(`Annotation render error: ${e.message}`);
-            return null;
-        }
+            catch (e) {
+                console.log(`Annotation render error: ${e.message}`);
+                return null;
+            }
+        });
     }
     updateAABB() {
         const bbox = this.getBoxCorners();
@@ -4747,16 +4942,17 @@ class LineAnnotation extends GeometricAnnotation {
     }
     getBoxCorners(helpers) {
         const { matrix, alignedStart, alignedEnd } = helpers !== null && helpers !== void 0 ? helpers : this.getRenderHelpers();
+        const sw = this._strokeWidth;
         const endingNotNone = this._endings &&
             (this._endings[0] && this._endings[0] !== lineEndingTypes.NONE
                 || this._endings[1] && this._endings[1] !== lineEndingTypes.NONE);
         const margin = endingNotNone
-            ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_MULTIPLIER * this._strokeWidth)
-            : this._strokeWidth / 2;
-        const marginTop = Math.max(Math.abs(this._leaderLinePosHeight), margin, this._caption ? LINE_CAPTION_SIZE : 0);
+            ? sw / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_SIZE_RATIO * sw)
+            : sw / 2;
+        const marginTop = Math.max(Math.abs(this._leaderLinePosHeight), margin, this._caption ? LINE_CAPTION_SIZE_RATIO * sw + sw / 2 : 0);
         const marginBottom = Math.max(Math.abs(this._leaderLineNegHeight), margin);
-        const min = Vec2.add(alignedStart, new Vec2(-margin, -marginBottom));
-        const max = Vec2.add(alignedEnd, new Vec2(margin, marginTop));
+        const min = Vec2.add(alignedStart, new Vec2(-margin, -marginTop));
+        const max = Vec2.add(alignedEnd, new Vec2(margin, marginBottom));
         const bl = new Vec2(min.x, min.y).applyMat3(matrix);
         const br = new Vec2(max.x, min.y).applyMat3(matrix);
         const tr = new Vec2(max.x, max.y).applyMat3(matrix);
@@ -4968,8 +5164,8 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
                 [this._points[1].x, this._points[1].y],
             ],
             endings: [lineEndingTypes.NONE, lineEndingTypes.ARROW_OPEN],
-            leaderLinePosHeight: 0,
-            leaderLineNegHeight: 0,
+            leaderLinePosHeight: 50,
+            leaderLineNegHeight: 30,
             caption: null,
         };
         return dto;

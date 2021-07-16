@@ -1,7 +1,7 @@
 import { Mat3, Vec2 } from "mathador";
 
 import { AppearanceRenderResult, LineEndingType, lineEndingTypes, 
-  LINE_END_MIN_SIZE, LINE_END_MULTIPLIER, SELECTION_STROKE_WIDTH, 
+  LINE_END_MIN_SIZE, LINE_END_SIZE_RATIO, SELECTION_STROKE_WIDTH, 
   SvgElementWithBlendMode } from "../../drawing/utils";
 
 import { EventService } from "../../common/event-service";
@@ -65,7 +65,7 @@ export class PolylineAnnotation extends PolyAnnotation {
         || this._endings[1] && this._endings[1] !== lineEndingTypes.NONE);
 
     const margin = endingNotNone
-      ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_MULTIPLIER * this._strokeWidth)
+      ? this._strokeWidth / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_SIZE_RATIO * this._strokeWidth)
       : this._strokeWidth / 2;
     min.addScalar(-margin);
     max.addScalar(margin);
@@ -75,7 +75,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     this._aabb[1].setFromVec2(max);
   }  
 
-  protected renderAppearance(): AppearanceRenderResult {   
+  protected async renderAppearanceAsync(): Promise<AppearanceRenderResult> {   
     try {
       const clipPaths: SVGClipPathElement[] = [];
       const elements: SvgElementWithBlendMode[] = [];

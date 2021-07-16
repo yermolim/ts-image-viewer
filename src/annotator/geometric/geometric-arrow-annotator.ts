@@ -53,7 +53,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
       dateModified: nowString,
       author: this._imageService.userName || "unknown",
       
-      textContent: null,
+      textContent: null, //"some weird long text that won't fit into single line",
 
       strokeColor: this._color,
       strokeWidth: this._strokeWidth,
@@ -66,9 +66,9 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
         [this._points[1].x, this._points[1].y],
       ],
       endings: [lineEndingTypes.NONE, lineEndingTypes.ARROW_OPEN],
-      leaderLinePosHeight: 0,
-      leaderLineNegHeight: 0,
-      caption: null,
+      leaderLineTopHeight: 0,
+      leaderLineBottomHeight: 0,
+      caption: null, // "some weird long text that won't fit into single line",
     };
 
     return dto;

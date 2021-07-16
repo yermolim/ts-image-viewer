@@ -115,7 +115,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     this._aabb[1].setFromVec2(max);
   }
   
-  protected renderAppearance(): AppearanceRenderResult {   
+  protected async renderAppearanceAsync(): Promise<AppearanceRenderResult> {   
     try {      
       const clipPaths: SVGClipPathElement[] = [];
       const elements: SvgElementWithBlendMode[] = [];

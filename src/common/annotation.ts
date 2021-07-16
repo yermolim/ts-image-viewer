@@ -808,7 +808,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
     this._renderedControls.innerHTML = "";
 
     // render annotation appearance
-    const contentRenderResult = this.renderAppearance();
+    const contentRenderResult = await this.renderAppearanceAsync();
     if (!contentRenderResult || !contentRenderResult.elements?.length) { 
       this._renderedBox = null;
       this._svgContentCopy = null;
@@ -1128,7 +1128,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
     }));
   }
 
-  protected abstract renderAppearance(): AppearanceRenderResult;
+  protected abstract renderAppearanceAsync(): Promise<AppearanceRenderResult>;
    
   protected abstract updateAABB(): void;
 }

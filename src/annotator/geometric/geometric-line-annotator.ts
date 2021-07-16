@@ -175,8 +175,8 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
         [this._points[1].x, this._points[1].y],
       ],
       endings: [lineEndingTypes.NONE, lineEndingTypes.NONE],
-      leaderLinePosHeight: 0,
-      leaderLineNegHeight: 0,
+      leaderLineTopHeight: 0,
+      leaderLineBottomHeight: 0,
       caption: null,
     };
 
