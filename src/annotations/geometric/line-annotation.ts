@@ -1,19 +1,13 @@
 import { Mat3, Vec2 } from "mathador";
 
 import { Double } from "../../common/types";
-import { AppearanceRenderResult, BBox, buildLineEndingPath, LineEndingType, 
-  lineEndingTypes, LINE_CAPTION_SIZE, LINE_END_MIN_SIZE, 
+import { AppearanceRenderResult, BBox, buildLineEndingPath, getLineRenderHelpers, LineEndingType, 
+  lineEndingTypes, LineRenderHelpers, LINE_CAPTION_SIZE, LINE_END_MIN_SIZE, 
   LINE_END_MULTIPLIER, SELECTION_STROKE_WIDTH, SvgElementWithBlendMode } from "../../drawing/utils";
 
 import { EventService } from "../../common/event-service";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 import { SvgTempPath } from "../../drawing/paths/svg-temp-path";
-
-interface LineRenderHelpers {
-  matrix: Mat3;
-  alignedStart: Vec2;
-  alignedEnd: Vec2;
-}
 
 export interface LineAnnotationDto extends GeometricAnnotationDto {  
   vertices: [Double, Double];
@@ -71,7 +65,7 @@ export class LineAnnotation extends GeometricAnnotation {
         new Vec2(dto.vertices[1][0], dto.vertices[1][1]),
       ]
       : [new Vec2(), new Vec2()];
-    this._endings = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+    this._endings = dto.endings || [lineEndingTypes.NONE, lineEndingTypes.NONE];
     this._caption = dto.caption;
     this._leaderLinePosHeight = dto.leaderLinePosHeight ?? 0;
     this._leaderLineNegHeight = dto.leaderLineNegHeight ?? 0;
@@ -176,6 +170,9 @@ export class LineAnnotation extends GeometricAnnotation {
       }
 
       // draw line endings if present
+      console.log(this._endings);
+      
+
       if (this._endings) {
         if (this._endings[0] !== lineEndingTypes.NONE) {
           const endingPathString = buildLineEndingPath(alignedStart, 
@@ -206,6 +203,7 @@ export class LineAnnotation extends GeometricAnnotation {
       clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
       clonedPath.setAttribute("stroke", "transparent");
       clonedPath.setAttribute("fill", "none");
+      clonedPath.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
       clonedGroup.append(clonedPath);
 
       elements.push({
@@ -244,16 +242,7 @@ export class LineAnnotation extends GeometricAnnotation {
     const start = this._vertices[0].clone();
     const end = this._vertices[1].clone();
 
-    // calculate the data for updating bounding boxes
-    const length = Vec2.subtract(end, start).getMagnitude();    
-    const alignedStart = new Vec2();
-    const alignedEnd = new Vec2(length, 0);
-    const matrix = Mat3.from4Vec2(alignedStart, alignedEnd, start, end);    
-    return {
-      matrix,
-      alignedStart,
-      alignedEnd,
-    };
+    return getLineRenderHelpers(start, end);
   }
 
   protected getBoxCorners(helpers?: LineRenderHelpers): BBox {

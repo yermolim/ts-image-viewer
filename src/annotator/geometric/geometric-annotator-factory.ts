@@ -8,7 +8,7 @@ import { GeometricCircleAnnotator } from "./geometric-circle-annotator";
 import { GeometricPolylineAnnotator } from "./geometric-polyline-annotator";
 import { GeometricPolygonAnnotator } from "./geometric-polygon-annotator";
 import { GeometricLineAnnotator } from "./geometric-line-annotator";
-// import { GeometricArrowAnnotator } from "./geometric-arrow-annotator";
+import { GeometricArrowAnnotator } from "./geometric-arrow-annotator";
 
 export const geometricAnnotatorTypes = ["square", "circle", 
   "polyline", "polygon", "line", "arrow"] as const;
@@ -59,8 +59,8 @@ export class GeometricAnnotatorFactory {
         return new GeometricPolygonAnnotator(imageService, parent, combinedOptions);
       case "line":
         return new GeometricLineAnnotator(imageService, parent, combinedOptions);
-      // case "arrow":
-      //   return new GeometricArrowAnnotator(imageService, parent, combinedOptions);
+      case "arrow":
+        return new GeometricArrowAnnotator(imageService, parent, combinedOptions);
       default:
         throw new Error(`Invalid geometric annotator type: ${type}`);
     }

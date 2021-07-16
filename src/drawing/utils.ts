@@ -87,6 +87,12 @@ export interface AppearanceRenderResult {
   pickHelpers: SVGGraphicsElement[];
 }
 
+export interface LineRenderHelpers {
+  matrix: Mat3;
+  alignedStart: Vec2;
+  alignedEnd: Vec2;
+}
+
 export function buildLineEndingPath(point: Vec2, type: LineEndingType, 
   strokeWidth: number, side: "left" | "right"): string {
   const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, 
@@ -220,4 +226,17 @@ export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): 
 
 export function getDistance(x1: number, y1: number, x2: number, y2: number): number {
   return Math.hypot(x2 - x1, y2 - y1);
+}
+  
+export function getLineRenderHelpers(start: Vec2, end: Vec2): LineRenderHelpers {
+  // calculate the data for updating bounding boxes
+  const length = Vec2.subtract(end, start).getMagnitude();    
+  const alignedStart = new Vec2();
+  const alignedEnd = new Vec2(length, 0);
+  const matrix = Mat3.from4Vec2(alignedStart, alignedEnd, start, end);    
+  return {
+    matrix,
+    alignedStart,
+    alignedEnd,
+  };
 }

@@ -2674,6 +2674,17 @@ function buildLineEndingPath(point, type, strokeWidth, side) {
             return "";
     }
 }
+function getLineRenderHelpers(start, end) {
+    const length = Vec2.subtract(end, start).getMagnitude();
+    const alignedStart = new Vec2();
+    const alignedEnd = new Vec2(length, 0);
+    const matrix = Mat3.from4Vec2(alignedStart, alignedEnd, start, end);
+    return {
+        matrix,
+        alignedStart,
+        alignedEnd,
+    };
+}
 
 var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -4572,7 +4583,7 @@ class LineAnnotation extends GeometricAnnotation {
                 new Vec2(dto.vertices[1][0], dto.vertices[1][1]),
             ]
             : [new Vec2(), new Vec2()];
-        this._endings = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+        this._endings = dto.endings || [lineEndingTypes.NONE, lineEndingTypes.NONE];
         this._caption = dto.caption;
         this._leaderLinePosHeight = (_b = dto.leaderLinePosHeight) !== null && _b !== void 0 ? _b : 0;
         this._leaderLineNegHeight = (_c = dto.leaderLineNegHeight) !== null && _c !== void 0 ? _c : 0;
@@ -4682,6 +4693,7 @@ class LineAnnotation extends GeometricAnnotation {
                 d += ` M${llRightStart.x},${llRightStart.y}`;
                 d += ` L${llRightEnd.x},${llRightEnd.y}`;
             }
+            console.log(this._endings);
             if (this._endings) {
                 if (this._endings[0] !== lineEndingTypes.NONE) {
                     const endingPathString = buildLineEndingPath(alignedStart, this._endings[0], this._strokeWidth, "left");
@@ -4702,6 +4714,7 @@ class LineAnnotation extends GeometricAnnotation {
             clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
             clonedPath.setAttribute("stroke", "transparent");
             clonedPath.setAttribute("fill", "none");
+            clonedPath.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
             clonedGroup.append(clonedPath);
             elements.push({
                 element: group,
@@ -4730,15 +4743,7 @@ class LineAnnotation extends GeometricAnnotation {
     getRenderHelpers() {
         const start = this._vertices[0].clone();
         const end = this._vertices[1].clone();
-        const length = Vec2.subtract(end, start).getMagnitude();
-        const alignedStart = new Vec2();
-        const alignedEnd = new Vec2(length, 0);
-        const matrix = Mat3.from4Vec2(alignedStart, alignedEnd, start, end);
-        return {
-            matrix,
-            alignedStart,
-            alignedEnd,
-        };
+        return getLineRenderHelpers(start, end);
     }
     getBoxCorners(helpers) {
         const { matrix, alignedStart, alignedEnd } = helpers !== null && helpers !== void 0 ? helpers : this.getRenderHelpers();
@@ -4924,6 +4929,53 @@ class GeometricLineAnnotator extends GeometricAnnotator {
     }
 }
 
+class GeometricArrowAnnotator extends GeometricLineAnnotator {
+    constructor(imageService, parent, options) {
+        super(imageService, parent, options || {});
+    }
+    redraw(min, max) {
+        this._svgGroup.innerHTML = "";
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        const { matrix, alignedStart, alignedEnd } = getLineRenderHelpers(min, max);
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
+        path.setAttribute("stroke-linecap", "square");
+        let pathString = `M${alignedStart.x},${alignedStart.y} L${alignedEnd.x},${alignedEnd.y}`;
+        const arrowPathString = buildLineEndingPath(alignedEnd, lineEndingTypes.ARROW_OPEN, this._strokeWidth, "right");
+        pathString += " " + arrowPathString;
+        path.setAttribute("d", pathString);
+        path.setAttribute("transform", `matrix(${matrix.truncate(2).toFloatShortArray().join(",")})`);
+        this._svgGroup.append(path);
+    }
+    buildAnnotationDto() {
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "line",
+            imageUuid: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._imageService.userName || "unknown",
+            textContent: null,
+            strokeColor: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+            rotation: 0,
+            vertices: [
+                [this._points[0].x, this._points[0].y],
+                [this._points[1].x, this._points[1].y],
+            ],
+            endings: [lineEndingTypes.NONE, lineEndingTypes.ARROW_OPEN],
+            leaderLinePosHeight: 0,
+            leaderLineNegHeight: 0,
+            caption: null,
+        };
+        return dto;
+    }
+}
+
 const geometricAnnotatorTypes = ["square", "circle",
     "polyline", "polygon", "line", "arrow"];
 class GeometricAnnotatorFactory {
@@ -4959,6 +5011,8 @@ class GeometricAnnotatorFactory {
                 return new GeometricPolygonAnnotator(imageService, parent, combinedOptions);
             case "line":
                 return new GeometricLineAnnotator(imageService, parent, combinedOptions);
+            case "arrow":
+                return new GeometricArrowAnnotator(imageService, parent, combinedOptions);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
@@ -5088,9 +5142,6 @@ class AnnotatorService {
         submodePicker.classList.add("context-menu-content", "row");
         geometricAnnotatorTypes.forEach(x => {
             const item = document.createElement("div");
-            if (x === "arrow") {
-                item.classList.add("disabled");
-            }
             item.classList.add("panel-button");
             if (x === this._geometricSubmode) {
                 item.classList.add("on");

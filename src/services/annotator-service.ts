@@ -262,11 +262,6 @@ export class AnnotatorService {
     geometricAnnotatorTypes.forEach(x => {   
       const item = document.createElement("div");
 
-      // TODO: remove after implementing rest of geometric annotators
-      if (x === "arrow") {
-        item.classList.add("disabled");
-      }
-
       item.classList.add("panel-button");
       if (x === this._geometricSubmode) {        
         item.classList.add("on");
