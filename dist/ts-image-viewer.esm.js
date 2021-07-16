@@ -4739,8 +4739,8 @@ class LineAnnotation extends GeometricAnnotation {
             : [new Vec2(), new Vec2()];
         this._endings = dto.endings || [lineEndingTypes.NONE, lineEndingTypes.NONE];
         this._caption = dto.caption;
-        this._leaderLinePosHeight = (_b = dto.leaderLinePosHeight) !== null && _b !== void 0 ? _b : 0;
-        this._leaderLineNegHeight = (_c = dto.leaderLineNegHeight) !== null && _c !== void 0 ? _c : 0;
+        this._leaderLineTopHeight = (_b = dto.leaderLineTopHeight) !== null && _b !== void 0 ? _b : 0;
+        this._leaderLineBottomHeight = (_c = dto.leaderLineBottomHeight) !== null && _c !== void 0 ? _c : 0;
     }
     get vertices() {
         return this._vertices;
@@ -4751,11 +4751,11 @@ class LineAnnotation extends GeometricAnnotation {
     get caption() {
         return this._caption;
     }
-    get leaderLinePosHeight() {
-        return this._leaderLinePosHeight;
+    get leaderLineTopHeight() {
+        return this._leaderLineTopHeight;
     }
-    get leaderLineNegHeight() {
-        return this._leaderLineNegHeight;
+    get leaderLineBottomHeight() {
+        return this._leaderLineBottomHeight;
     }
     get matrix() {
         return this.getRenderHelpers().matrix;
@@ -4779,8 +4779,8 @@ class LineAnnotation extends GeometricAnnotation {
                 [this._vertices[1].x, this._vertices[1].y],
             ],
             endings: this._endings,
-            leaderLinePosHeight: this._leaderLinePosHeight,
-            leaderLineNegHeight: this._leaderLineNegHeight,
+            leaderLineTopHeight: this._leaderLineTopHeight,
+            leaderLineBottomHeight: this._leaderLineBottomHeight,
         };
     }
     setTextContentAsync(text, undoable = true) {
@@ -4838,9 +4838,9 @@ class LineAnnotation extends GeometricAnnotation {
                 const { matrix, alignedStart, alignedEnd } = this.getRenderHelpers();
                 let d = `M${alignedStart.x},${alignedStart.y}`;
                 d += ` L${alignedEnd.x},${alignedEnd.y}`;
-                if (this._leaderLinePosHeight || this._leaderLineNegHeight) {
-                    const llTop = new Vec2(0, -Math.abs(this._leaderLinePosHeight));
-                    const llBottom = new Vec2(0, Math.abs(this._leaderLineNegHeight));
+                if (this._leaderLineTopHeight || this._leaderLineBottomHeight) {
+                    const llTop = new Vec2(0, -Math.abs(this._leaderLineTopHeight));
+                    const llBottom = new Vec2(0, Math.abs(this._leaderLineBottomHeight));
                     const llLeftStart = Vec2.add(alignedStart, llBottom);
                     const llLeftEnd = Vec2.add(alignedStart, llTop);
                     const llRightStart = Vec2.add(alignedEnd, llBottom);
@@ -4949,8 +4949,8 @@ class LineAnnotation extends GeometricAnnotation {
         const margin = endingNotNone
             ? sw / 2 + Math.max(LINE_END_MIN_SIZE, LINE_END_SIZE_RATIO * sw)
             : sw / 2;
-        const marginTop = Math.max(Math.abs(this._leaderLinePosHeight), margin, this._caption ? LINE_CAPTION_SIZE_RATIO * sw + sw / 2 : 0);
-        const marginBottom = Math.max(Math.abs(this._leaderLineNegHeight), margin);
+        const marginTop = Math.max(Math.abs(this._leaderLineTopHeight), margin, this._caption ? LINE_CAPTION_SIZE_RATIO * sw + sw / 2 : 0);
+        const marginBottom = Math.max(Math.abs(this._leaderLineBottomHeight), margin);
         const min = Vec2.add(alignedStart, new Vec2(-margin, -marginTop));
         const max = Vec2.add(alignedEnd, new Vec2(margin, marginBottom));
         const bl = new Vec2(min.x, min.y).applyMat3(matrix);
@@ -5117,8 +5117,8 @@ class GeometricLineAnnotator extends GeometricAnnotator {
                 [this._points[1].x, this._points[1].y],
             ],
             endings: [lineEndingTypes.NONE, lineEndingTypes.NONE],
-            leaderLinePosHeight: 0,
-            leaderLineNegHeight: 0,
+            leaderLineTopHeight: 0,
+            leaderLineBottomHeight: 0,
             caption: null,
         };
         return dto;
@@ -5164,8 +5164,8 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
                 [this._points[1].x, this._points[1].y],
             ],
             endings: [lineEndingTypes.NONE, lineEndingTypes.ARROW_OPEN],
-            leaderLinePosHeight: 50,
-            leaderLineNegHeight: 30,
+            leaderLineTopHeight: 0,
+            leaderLineBottomHeight: 0,
             caption: null,
         };
         return dto;
