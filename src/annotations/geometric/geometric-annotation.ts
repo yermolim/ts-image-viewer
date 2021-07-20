@@ -13,10 +13,12 @@ export abstract class GeometricAnnotation extends AnnotationBase {
   get color(): Quadruple {
     return this.color;
   }
+
   protected _strokeWidth: number;
   get strokeWidth(): number {
     return this._strokeWidth;
   }
+  
   protected _strokeDashGap: Double;
   get strokeDashGap(): Double {
     return this._strokeDashGap;

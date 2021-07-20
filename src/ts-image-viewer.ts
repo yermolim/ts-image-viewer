@@ -10,14 +10,17 @@ import { AnnotEventDetail, AnnotEvent,
   imageChangeEvent, imageServiceStateChangeEvent, annotChangeEvent, 
   ImageEvent, ImageServiceStateChangeEvent } from "./common/events";
 
+import { CustomStampCreationInfo } from "./drawing/stamps";
+
 import { AnnotatorService } from "./services/annotator-service";
+import { ImageService } from "./services/image-service";
+import { CustomStampEvent, customStampEvent, CustomStampEventDetail, CustomStampService } from "./services/custom-stamp-service";
   
 import { Loader } from "./components/loader";
 import { Previewer } from "./components/previewer";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
   annotatorTypes } from "./annotator/annotator";
-import { ImageService } from "./services/image-service";
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 type FileButtons = "open" | "save" | "close";
@@ -52,17 +55,17 @@ export interface TsImageViewerOptions {
    */
   annotChangeCallback?: (detail: AnnotEventDetail) => void;
   
-  // /**
-  //  * array of objects describing custom stamps
-  //  */
-  // customStamps?: CustomStampCreationInfo[];
+  /**
+   * array of objects describing custom stamps
+   */
+  customStamps?: CustomStampCreationInfo[];
   
-  // /**
-  //  * action to execute on custom stamp change event.
-  //  * fires when a new custom stamp is added or an old one is deleted.
-  //  * can be used for managing custom stamp library
-  //  */
-  // customStampChangeCallback?: (detail: CustomStampEventDetail) => void;
+  /**
+   * action to execute on custom stamp change event.
+   * fires when a new custom stamp is added or an old one is deleted.
+   * can be used for managing custom stamp library
+   */
+  customStampChangeCallback?: (detail: CustomStampEventDetail) => void;
     
   /**
    * use lazy loading for the images (has effect only if image loaded via url)
@@ -86,7 +89,7 @@ export class TsImageViewer {
   private readonly _eventService: EventService;
   private readonly _imageService: ImageService;
   private readonly _annotatorService: AnnotatorService;
-  // private readonly _customStampsService: CustomStampService;
+  private readonly _customStampsService: CustomStampService;
 
   private readonly _loader: Loader;
   private readonly _viewer: Viewer;
@@ -95,8 +98,9 @@ export class TsImageViewer {
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
   private _fileCloseAction: () => void;
+
   private _annotChangeCallback: (detail: AnnotEventDetail) => void;
-  // private _customStampChangeCallback: (detail: CustomStampEventDetail) => void;
+  private _customStampChangeCallback: (detail: CustomStampEventDetail) => void;
 
   private _mainContainerRObserver: ResizeObserver;
   private _panelsHidden: boolean;
@@ -128,8 +132,9 @@ export class TsImageViewer {
     this._fileOpenAction = options.fileOpenAction;
     this._fileSaveAction = options.fileSaveAction;
     this._fileCloseAction = options.fileCloseAction;
+
     this._annotChangeCallback = options.annotChangeCallback;
-    // this._customStampChangeCallback = options.customStampChangeCallback;    
+    this._customStampChangeCallback = options.customStampChangeCallback;    
 
     const lazyLoadImages = options.lazyLoadImages ?? true;
     const previewWidth = options.previewWidth || 100;
@@ -143,7 +148,8 @@ export class TsImageViewer {
       lazyLoadImages: lazyLoadImages, 
       previewWidth: previewWidth,
       userName: this._userName,
-    });      
+    });    
+    this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);  
 
     this._loader = new Loader();
     this._previewer = new Previewer(this._imageService, this._shadowRoot.querySelector("#previewer"), 
@@ -151,7 +157,8 @@ export class TsImageViewer {
     this._viewer = new Viewer(this._imageService, this._shadowRoot.querySelector("#viewer")); 
     this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
     
-    this._annotatorService = new AnnotatorService(this._imageService, this._viewer);
+    this._annotatorService = new AnnotatorService(
+      this._imageService, this._customStampsService, this._viewer);
 
     this.initMainContainerEventHandlers();
     this.initViewControls();
@@ -163,26 +170,29 @@ export class TsImageViewer {
     this._eventService.addListener(imageServiceStateChangeEvent, this.onImageServiceStateChange);
     this._eventService.addListener(annotChangeEvent, this.onAnnotatorChange);
     this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
-    // this._eventService.addListener(docServiceStateChangeEvent, this.onDocServiceStateChange);
-    // this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
+    this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
   }
 
   /**free the object resources to let GC clean them to avoid memory leak */
   destroy() {
     this._annotChangeCallback = null; 
-
-    this._annotatorService?.destroy();
-
-    this._viewer.destroy();
-    this._previewer.destroy();
-    this._imageService.destroy();
+    this._customStampChangeCallback = null;
     
-    // this._customStampsService.destroy();
+    this._eventService.removeListener(customStampEvent, this.onCustomStampChanged);
+    this._eventService.removeListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
+    this._eventService.removeListener(annotChangeEvent, this.onAnnotatorChange);
     this._eventService.removeListener(imageServiceStateChangeEvent, this.onImageServiceStateChange);
     this._eventService.removeListener(imageChangeEvent, this.onImageChange);
+    this._mainContainerRObserver?.disconnect();
+
+    this._annotatorService?.destroy();
+    this._viewer.destroy();
+    this._previewer.destroy();
+    this._imageService.destroy();    
+    this._customStampsService.destroy();
+
     this._eventService.destroy();
 
-    this._mainContainerRObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
   }  
   
@@ -251,40 +261,40 @@ export class TsImageViewer {
   //#endregion
 
   //#region custom stamps
-  // importCustomStamps(customStamps: CustomStampCreationInfo[]) {  
-  //   try {
-  //     this._customStampsService.importCustomStamps(customStamps);
-  //   } catch (e) {
-  //     console.log(`Error while importing custom stamps: ${e.message}`);      
-  //   }   
-  // }
+  importCustomStamps(customStamps: CustomStampCreationInfo[]) {  
+    try {
+      this._customStampsService.importCustomStamps(customStamps);
+    } catch (e) {
+      console.log(`Error while importing custom stamps: ${e.message}`);      
+    }   
+  }
   
-  // importCustomStampsFromJson(json: string) { 
-  //   try {
-  //     const customStamps: CustomStampCreationInfo[] = JSON.parse(json); 
-  //     this._customStampsService.importCustomStamps(customStamps);
-  //   } catch (e) {
-  //     console.log(`Error while importing custom stamps: ${e.message}`);      
-  //   } 
-  // }
+  importCustomStampsFromJson(json: string) { 
+    try {
+      const customStamps: CustomStampCreationInfo[] = JSON.parse(json); 
+      this._customStampsService.importCustomStamps(customStamps);
+    } catch (e) {
+      console.log(`Error while importing custom stamps: ${e.message}`);      
+    } 
+  }
   
-  // /**
-  //  * export custom stamps
-  //  * @returns 
-  //  */
-  // exportCustomStamps(): CustomStampCreationInfo[] {
-  //   const customStamps = this._customStampsService.getCustomStamps();
-  //   return customStamps;
-  // }  
+  /**
+   * export custom stamps
+   * @returns 
+   */
+  exportCustomStamps(): CustomStampCreationInfo[] {
+    const customStamps = this._customStampsService.getCustomStamps();
+    return customStamps;
+  }  
   
-  // /**
-  //  * export custom stamps as a serialized array of the corresponding objects
-  //  * @returns 
-  //  */
-  // exportCustomStampsToJson(): string {
-  //   const customStamps = this._customStampsService.getCustomStamps();
-  //   return JSON.stringify(customStamps);
-  // }
+  /**
+   * export custom stamps as a serialized array of the corresponding objects
+   * @returns 
+   */
+  exportCustomStampsToJson(): string {
+    const customStamps = this._customStampsService.getCustomStamps();
+    return JSON.stringify(customStamps);
+  }
   //#endregion
 
 
@@ -412,6 +422,8 @@ export class TsImageViewer {
     // mode buttons
     this._shadowRoot.querySelector("#button-annotation-mode-select")
       .addEventListener("click", this.onAnnotatorSelectModeButtonClick);
+    this._shadowRoot.querySelector("#button-annotation-mode-stamp")
+      .addEventListener("click", this.onAnnotatorStampModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-pen")
       .addEventListener("click", this.onAnnotatorPenModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-geometric")
@@ -421,7 +433,13 @@ export class TsImageViewer {
     this._shadowRoot.querySelector("#button-annotation-edit-text")
       .addEventListener("click", this.onAnnotatorEditTextButtonClick);   
     this._shadowRoot.querySelector("#button-annotation-delete")
-      .addEventListener("click", this.onAnnotatorDeleteButtonClick);    
+      .addEventListener("click", this.onAnnotatorDeleteButtonClick); 
+      
+    // stamp buttons
+    this._shadowRoot.querySelector("#button-annotation-stamp-undo")
+      .addEventListener("click", this.annotatorUndo);
+    this._shadowRoot.querySelector("#button-annotation-stamp-clear")
+      .addEventListener("click", this.annotatorClear);     
 
     // pen buttons
     this._shadowRoot.querySelector("#button-annotation-pen-undo")
@@ -535,14 +553,14 @@ export class TsImageViewer {
     this._annotatorService.annotator?.saveAnnotationAsync();
   };
   
-  // private onCustomStampChanged = (e: CustomStampEvent) => {
-  //   this.setAnnotationMode("stamp");
+  private onCustomStampChanged = (e: CustomStampEvent) => {
+    this.setAnnotatorMode("stamp");
 
-  //   // execute change callback if present
-  //   if (this._customStampChangeCallback) {
-  //     this._customStampChangeCallback(e.detail);
-  //   }
-  // };
+    // execute change callback if present
+    if (this._customStampChangeCallback) {
+      this._customStampChangeCallback(e.detail);
+    }
+  };
   
   private onAnnotatorChange = async (e: AnnotEvent) => {
     if (!e.detail) {

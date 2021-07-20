@@ -173,7 +173,7 @@ export const mainHtml = /*html*/`
           <img src="${icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-stamp" 
-          class="panel-button annotation-panel-item disabled">
+          class="panel-button annotation-panel-item">
           <img src="${icon_stamp}"/>
         </div> 
       </div>

@@ -7,7 +7,7 @@ import { Quadruple } from "../common/types";
 import { htmlToElements } from "../common/dom";
 import { imageChangeEvent, ImageEvent } from "../common/events";
 
-// import { CustomStampCreationInfo } from "../drawing/stamps";
+import { CustomStampCreationInfo } from "../drawing/stamps";
 
 import { Viewer } from "../components/viewer";
 import { ContextMenu } from "../components/context-menu";
@@ -16,12 +16,12 @@ import { Annotator } from "../annotator/annotator";
 import { PenAnnotator } from "../annotator/pen/pen-annotator";
 import { GeometricAnnotatorFactory, GeometricAnnotatorType, geometricAnnotatorTypes } 
   from "../annotator/geometric/geometric-annotator-factory";
-// import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
+import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
 // import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } 
 //   from "../annotator/text/text-annotator-factory";
 
 import { ImageService } from "./image-service";
-// import { CustomStampService } from "./custom-stamp-service";
+import { CustomStampService } from "./custom-stamp-service";
 
 export type AnnotatorServiceMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
@@ -36,7 +36,7 @@ export class AnnotatorService {
   ];
   
   private readonly _imageService: ImageService;
-  // private readonly _customStampService: CustomStampService;
+  private readonly _customStampService: CustomStampService;
   private readonly _viewer: Viewer;
   
   private _contextMenu: ContextMenu;
@@ -55,8 +55,8 @@ export class AnnotatorService {
   private _strokeColor: Quadruple = this._annotationColors[0];
   private _strokeWidth = 3;
 
-  // private _stampType: string = supportedStampTypes[0].type;
-  // private _stampCreationInfo: CustomStampCreationInfo;
+  private _stampType: string = supportedStampTypes[0].type;
+  private _stampCreationInfo: CustomStampCreationInfo;
 
   private _geometricCloudMode = false;
   private _geometricSubmode: GeometricAnnotatorType = geometricAnnotatorTypes[0];
@@ -69,20 +69,20 @@ export class AnnotatorService {
   }
 
   constructor(imageService: ImageService, 
-    // customStampService: CustomStampService, 
+    customStampService: CustomStampService, 
     viewer: Viewer) {
     if (!imageService) {
       throw new Error("Page service is not defined");
     }
-    // if (!customStampService) {
-    //   throw new Error("Custom stamp service is not defined");
-    // }
+    if (!customStampService) {
+      throw new Error("Custom stamp service is not defined");
+    }
     if (!viewer) {
       throw new Error("Viewer is not defined");
     }
 
     this._imageService = imageService;
-    // this._customStampService = customStampService;
+    this._customStampService = customStampService;
     this._viewer = viewer;
 
     this.init();
@@ -128,8 +128,8 @@ export class AnnotatorService {
         this._contextMenu.enabled = false;
         return;
       case "stamp":
-        // this._annotator = new StampAnnotator(
-        //   this._imageService, this._viewer.container, this._stampType, this._stampCreationInfo);
+        this._annotator = new StampAnnotator(
+          this._imageService, this._viewer.container, this._stampType, this._stampCreationInfo);
         break;
       case "pen":
         this._annotator = new PenAnnotator(this._imageService, 
@@ -181,11 +181,11 @@ export class AnnotatorService {
     switch (this._mode) {
       case "select":
         return [];
-      // case "stamp":
-      //   return [
-      //     this.buildCustomStampButtons(),
-      //     this.buildStampTypePicker(),
-      //   ];
+      case "stamp":
+        return [
+          this.buildCustomStampButtons(),
+          this.buildStampTypePicker(),
+        ];
       case "pen":
         return [
           this.buildStrokeColorPicker(),
@@ -208,53 +208,53 @@ export class AnnotatorService {
     }
   }  
 
-  // private buildCustomStampButtons(): HTMLElement {    
-  //   const buttonsContainer = htmlToElements(stampContextButtonsHtml)[0];
-  //   buttonsContainer.querySelector(".stamp-load-image").addEventListener("click", () => {
-  //     this._customStampService.startLoadingImage();
-  //   });
-  //   buttonsContainer.querySelector(".stamp-draw-image").addEventListener("click", () => {
-  //     this._customStampService.startDrawing();
-  //   });
-  //   if (this._stampCreationInfo) {
-  //     const deleteButton = buttonsContainer.querySelector(".stamp-delete");
-  //     deleteButton.addEventListener("click", () => {
-  //       this._customStampService.removeCustomStamp(this._stampType);
-  //     });
-  //     deleteButton.classList.remove("disabled");
-  //   }
-  //   return buttonsContainer;
-  // }
+  private buildCustomStampButtons(): HTMLElement {    
+    const buttonsContainer = htmlToElements(stampContextButtonsHtml)[0];
+    buttonsContainer.querySelector(".stamp-load-image").addEventListener("click", () => {
+      this._customStampService.startLoadingImage();
+    });
+    buttonsContainer.querySelector(".stamp-draw-image").addEventListener("click", () => {
+      this._customStampService.startDrawing();
+    });
+    if (this._stampCreationInfo) {
+      const deleteButton = buttonsContainer.querySelector(".stamp-delete");
+      deleteButton.addEventListener("click", () => {
+        this._customStampService.removeCustomStamp(this._stampType);
+      });
+      deleteButton.classList.remove("disabled");
+    }
+    return buttonsContainer;
+  }
 
-  // private buildStampTypePicker(): HTMLElement {
-  //   const stampTypes = supportedStampTypes;
+  private buildStampTypePicker(): HTMLElement {
+    const stampTypes = supportedStampTypes;
 
-  //   // init a stamp type picker
-  //   const pickerDiv = document.createElement("div");
-  //   pickerDiv.classList.add("context-menu-content", "column");
-  //   [...stampTypes, ...this._customStampService.getCustomStamps()].forEach(x => {
-  //     const item = document.createElement("div");
-  //     item.classList.add("context-menu-stamp-select-button");
-  //     if (x.type === this._stampType) {        
-  //       item.classList.add("on");
-  //     }
-  //     item.addEventListener("click", () => {
-  //       this._stampType = x.type;
-  //       if (x["imageData"]) {
-  //         // custom stamp
-  //         this._stampCreationInfo = <CustomStampCreationInfo>x;
-  //       } else {
-  //         this._stampCreationInfo = null;
-  //       }
-  //       this.setMode();
-  //     });
-  //     const stampName = document.createElement("div");
-  //     stampName.innerHTML = x.name;
-  //     item.append(stampName);
-  //     pickerDiv.append(item);
-  //   });
-  //   return pickerDiv;
-  // }
+    // init a stamp type picker
+    const pickerDiv = document.createElement("div");
+    pickerDiv.classList.add("context-menu-content", "column");
+    [...stampTypes, ...this._customStampService.getCustomStamps()].forEach(x => {
+      const item = document.createElement("div");
+      item.classList.add("context-menu-stamp-select-button");
+      if (x.type === this._stampType) {        
+        item.classList.add("on");
+      }
+      item.addEventListener("click", () => {
+        this._stampType = x.type;
+        if (x["imageData"]) {
+          // custom stamp
+          this._stampCreationInfo = <CustomStampCreationInfo>x;
+        } else {
+          this._stampCreationInfo = null;
+        }
+        this.setMode();
+      });
+      const stampName = document.createElement("div");
+      stampName.innerHTML = x.name;
+      item.append(stampName);
+      pickerDiv.append(item);
+    });
+    return pickerDiv;
+  }
   
   private buildGeometricSubmodePicker(): HTMLElement {    
     const submodePicker = document.createElement("div");

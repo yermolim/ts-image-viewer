@@ -106,11 +106,6 @@ export abstract class AnnotationBase implements RenderableAnnotation {
   get textContent(): string {
     return this._textContent;
   }
-  
-  protected _strokeWidth: number;
-  get strokeWidth(): number {
-    return this._strokeWidth;
-  }
 
   protected _rotation: number;
   get rotation(): number {
