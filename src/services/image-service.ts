@@ -96,6 +96,8 @@ export class ImageService {
   /**undo the most recent command */
   async undoAsync() {
     await this.undoCommandAsync();
+    this.setSelectedAnnotation(null);
+    this.setFocusedAnnotation(null);
   }
 
 

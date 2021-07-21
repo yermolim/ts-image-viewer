@@ -11044,6 +11044,8 @@ class ImageService {
     undoAsync() {
         return __awaiter$4(this, void 0, void 0, function* () {
             yield this.undoCommandAsync();
+            this.setSelectedAnnotation(null);
+            this.setFocusedAnnotation(null);
         });
     }
     addImagesAsync(loadInfos) {
