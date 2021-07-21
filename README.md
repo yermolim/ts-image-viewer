@@ -16,10 +16,10 @@ Browser image viewer with basic annotationing support.
     <li>Adding and editing annotations.
 User can modify or delete any supported annotation or add new annotations of the supported types by using provided UI. The serialized annotations can be imported or exported at any time using corresponding methods. 
 All changes are made can be saved to a new image file, which can be downloaded or returned to the caller as a byte array.</li>
-    <li>annotation import/export to/from data-transfer objects that can be effortlessly serialized to JSON (useful for storing annotations in the separate database)</li>
-    <li>responsive UI, friendly for touch devices</li>
-    <li>easy color scheme customization using CSS variables to override the default values</li>
-    <li>using Shadow DOM to minimize conflicts with outer HTML</li>
+    <li>Annotation import/export to/from data-transfer objects that can be effortlessly serialized to JSON (useful for storing annotations in the separate database)</li>
+    <li>Responsive UI, friendly for touch devices</li>
+    <li>Easy color scheme customization using CSS variables to override the default values</li>
+    <li>Using Shadow DOM to minimize conflicts with outer HTML</li>
 </ul>
 
 <img src="https://raw.githubusercontent.com/yermolim/ts-image-viewer/main/gifs/main.gif" width="540" height="340">
