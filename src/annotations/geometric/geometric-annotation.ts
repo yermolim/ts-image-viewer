@@ -10,8 +10,8 @@ export interface GeometricAnnotationDto extends AnnotationDto {
 
 export abstract class GeometricAnnotation extends AnnotationBase {
   protected _strokeColor: Quadruple;
-  get color(): Quadruple {
-    return this.color;
+  get strokeColor(): Quadruple {
+    return this._strokeColor;
   }
 
   protected _strokeWidth: number;

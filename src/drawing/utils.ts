@@ -21,6 +21,10 @@ export const LINE_END_MIN_SIZE = 10;
 export const LINE_CAPTION_SIZE_RATIO = 5;
 /**defines how many times the line font size is larger than the line width */
 export const LINE_CAPTION_FONT_RATIO = 4;
+/**defines how many times the line caption size is larger than the line width */
+export const TEXT_SIZE_RATIO = 5;
+/**defines how many times the line font size is larger than the line width */
+export const TEXT_FONT_RATIO = 4;
 
 export const lineEndingTypes = {
   SQUARE: "square",
@@ -35,6 +39,13 @@ export const lineEndingTypes = {
   SLASH: "slash",
 } as const;
 export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
+
+export const justificationTypes = {
+  LEFT: "left",
+  CENTER: "center",
+  RIGHT: "right",
+} as const;
+export type JustificationType = typeof justificationTypes[keyof typeof justificationTypes];
 
 export interface BBox {
   /**lower-left corner coords */

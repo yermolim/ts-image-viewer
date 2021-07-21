@@ -12,7 +12,7 @@ const standardStampBBox: Quadruple = [0, 0, 440, 120];
 // h - close
 // f - close+fill
 
-const standardStampForms = {
+const stampAnnotationForms = {
   DRAFT: [
     { 
       pathString: `
@@ -2866,98 +2866,98 @@ export interface CustomStampCreationInfo extends StampCreationInfo {
 
 export const standardStampCreationInfos = {
   "Draft": {        
-    formPaths: standardStampForms.DRAFT,
+    formPaths: stampAnnotationForms.DRAFT,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "Draft",
     bbox: standardStampBBox,    
   },
   "Approved": {      
-    formPaths: standardStampForms.APPROVED,
+    formPaths: stampAnnotationForms.APPROVED,
     strokeWidth: 8.58,
     color: standardStampColors.greenColor,
     subject: "Approved",
     bbox: standardStampBBox,    
   },
   "NotApproved": {        
-    formPaths: standardStampForms.NOT_APPROVED,
+    formPaths: stampAnnotationForms.NOT_APPROVED,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "Not Approved",
     bbox: standardStampBBox,    
   },
   "Departmental": {        
-    formPaths: standardStampForms.DEPARTMENTAL,
+    formPaths: stampAnnotationForms.DEPARTMENTAL,
     strokeWidth: 8.58,
     color: standardStampColors.blueColor,
     subject: "Departmental",
     bbox: standardStampBBox,    
   },
   "Confidential": {        
-    formPaths: standardStampForms.CONFIDENTIAL,
+    formPaths: stampAnnotationForms.CONFIDENTIAL,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "Confidential",
     bbox: standardStampBBox,    
   },
   "Final": {        
-    formPaths: standardStampForms.FINAL,
+    formPaths: stampAnnotationForms.FINAL,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "Final",
     bbox: standardStampBBox,    
   },
   "Expired": {        
-    formPaths: standardStampForms.EXPIRED,
+    formPaths: stampAnnotationForms.EXPIRED,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "Expired",
     bbox: standardStampBBox,    
   },
   "AsIs": {        
-    formPaths: standardStampForms.AS_IS,
+    formPaths: stampAnnotationForms.AS_IS,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "As Is",
     bbox: standardStampBBox,    
   },
   "Sold": {        
-    formPaths: standardStampForms.SOLD,
+    formPaths: stampAnnotationForms.SOLD,
     strokeWidth: 8.58,
     color: standardStampColors.blueColor,
     subject: "Sold",
     bbox: standardStampBBox,    
   },
   "Experimental": {        
-    formPaths: standardStampForms.EXPERIMENTAL,
+    formPaths: stampAnnotationForms.EXPERIMENTAL,
     strokeWidth: 8.58,
     color: standardStampColors.blueColor,
     subject: "Experimental",
     bbox: standardStampBBox,    
   },
   "ForComment": {        
-    formPaths: standardStampForms.FOR_COMMENT,
+    formPaths: stampAnnotationForms.FOR_COMMENT,
     strokeWidth: 8.58,
     color: standardStampColors.greenColor,
     subject: "For Comment",
     bbox: standardStampBBox,    
   },
   "TopSecret": {        
-    formPaths: standardStampForms.TOP_SECRET,
+    formPaths: stampAnnotationForms.TOP_SECRET,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "Top Secret",
     bbox: standardStampBBox,    
   },
   "ForPublicRelease": {        
-    formPaths: standardStampForms.FOR_PUBLIC_RELEASE,
+    formPaths: stampAnnotationForms.FOR_PUBLIC_RELEASE,
     strokeWidth: 8.58,
     color: standardStampColors.greenColor,
     subject: "For Public Release",
     bbox: standardStampBBox,    
   },
   "NotForPublicRelease": {        
-    formPaths: standardStampForms.NOT_FOR_PUBLIC_RELEASE,
+    formPaths: stampAnnotationForms.NOT_FOR_PUBLIC_RELEASE,
     strokeWidth: 8.58,
     color: standardStampColors.redColor,
     subject: "Not For Public Release",

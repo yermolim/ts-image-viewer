@@ -200,11 +200,11 @@ export abstract class AnnotationBase implements RenderableAnnotation {
       : new Date();
     this._author = dto?.author || "unknown";
 
-    if (dto.textContent) {
+    if (dto?.textContent) {
       this._textContent = dto.textContent;
     }
 
-    this._rotation = dto.rotation ?? 0;
+    this._rotation = dto?.rotation ?? 0;
   }
   
   /**

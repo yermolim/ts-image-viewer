@@ -106,10 +106,10 @@ export async function buildTextDataAsync(text: string, options: TextDataOptions)
     let pivotPoint: Vec2;
     switch (options.pivotPoint) {
       case "top-left":          
-        pivotPoint = new Vec2(0, textHeight);
+        pivotPoint = new Vec2(0, 0);
         break;
       case "bottom-margin":
-        pivotPoint = new Vec2(textWidth / 2, options.strokeWidth);
+        pivotPoint = new Vec2(textWidth / 2, options.strokeWidth + textHeight);
         break;
       case "center":
       default:
@@ -125,21 +125,19 @@ export async function buildTextDataAsync(text: string, options: TextDataOptions)
       const y = span.offsetTop;
       const width = span.offsetWidth;
       const height = span.offsetHeight;
-      // line dimensions in PDF CS 
-      // (Y-axis is flipped, bottom-left corner is 0,0)
-      const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
-      const lineTopRightPdf = new Vec2(x + width, textHeight - y);
+      // line dimensions in local CS 
+      const lineTopLeft = new Vec2(x, y);
+      const lineBottomRight = new Vec2(x + width, y + height);
       const lineRect: Quadruple = [
-        lineBottomLeftPdf.x, lineBottomLeftPdf.y,
-        lineTopRightPdf.x, lineTopRightPdf.y
+        lineTopLeft.x, lineTopLeft.y,
+        lineBottomRight.x, lineBottomRight.y
       ];
-      // line dimensions relative to annotation text pivot point 
-      // (Y-axis is flipped, pivot point is 0,0)
-      const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
-      const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
+      // line dimensions relative to annotation text pivot point
+      const lineTopLeftRel = Vec2.subtract(lineTopLeft, pivotPoint);
+      const lineBottomRightRel = Vec2.subtract(lineBottomRight, pivotPoint);
       const lineRelativeRect: Quadruple = [
-        lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
-        lineTopRightPdfRel.x, lineTopRightPdfRel.y
+        lineTopLeftRel.x, lineTopLeftRel.y,
+        lineBottomRightRel.x, lineBottomRightRel.y
       ];
       lineData.push({
         text: lines[i],
@@ -149,15 +147,14 @@ export async function buildTextDataAsync(text: string, options: TextDataOptions)
     }
 
     // calculate dimensions for the whole text
-    // text dimensions in PDF CS 
-    // (Y-axis is flipped, bottom-left corner is 0,0)
+    // text dimensions in local CS 
     const textRect: Quadruple = [0, 0, textWidth, textHeight];
-    // text dimensions relative to annotation text pivot point 
-    // (Y-axis is flipped, pivot point is 0,0)
+    // text dimensions relative to annotation text pivot point
     const textRelativeRect: Quadruple = [
       0 - pivotPoint.x, 0 - pivotPoint.y,
       textWidth - pivotPoint.x, textHeight - pivotPoint.y
     ];
+    
     const textData: TextData = {
       width: textWidth,
       height: textHeight,

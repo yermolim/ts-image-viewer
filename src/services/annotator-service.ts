@@ -17,8 +17,8 @@ import { PenAnnotator } from "../annotator/pen/pen-annotator";
 import { GeometricAnnotatorFactory, GeometricAnnotatorType, geometricAnnotatorTypes } 
   from "../annotator/geometric/geometric-annotator-factory";
 import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
-// import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } 
-//   from "../annotator/text/text-annotator-factory";
+import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } 
+  from "../annotator/text/text-annotator-factory";
 
 import { ImageService } from "./image-service";
 import { CustomStampService } from "./custom-stamp-service";
@@ -40,8 +40,10 @@ export class AnnotatorService {
   private readonly _viewer: Viewer;
   
   private _contextMenu: ContextMenu;
+
   private _geometricFactory: GeometricAnnotatorFactory;
-  // private _textFactory: TextAnnotatorFactory;
+  private _textFactory: TextAnnotatorFactory;
+
   private _viewerResizeObserver: ResizeObserver;
   
   private _mode: AnnotatorServiceMode;  
@@ -61,7 +63,7 @@ export class AnnotatorService {
   private _geometricCloudMode = false;
   private _geometricSubmode: GeometricAnnotatorType = geometricAnnotatorTypes[0];
   
-  // private _textSubmode: TextAnnotatorType = textAnnotatorTypes[0];
+  private _textSubmode: TextAnnotatorType = textAnnotatorTypes[0];
 
   private _annotator: Annotator;
   get annotator(): Annotator {
@@ -109,8 +111,9 @@ export class AnnotatorService {
     this._viewerResizeObserver = viewerRObserver;
     
     this._contextMenu = new ContextMenu();
+
     this._geometricFactory = new GeometricAnnotatorFactory();
-    // this._textFactory = new TextAnnotatorFactory();
+    this._textFactory = new TextAnnotatorFactory();
   }
 
   private setMode(mode?: AnnotatorServiceMode) {
@@ -147,12 +150,11 @@ export class AnnotatorService {
           }, this._geometricSubmode);
         break;
       case "text":
-        // this._strokeWidth = 2;
-        // this._annotator = this._textFactory.createAnnotator(
-        //   this._imageService, this._viewer, {
-        //     strokeWidth: this._strokeWidth,
-        //     color: this._strokeColor,
-        //   }, this._textSubmode);
+        this._annotator = this._textFactory.createAnnotator(
+          this._imageService, this._viewer, {
+            strokeWidth: this._strokeWidth,
+            color: this._strokeColor,
+          }, this._textSubmode);
         break;
       default:
         // Execution should not come here
@@ -197,11 +199,12 @@ export class AnnotatorService {
           this.buildStrokeColorPicker(),
           this.buildStrokeWidthSlider(true),
         ];
-      // case "text":
-      //   return [
-      //     this.buildTextSubmodePicker(),
-      //     this.buildStrokeColorPicker(),
-      //   ];
+      case "text":
+        return [
+          this.buildTextSubmodePicker(),
+          this.buildStrokeColorPicker(),
+          this.buildStrokeWidthSlider(false),
+        ];
       default:
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${this._mode}`);
@@ -276,24 +279,24 @@ export class AnnotatorService {
     return submodePicker;
   }
   
-  // private buildTextSubmodePicker(): HTMLElement {
-  //   const submodePicker = document.createElement("div");
-  //   submodePicker.classList.add("context-menu-content", "row");
-  //   textAnnotatorTypes.forEach(x => {   
-  //     const item = document.createElement("div");
-  //     item.classList.add("panel-button");
-  //     if (x === this._textSubmode) {        
-  //       item.classList.add("on");
-  //     }
-  //     item.addEventListener("click", () => {
-  //       this._textSubmode = x;
-  //       this.setMode();
-  //     });
-  //     item.innerHTML = textIcons[x];
-  //     submodePicker.append(item);
-  //   });
-  //   return submodePicker;
-  // }
+  private buildTextSubmodePicker(): HTMLElement {
+    const submodePicker = document.createElement("div");
+    submodePicker.classList.add("context-menu-content", "row");
+    textAnnotatorTypes.forEach(x => {   
+      const item = document.createElement("div");
+      item.classList.add("panel-button");
+      if (x === this._textSubmode) {        
+        item.classList.add("on");
+      }
+      item.addEventListener("click", () => {
+        this._textSubmode = x;
+        this.setMode();
+      });
+      item.innerHTML = textIcons[x];
+      submodePicker.append(item);
+    });
+    return submodePicker;
+  }
 
   private buildStrokeColorPicker(): HTMLElement {    
     const colorPickerDiv = document.createElement("div");
@@ -360,9 +363,9 @@ export class AnnotatorService {
 
     const slider = document.createElement("input");
     slider.setAttribute("type", "range");
-    slider.setAttribute("min", "1");
-    slider.setAttribute("max", "32");
-    slider.setAttribute("step", "1");
+    slider.setAttribute("min", "2");
+    slider.setAttribute("max", "64");
+    slider.setAttribute("step", "2");
     slider.setAttribute("value", this._strokeWidth + "");
     slider.classList.add("context-menu-slider");
     slider.addEventListener("change", () => {

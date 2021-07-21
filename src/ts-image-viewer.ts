@@ -428,6 +428,8 @@ export class TsImageViewer {
       .addEventListener("click", this.onAnnotatorPenModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-geometric")
       .addEventListener("click", this.onAnnotatorGeometricModeButtonClick);
+    this._shadowRoot.querySelector("#button-annotation-mode-text")
+      .addEventListener("click", this.onAnnotatorTextModeButtonClick);
 
     // select buttons
     this._shadowRoot.querySelector("#button-annotation-edit-text")
