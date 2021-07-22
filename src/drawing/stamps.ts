@@ -1,4 +1,4 @@
-import { Quadruple } from "ts-viewers-core";
+import { Quadruple, StampCreationInfo } from "ts-viewers-core";
 
 const standardStampColors = {  
   redColor: [205, 0, 0, 1],
@@ -2844,24 +2844,10 @@ export interface StandardStampFormPath {
   stroke: boolean; 
 }
 
-export interface StampCreationInfo {
-  subject: string;
-  bbox: Quadruple;
-}
-
 export interface StandardStampCreationInfo extends StampCreationInfo {   
   formPaths: StandardStampFormPath[];
   strokeWidth: number;
   color: Quadruple;
-}
-
-export interface CustomStampCreationInfo extends StampCreationInfo {
-  /**image data as a byte array (4 bytes for each pixel: RGBA) */
-  imageData: number[];
-  /**stamp name to use in PDF file */
-  type: string;
-  /**stamp name to show in user interface */
-  name: string;
 }
 
 export const standardStampCreationInfos = {

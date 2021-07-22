@@ -21,7 +21,7 @@
  * disclosing the source code of your own applications.
  */
 
-import { Icons, getCommonStyles, UUID, SvgSmoothPath, CloudCurveData, DomUtils, SvgTempPath, ContextMenu, Loader, CanvasSmoothPathEditor, EventService } from 'ts-viewers-core';
+import { Icons, getCommonStyles, UUID, SvgSmoothPath, CloudCurveData, DomUtils, SvgTempPath, ContextMenu, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
 import { Vec2, Mat3, getDistance2D } from 'mathador';
 
 const geometricIcons = {
@@ -245,67 +245,6 @@ const stampContextButtonsHtml = `
     </div>
   </div>
 `;
-const stampImageLoaderHtml = `
-  <div class="abs-full-size-overlay stamp-dialog">
-    <div class="form">
-      <div class="form-canvas-wrapper">
-        <canvas class="abs-ratio-canvas"></canvas>
-      </div>
-      <div class="stamp-input-row">
-        <p>Stamp name:</p>
-        <input class="stamp-name-input" type="text" maxlength="128"/>
-      </div>
-      <div class="stamp-input-row">
-        <p>Stamp description:</p>
-        <input class="stamp-subject-input" type="text" maxlength="256"/>
-      </div>
-      <div class="stamp-input-row">
-        <p>Width:</p>
-        <input class="stamp-width-input" type="text" maxlength="4"/>
-        <p>Height:</p>
-        <input class="stamp-height-input" type="text" maxlength="4"/>
-      </div>
-      <div class="buttons">
-        <div class="panel-button stamp-ok">
-          <img src="${Icons.icon_ok}"/>
-        </div>
-        <div class="panel-button stamp-cancel">
-          <img src="${Icons.icon_close}"/>
-        </div>
-      </div>
-    </div>
-  </div>
-`;
-const stampDesignerHtml = `
-  <div class="abs-full-size-overlay stamp-dialog">
-    <div class="form">
-      <div class="form-canvas-wrapper">
-      </div>
-      <div class="stamp-input-row">
-        <p>Stamp name:</p>
-        <input class="stamp-name-input" type="text" maxlength="128"/>
-      </div>
-      <div class="stamp-input-row">
-        <p>Stamp description:</p>
-        <input class="stamp-subject-input" type="text" maxlength="256"/>
-      </div>
-      <div class="stamp-input-row">
-        <p>Width:</p>
-        <input class="stamp-width-input" type="text" maxlength="4"/>
-        <p>Height:</p>
-        <input class="stamp-height-input" type="text" maxlength="4"/>
-      </div>
-      <div class="buttons">
-        <div class="panel-button stamp-ok">
-          <img src="${Icons.icon_ok}"/>
-        </div>
-        <div class="panel-button stamp-cancel">
-          <img src="${Icons.icon_close}"/>
-        </div>
-      </div>
-    </div>
-  </div>
-`;
 
 const appName = "tsimage";
 const styles = `
@@ -370,7 +309,7 @@ class ImageServiceStateChangeEvent extends CustomEvent {
     }
 }
 
-var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -655,7 +594,7 @@ class AnnotationBase {
         };
     }
     renderAsync(imageInfo) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (!imageInfo) {
                 throw new Error("Can't render the annotation: image dimensions is not defined");
             }
@@ -664,7 +603,7 @@ class AnnotationBase {
                 this._renderedControls = this.renderControls();
             }
             yield new Promise((resolve, reject) => {
-                setTimeout(() => __awaiter$s(this, void 0, void 0, function* () {
+                setTimeout(() => __awaiter$r(this, void 0, void 0, function* () {
                     yield this.updateRenderAsync();
                     resolve();
                 }), 0);
@@ -673,7 +612,7 @@ class AnnotationBase {
         });
     }
     moveToAsync(point) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             const aabb = this.aabb;
             const width = aabb[1].x - aabb[0].x;
             const height = aabb[1].y - aabb[0].y;
@@ -684,7 +623,7 @@ class AnnotationBase {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (!center) {
                 const [{ x: xmin, y: ymin }, { x: xmax, y: ymax }] = this.aabb;
                 center = new Vec2((xmin + xmax) / 2, (ymin + ymax) / 2);
@@ -709,12 +648,12 @@ class AnnotationBase {
         };
     }
     setTextContentAsync(text, undoable = true) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             const oldText = this._textContent;
             this._textContent = text;
             this._dateModified = new Date();
             const undoAction = undoable
-                ? () => __awaiter$s(this, void 0, void 0, function* () {
+                ? () => __awaiter$r(this, void 0, void 0, function* () {
                     yield this.setTextContentAsync(oldText, false);
                 })
                 : undefined;
@@ -722,7 +661,7 @@ class AnnotationBase {
         });
     }
     toImageAsync() {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             const renderedContent = this._renderedContent;
             if (!renderedContent) {
                 return null;
@@ -875,13 +814,13 @@ class AnnotationBase {
         return mat;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             this._dateModified = new Date();
             this._aabbIsActual = false;
             yield this.updateRenderAsync();
             const invertedMat = Mat3.invert(matrix);
             const undoAction = undoable
-                ? () => __awaiter$s(this, void 0, void 0, function* () {
+                ? () => __awaiter$r(this, void 0, void 0, function* () {
                     yield this.applyCommonTransformAsync(invertedMat, false);
                 })
                 : undefined;
@@ -889,7 +828,7 @@ class AnnotationBase {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -898,7 +837,7 @@ class AnnotationBase {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$s(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$r(this, void 0, void 0, function* () {
                 this._svgContentCopy.remove();
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 if (this._moved) {
@@ -1024,7 +963,7 @@ class AnnotationBase {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -1191,7 +1130,7 @@ function getLineRenderHelpers(start, end) {
     };
 }
 
-var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1246,7 +1185,7 @@ class PenAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$q(this, void 0, void 0, function* () {
             let x;
             let y;
             const vec = new Vec2();
@@ -1296,7 +1235,7 @@ class PenAnnotation extends AnnotationBase {
         this._aabb[1].set(xMax, yMax);
     }
     renderAppearanceAsync() {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$q(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -1523,7 +1462,7 @@ class Annotator {
     }
 }
 
-var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1600,7 +1539,7 @@ class PenAnnotator extends Annotator {
         this.removeTempPenData();
     }
     saveAnnotationAsync() {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$p(this, void 0, void 0, function* () {
             if (!this._annotationPathData) {
                 return;
             }
@@ -1703,7 +1642,7 @@ class GeometricAnnotation extends AnnotationBase {
     }
 }
 
-var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1765,7 +1704,7 @@ class SquareAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners(false);
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -1790,7 +1729,7 @@ class SquareAnnotation extends GeometricAnnotation {
         this._aabb[1].setFromVec2(max);
     }
     renderAppearanceAsync() {
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -1966,7 +1905,7 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
-var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2040,7 +1979,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$o(this, void 0, void 0, function* () {
+        return __awaiter$n(this, void 0, void 0, function* () {
             if (!this._center) {
                 return;
             }
@@ -2126,7 +2065,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2185,7 +2124,7 @@ class CircleAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners(false);
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -2210,7 +2149,7 @@ class CircleAnnotation extends GeometricAnnotation {
         this._aabb[1].setFromVec2(max);
     }
     renderAppearanceAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -2336,7 +2275,7 @@ class CircleAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2410,7 +2349,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$l(this, void 0, void 0, function* () {
             if (!this._center) {
                 return;
             }
@@ -2501,7 +2440,7 @@ class PolyAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2542,7 +2481,7 @@ class PolylineAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$l(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             this._vertices.forEach(x => x.applyMat3(matrix));
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
@@ -2561,7 +2500,7 @@ class PolylineAnnotation extends PolyAnnotation {
         this._aabb[1].setFromVec2(max);
     }
     renderAppearanceAsync() {
-        return __awaiter$l(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -2626,7 +2565,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
 }
 
-var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2707,7 +2646,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             if (this._points.length < 2) {
                 return;
             }
@@ -2768,7 +2707,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2812,7 +2751,7 @@ class PolygonAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             this._vertices.forEach(x => x.applyMat3(matrix));
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
@@ -2827,7 +2766,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
     renderAppearanceAsync() {
         var _a, _b;
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             try {
                 if (!((_a = this._vertices) === null || _a === void 0 ? void 0 : _a.length) || this._vertices.length < 3) {
                     throw new Error("Any polygon can't have less than 3 vertices");
@@ -2912,7 +2851,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
 }
 
-var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2993,7 +2932,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$i(this, void 0, void 0, function* () {
+        return __awaiter$h(this, void 0, void 0, function* () {
             if (this._points.length < 3) {
                 return;
             }
@@ -3070,7 +3009,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3081,7 +3020,7 @@ var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class TextData {
     static buildAsync(text, options) {
-        return __awaiter$h(this, void 0, void 0, function* () {
+        return __awaiter$g(this, void 0, void 0, function* () {
             let result;
             if (text) {
                 const pTemp = document.createElement("p");
@@ -3200,7 +3139,7 @@ class TextData {
     }
 }
 
-var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3331,7 +3270,7 @@ class LineAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             setTextContentAsync: { get: () => super.setTextContentAsync }
         });
-        return __awaiter$g(this, void 0, void 0, function* () {
+        return __awaiter$f(this, void 0, void 0, function* () {
             this._caption = text;
             this.updateAABB();
             yield _super.setTextContentAsync.call(this, text, undoable);
@@ -3342,13 +3281,13 @@ class LineAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$g(this, void 0, void 0, function* () {
+        return __awaiter$f(this, void 0, void 0, function* () {
             this._vertices.forEach(x => x.applyMat3(matrix));
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
     }
     renderAppearanceAsync() {
-        return __awaiter$g(this, void 0, void 0, function* () {
+        return __awaiter$f(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -3533,7 +3472,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -3611,7 +3550,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$f(this, void 0, void 0, function* () {
+        return __awaiter$e(this, void 0, void 0, function* () {
             if (this._points.length < 2) {
                 return;
             }
@@ -6678,7 +6617,7 @@ const standardStampCreationInfos = {
     },
 };
 
-var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6753,12 +6692,12 @@ class StampAnnotation extends AnnotationBase {
         };
     }
     renderStampAppearanceAsync() {
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             return yield this.renderAppearanceAsync();
         });
     }
     moveToAsync(point) {
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             const x = point.x - this._center.x;
             const y = point.y - this._center.y;
             const mat = Mat3.buildTranslate(x, y);
@@ -6766,7 +6705,7 @@ class StampAnnotation extends AnnotationBase {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             center || (center = this._center);
             const mat = new Mat3()
                 .applyTranslation(-center.x, -center.y)
@@ -6779,7 +6718,7 @@ class StampAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners();
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -6805,7 +6744,7 @@ class StampAnnotation extends AnnotationBase {
     }
     renderAppearanceAsync() {
         var _a;
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -6941,7 +6880,7 @@ class StampAnnotation extends AnnotationBase {
     }
 }
 
-var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6986,7 +6925,7 @@ class StampAnnotator extends Annotator {
                 this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY})`);
             }
         };
-        this.onPointerUp = (e) => __awaiter$d(this, void 0, void 0, function* () {
+        this.onPointerUp = (e) => __awaiter$c(this, void 0, void 0, function* () {
             var _a, _b, _c;
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -7042,7 +6981,7 @@ class StampAnnotator extends Annotator {
         this._tempAnnotation = null;
     }
     saveAnnotationAsync() {
-        return __awaiter$d(this, void 0, void 0, function* () {
+        return __awaiter$c(this, void 0, void 0, function* () {
             if (!this._imageUuid || !this._tempAnnotation) {
                 return;
             }
@@ -7100,7 +7039,7 @@ class StampAnnotator extends Annotator {
         return new StampAnnotation(this._imageService.eventService, dto);
     }
     createTempStampAnnotationAsync() {
-        return __awaiter$d(this, void 0, void 0, function* () {
+        return __awaiter$c(this, void 0, void 0, function* () {
             let stamp;
             if (standardStampCreationInfos[this._type]) {
                 stamp = this.createStandardStamp(this._type, this._imageService.userName);
@@ -7122,7 +7061,7 @@ class StampAnnotator extends Annotator {
     }
 }
 
-var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -7268,12 +7207,12 @@ class NoteAnnotation extends AnnotationBase {
         };
     }
     renderNoteAppearanceAsync() {
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             return yield this.renderAppearanceAsync();
         });
     }
     moveToAsync(point) {
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             const x = point.x - this._center.x;
             const y = point.y - this._center.y;
             const mat = Mat3.buildTranslate(x, y);
@@ -7281,7 +7220,7 @@ class NoteAnnotation extends AnnotationBase {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             center || (center = this._center);
             const mat = new Mat3()
                 .applyTranslation(-center.x, -center.y)
@@ -7325,7 +7264,7 @@ class NoteAnnotation extends AnnotationBase {
         this._aabb[1].setFromVec2(max);
     }
     renderAppearanceAsync() {
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -7398,7 +7337,7 @@ class NoteAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             const { ll, lr, ur, ul } = this.getBoxCorners();
             ll.applyMat3(matrix);
             lr.applyMat3(matrix);
@@ -7436,7 +7375,7 @@ class TextAnnotator extends Annotator {
     }
 }
 
-var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -7465,7 +7404,7 @@ class TextNoteAnnotator extends TextAnnotator {
                 this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY})`);
             }
         };
-        this.onPointerUp = (e) => __awaiter$b(this, void 0, void 0, function* () {
+        this.onPointerUp = (e) => __awaiter$a(this, void 0, void 0, function* () {
             var _a, _b, _c;
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -7518,7 +7457,7 @@ class TextNoteAnnotator extends TextAnnotator {
     }
     saveAnnotationAsync() {
         var _a;
-        return __awaiter$b(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             if (!this._imageUuid || !this._tempAnnotation) {
                 return;
             }
@@ -7539,7 +7478,7 @@ class TextNoteAnnotator extends TextAnnotator {
     }
     createTempNoteAnnotationAsync() {
         var _a, _b, _c, _d;
-        return __awaiter$b(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             const nowString = new Date().toISOString();
             const size = ((_d = (_c = (_b = (_a = this._imageService.currentImageView) === null || _a === void 0 ? void 0 : _a.imageInfo) === null || _b === void 0 ? void 0 : _b.dimensions) === null || _c === void 0 ? void 0 : _c.x) !== null && _d !== void 0 ? _d : 2000) / 20;
             const dto = {
@@ -7568,7 +7507,7 @@ class TextNoteAnnotator extends TextAnnotator {
     }
 }
 
-var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -7959,7 +7898,7 @@ class TextAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             setTextContentAsync: { get: () => super.setTextContentAsync }
         });
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             this.updateAABB();
             yield _super.setTextContentAsync.call(this, text, undoable);
             yield this.updateRenderAsync();
@@ -7969,7 +7908,7 @@ class TextAnnotation extends AnnotationBase {
         const _super = Object.create(null, {
             applyCommonTransformAsync: { get: () => super.applyCommonTransformAsync }
         });
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             this._points.applyMatrix(matrix);
             yield _super.applyCommonTransformAsync.call(this, matrix, undoable);
         });
@@ -7984,7 +7923,7 @@ class TextAnnotation extends AnnotationBase {
         this._aabb[1].setFromVec2(max);
     }
     renderAppearanceAsync() {
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             try {
                 const clipPaths = [];
                 const elements = [];
@@ -8190,7 +8129,7 @@ class TextAnnotation extends AnnotationBase {
     }
 }
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8238,7 +8177,7 @@ class FreeTextAnnotator extends TextAnnotator {
             const { min, max } = Vec2.minMax(this._down, new Vec2(ix, iy));
             this.redrawRect(min, max);
         };
-        this.onPointerUp = (e) => __awaiter$9(this, void 0, void 0, function* () {
+        this.onPointerUp = (e) => __awaiter$8(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -8267,7 +8206,7 @@ class FreeTextAnnotator extends TextAnnotator {
         this.emitDataChanged(0);
     }
     saveAnnotationAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             if (!this._imageUuid || !this._rect) {
                 return;
             }
@@ -8351,7 +8290,7 @@ class FreeTextAnnotator extends TextAnnotator {
     }
 }
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8473,7 +8412,7 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
         this.emitDataChanged(0);
     }
     saveAnnotationAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (!this._imageUuid || !this._rect) {
                 return;
             }
@@ -8908,7 +8847,7 @@ class AnnotatorService {
     }
 }
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8965,7 +8904,7 @@ class ImageInfo {
         return this._annotations;
     }
     getImageAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             if (this._preloadedImage) {
                 return this._preloadedImage;
             }
@@ -8981,7 +8920,7 @@ class ImageInfo {
     }
 }
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -9035,7 +8974,7 @@ class ImageAnnotationView {
         this._eventService.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
     appendAsync(parent) {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             if (this._destroyed) {
                 return;
             }
@@ -9046,7 +8985,7 @@ class ImageAnnotationView {
     }
     renderAnnotationsAsync() {
         var _a, _b;
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             this.clear();
             const annotations = this._imageInfo.annotations || [];
             for (let i = 0; i < annotations.length || 0; i++) {
@@ -9087,7 +9026,7 @@ class ImageAnnotationView {
     }
 }
 
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -9175,7 +9114,7 @@ class ImageView {
         this._viewOuterContainer.remove();
     }
     renderPreviewAsync(force = false) {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$4(this, void 0, void 0, function* () {
             if (!force && this._previewRendered) {
                 return;
             }
@@ -9194,7 +9133,7 @@ class ImageView {
     }
     renderViewAsync(force = false) {
         var _a;
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$4(this, void 0, void 0, function* () {
             if (!force && this.viewValid) {
                 return;
             }
@@ -9245,7 +9184,7 @@ class ImageView {
         }
     }
     bakeAnnotationsAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$4(this, void 0, void 0, function* () {
             const tempCanvas = document.createElement("canvas");
             const { x, y } = this.imageInfo.dimensions;
             tempCanvas.width = x;
@@ -9379,7 +9318,7 @@ class ImageView {
     }
 }
 
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -9482,7 +9421,7 @@ class ImageService {
         (_a = this._imageViews) === null || _a === void 0 ? void 0 : _a.forEach(x => x.destroy());
     }
     undoAsync() {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             yield this.undoCommandAsync();
             this.setSelectedAnnotation(null);
             this.setFocusedAnnotation(null);
@@ -9490,7 +9429,7 @@ class ImageService {
     }
     addImagesAsync(loadInfos) {
         var _a;
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             if (!(loadInfos === null || loadInfos === void 0 ? void 0 : loadInfos.length)) {
                 return;
             }
@@ -9699,12 +9638,12 @@ class ImageService {
     }
     setSelectedAnnotationTextContentAsync(text) {
         var _a;
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             yield ((_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
         });
     }
     bakeImageAnnotationsAsync(imageUuid) {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             const imageView = imageUuid
                 ? this._imageViews.find(x => x.imageInfo.uuid === imageUuid)
                 : this._currentImageView;
@@ -9729,7 +9668,7 @@ class ImageService {
         this.emitStateChanged();
     }
     undoCommandAsync() {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             if (!this._lastCommands.length) {
                 return;
             }
@@ -9755,7 +9694,7 @@ class ImageService {
         if (undoable) {
             this.pushCommand({
                 timestamp: Date.now(),
-                undo: () => __awaiter$4(this, void 0, void 0, function* () {
+                undo: () => __awaiter$3(this, void 0, void 0, function* () {
                     this.removeAnnotation(annotation, false);
                     if (this.selectedAnnotation === annotation) {
                         this.setSelectedAnnotation(null);
@@ -9777,7 +9716,7 @@ class ImageService {
         if (undoable) {
             this.pushCommand({
                 timestamp: Date.now(),
-                undo: () => __awaiter$4(this, void 0, void 0, function* () {
+                undo: () => __awaiter$3(this, void 0, void 0, function* () {
                     this.appendAnnotation(annotation.imageUuid, annotation, false);
                 })
             });
@@ -9786,271 +9725,6 @@ class ImageService {
             type: "delete",
             annotations: [annotation.toDto()],
         }));
-    }
-}
-
-var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const customStampEvent = "tspdf-customstampchange";
-class CustomStampEvent extends CustomEvent {
-    constructor(detail) {
-        super(customStampEvent, { detail });
-    }
-}
-class CustomStampService {
-    constructor(container, eventService) {
-        this._customStampsByType = new Map();
-        this._loader = new Loader();
-        this.onFileInput = () => {
-            const files = this._fileInput.files;
-            if (files.length === 0) {
-                return;
-            }
-            this.openImageLoaderOverlayAsync(files[0]);
-            this._fileInput.value = null;
-        };
-        if (!container) {
-            throw new Error("Container is not defined");
-        }
-        if (!eventService) {
-            throw new Error("Event service is not defined");
-        }
-        this._container = container;
-        this._eventService = eventService;
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = "image/*";
-        fileInput.classList.add("abs-hidden");
-        this._fileInput = fileInput;
-        this._fileInput.addEventListener("change", this.onFileInput);
-        this._container.append(this._fileInput);
-    }
-    destroy() {
-        var _a;
-        this._fileInput.remove();
-        this._loader.hide();
-        (_a = this._overlay) === null || _a === void 0 ? void 0 : _a.remove();
-    }
-    importCustomStamps(stamps) {
-        if (stamps === null || stamps === void 0 ? void 0 : stamps.length) {
-            stamps.forEach(x => {
-                this._customStampsByType.set(x.type, x);
-            });
-        }
-    }
-    getCustomStamps() {
-        return [...this._customStampsByType.values()];
-    }
-    addCustomStamp(stamp) {
-        this._customStampsByType.set(stamp.type, stamp);
-        this._eventService.dispatchEvent(new CustomStampEvent({
-            type: "add",
-            stamp: stamp,
-        }));
-    }
-    removeCustomStamp(type) {
-        const stamp = this._customStampsByType.get(type);
-        if (!stamp) {
-            return;
-        }
-        this._customStampsByType.delete(type);
-        this._eventService.dispatchEvent(new CustomStampEvent({
-            type: "delete",
-            stamp: stamp,
-        }));
-    }
-    startLoadingImage() {
-        this._fileInput.click();
-    }
-    startDrawing() {
-        this.openDesignerOverlayAsync();
-    }
-    openImageLoaderOverlayAsync(file) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            this._loader.show(this._container, 10);
-            const imagePromise = new Promise((resolve, reject) => {
-                const url = URL.createObjectURL(file);
-                const img = new Image();
-                img.onload = () => {
-                    URL.revokeObjectURL(url);
-                    resolve(img);
-                };
-                img.onerror = (e) => {
-                    console.log(e);
-                    reject();
-                };
-                img.src = url;
-            });
-            let image;
-            try {
-                image = yield imagePromise;
-            }
-            catch (_a) {
-                this._loader.hide();
-                return;
-            }
-            const imageWidth = image.width;
-            const imageHeight = image.height;
-            const imageRatio = image.width / image.height;
-            const overlay = DomUtils.htmlToElements(stampImageLoaderHtml)[0];
-            const canvas = overlay.querySelector("canvas");
-            const cancelButton = overlay.querySelector(".stamp-cancel");
-            const okButton = overlay.querySelector(".stamp-ok");
-            const nameInput = overlay.querySelector(".stamp-name-input");
-            const subjectInput = overlay.querySelector(".stamp-subject-input");
-            const widthInput = overlay.querySelector(".stamp-width-input");
-            const heightInput = overlay.querySelector(".stamp-height-input");
-            let stampName = "Custom stamp";
-            let stampSubject = "image stamp";
-            let stampWidth = 64;
-            let stampHeight = +(64 / imageRatio).toFixed();
-            nameInput.value = stampName;
-            widthInput.value = stampWidth + "";
-            heightInput.value = stampHeight + "";
-            this._overlay = overlay;
-            this._container.append(overlay);
-            canvas.width = imageWidth;
-            canvas.height = imageHeight;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(image, 0, 0);
-            const imgData = ctx.getImageData(0, 0, image.width, image.height).data;
-            const validate = () => {
-                if (!stampName
-                    || (!stampHeight || isNaN(stampHeight))
-                    || (!stampWidth || isNaN(stampWidth))) {
-                    okButton.classList.add("disabled");
-                }
-                else {
-                    okButton.classList.remove("disabled");
-                }
-            };
-            nameInput.addEventListener("input", () => {
-                stampName = nameInput.value;
-                validate();
-            });
-            subjectInput.addEventListener("input", () => {
-                stampSubject = subjectInput.value;
-                validate();
-            });
-            widthInput.addEventListener("input", () => {
-                var _a;
-                stampWidth = +((_a = (+widthInput.value)) === null || _a === void 0 ? void 0 : _a.toFixed());
-                validate();
-            });
-            heightInput.addEventListener("input", () => {
-                var _a;
-                stampHeight = +((_a = (+heightInput.value)) === null || _a === void 0 ? void 0 : _a.toFixed());
-                validate();
-            });
-            const hide = () => {
-                overlay.remove();
-                this._overlay = null;
-            };
-            cancelButton.addEventListener("click", hide);
-            okButton.addEventListener("click", () => {
-                const imageDataArray = new Array(imgData.length);
-                for (let i = 0; i < imgData.length; i++) {
-                    imageDataArray[i] = imgData[i];
-                }
-                const stamp = {
-                    type: UUID.getRandomUuid(),
-                    name: stampName,
-                    subject: stampSubject,
-                    bbox: [0, 0, imageWidth, imageHeight],
-                    imageData: imageDataArray,
-                };
-                this.addCustomStamp(stamp);
-                hide();
-            });
-            this._loader.hide();
-        });
-    }
-    openDesignerOverlayAsync() {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            this._loader.show(this._container, 10);
-            const overlay = DomUtils.htmlToElements(stampDesignerHtml)[0];
-            const canvasContainer = overlay.querySelector(".form-canvas-wrapper");
-            const cancelButton = overlay.querySelector(".stamp-cancel");
-            const okButton = overlay.querySelector(".stamp-ok");
-            const nameInput = overlay.querySelector(".stamp-name-input");
-            const subjectInput = overlay.querySelector(".stamp-subject-input");
-            const widthInput = overlay.querySelector(".stamp-width-input");
-            const heightInput = overlay.querySelector(".stamp-height-input");
-            let stampName = "Custom stamp";
-            let stampSubject = "drawing stamp";
-            let stampWidth = 64;
-            let stampHeight = 64;
-            nameInput.value = stampName;
-            widthInput.value = stampWidth + "";
-            heightInput.value = stampHeight + "";
-            const editor = new CanvasSmoothPathEditor(canvasContainer, {
-                canvasWidth: stampWidth,
-                canvasHeight: stampHeight,
-            });
-            this._overlay = overlay;
-            this._container.append(overlay);
-            const updateCanvasSize = () => {
-                editor.canvasSize = [stampWidth, stampHeight];
-            };
-            const validate = () => {
-                if (!stampName
-                    || (!stampHeight || isNaN(stampHeight))
-                    || (!stampWidth || isNaN(stampWidth))) {
-                    okButton.classList.add("disabled");
-                }
-                else {
-                    updateCanvasSize();
-                    okButton.classList.remove("disabled");
-                }
-            };
-            nameInput.addEventListener("input", () => {
-                stampName = nameInput.value;
-                validate();
-            });
-            subjectInput.addEventListener("input", () => {
-                stampSubject = subjectInput.value;
-                validate();
-            });
-            widthInput.addEventListener("input", () => {
-                var _a;
-                stampWidth = +((_a = (+widthInput.value)) === null || _a === void 0 ? void 0 : _a.toFixed());
-                validate();
-            });
-            heightInput.addEventListener("input", () => {
-                var _a;
-                stampHeight = +((_a = (+heightInput.value)) === null || _a === void 0 ? void 0 : _a.toFixed());
-                validate();
-            });
-            const hide = () => {
-                overlay.remove();
-                this._overlay = null;
-            };
-            cancelButton.addEventListener("click", hide);
-            okButton.addEventListener("click", () => {
-                const imgData = editor.getImageData();
-                const imageDataArray = new Array(imgData.length);
-                for (let i = 0; i < imgData.length; i++) {
-                    imageDataArray[i] = imgData[i];
-                }
-                const stamp = {
-                    type: UUID.getRandomUuid(),
-                    name: stampName,
-                    subject: stampSubject,
-                    bbox: [0, 0, stampWidth, stampHeight],
-                    imageData: imageDataArray,
-                };
-                this.addCustomStamp(stamp);
-                hide();
-            });
-            this._loader.hide();
-        });
     }
 }
 

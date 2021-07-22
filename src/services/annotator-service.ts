@@ -1,12 +1,11 @@
 import { Vec2 } from "mathador";
-import { ContextMenu, DomUtils, Quadruple } from "ts-viewers-core";
+import { ContextMenu, DomUtils, Quadruple, 
+  CustomStampCreationInfo, CustomStampService } from "ts-viewers-core";
 
 import { geometricIcons, lineTypeIcons, textIcons, 
   stampContextButtonsHtml } from "../assets/index.html";
 
 import { imageChangeEvent, ImageEvent } from "../common/events";
-
-import { CustomStampCreationInfo } from "../drawing/stamps";
 
 import { Viewer } from "../components/viewer";
 
@@ -19,7 +18,6 @@ import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes }
   from "../annotator/text/text-annotator-factory";
 
 import { ImageService } from "./image-service";
-import { CustomStampService } from "./custom-stamp-service";
 
 export type AnnotatorServiceMode = "select" | "stamp" | "pen" | "geometric" | "text";
 

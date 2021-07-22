@@ -1,7 +1,7 @@
 import { getDistance2D, Vec2 } from "mathador";
 
-import { UUID} from "ts-viewers-core";
-import { CustomStampCreationInfo, StandardStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
+import { UUID, CustomStampCreationInfo} from "ts-viewers-core";
+import { StandardStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
 
 import { ImageService } from "../../services/image-service";
 import { StampAnnotation, StampAnnotationDto } from "../../annotations/stamp-annotation";

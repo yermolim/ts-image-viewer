@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { DomUtils, EventService, Loader } from "ts-viewers-core";
+import { DomUtils, EventService, Loader, CustomStampCreationInfo, 
+  CustomStampEvent, customStampEvent, CustomStampEventDetail, 
+  CustomStampService } from "ts-viewers-core";
 
 import { mainHtml } from "./assets/index.html";
 import { styles } from "./assets/styles";
@@ -10,12 +12,8 @@ import { AnnotEventDetail, AnnotEvent,
   imageChangeEvent, imageServiceStateChangeEvent, annotChangeEvent, 
   ImageEvent, ImageServiceStateChangeEvent } from "./common/events";
 
-import { CustomStampCreationInfo } from "./drawing/stamps";
-
 import { AnnotatorService } from "./services/annotator-service";
 import { ImageService } from "./services/image-service";
-import { CustomStampEvent, customStampEvent, CustomStampEventDetail, 
-  CustomStampService } from "./services/custom-stamp-service";
   
 import { Previewer } from "./components/previewer";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
@@ -24,6 +22,12 @@ import { annotatorDataChangeEvent, AnnotatorDataChangeEvent,
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 type FileButtons = "open" | "save" | "close";
+
+declare global {
+  interface HTMLElementEventMap {
+    [customStampEvent]: CustomStampEvent;
+  }
+}
 
 export interface TsImageViewerOptions {
   /**parent container CSS selector */
