@@ -2,7 +2,7 @@
 import { DomUtils, EventService, Loader } from "ts-viewers-core";
 
 import { mainHtml } from "./assets/index.html";
-import { styles } from "./assets/styles.html";
+import { styles } from "./assets/styles";
 
 import { AnnotationDto } from "./common/annotation";
 import { ImageLoadInfo } from "./common/image-info";
