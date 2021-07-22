@@ -1,6 +1,6 @@
 /**
  * Browser image viewer with basic annotationing support
- * Copyright (C) 2021-present, Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
+ * Copyright (C) 2021-present Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -14,6 +14,11 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * You can be released from the requirements of the license by purchasing
+ * a commercial license. Buying such a license is mandatory as soon as you
+ * develop commercial activities involving this program without
+ * disclosing the source code of your own applications.
  */
 
 import { Vec2, Mat3, getDistance2D } from 'mathador';
@@ -8424,26 +8429,18 @@ class StampAnnotation extends AnnotationBase {
                     matrix.applyTranslation(this._center.x, this.center.y);
                     const transformationString = `matrix(${matrix.truncate(5).toFloatShortArray().join(" ")})`;
                     const imageData = new ImageData(this._stampImageData, this._defaultWidth, this._defaultHeight);
-                    const urlPromise = new Promise((resolve, reject) => {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = this._defaultWidth;
-                        canvas.height = this._defaultHeight;
-                        canvas.getContext("2d").putImageData(imageData, 0, 0);
-                        canvas.toBlob((blob) => {
-                            const url = URL.createObjectURL(blob);
-                            resolve(url);
-                        });
-                    });
-                    const imageUrl = yield urlPromise;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = this._defaultWidth;
+                    canvas.height = this._defaultHeight;
+                    canvas.getContext("2d").putImageData(imageData, 0, 0);
+                    const imageDataBase64 = canvas.toDataURL("image/png");
                     const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
                     image.onerror = e => {
                         console.log(e);
                         console.log("Loading stamp image data failed");
                     };
-                    image.onload = e => {
-                        URL.revokeObjectURL(imageUrl);
-                    };
-                    image.setAttribute("href", imageUrl);
+                    image.onload = e => { };
+                    image.setAttribute("href", imageDataBase64);
                     image.setAttribute("width", this._width + "");
                     image.setAttribute("height", this._height + "");
                     image.setAttribute("preserveAspectRatio", "none");

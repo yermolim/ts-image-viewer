@@ -266,27 +266,19 @@ export class StampAnnotation extends AnnotationBase {
         // convert RGBA array to url using canvas
         const imageData = new ImageData(this._stampImageData, 
           this._defaultWidth, this._defaultHeight);
-        const urlPromise = new Promise<string>((resolve, reject) => {
-          const canvas = document.createElement("canvas");
-          canvas.width = this._defaultWidth;
-          canvas.height = this._defaultHeight;
-          canvas.getContext("2d").putImageData(imageData, 0, 0);
-          canvas.toBlob((blob: Blob) => {
-            const url = URL.createObjectURL(blob);  
-            resolve(url);
-          });
-        });
-        const imageUrl = await urlPromise; 
+        const canvas = document.createElement("canvas");
+        canvas.width = this._defaultWidth;
+        canvas.height = this._defaultHeight;
+        canvas.getContext("2d").putImageData(imageData, 0, 0);
+        const imageDataBase64 = canvas.toDataURL("image/png");        
 
         const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
         image.onerror = e => {
           console.log(e);
           console.log("Loading stamp image data failed");
         };
-        image.onload = e => {
-          URL.revokeObjectURL(imageUrl);
-        };
-        image.setAttribute("href", imageUrl);
+        image.onload = e => {};
+        image.setAttribute("href", imageDataBase64);
         image.setAttribute("width", this._width + "");
         image.setAttribute("height", this._height + "");   
         image.setAttribute("preserveAspectRatio", "none");
