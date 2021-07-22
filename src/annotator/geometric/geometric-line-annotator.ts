@@ -1,6 +1,6 @@
 import { Vec2 } from "mathador";
 
-import { getRandomUuid } from "../../common/uuid";
+import { UUID} from "ts-viewers-core";
 import { lineEndingTypes } from "../../drawing/utils";
 
 import { ImageService } from "../../services/image-service";
@@ -154,7 +154,7 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
   protected buildAnnotationDto(): LineAnnotationDto {    
     const nowString = new Date().toISOString();
     const dto: LineAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "line",
       imageUuid: null,
 

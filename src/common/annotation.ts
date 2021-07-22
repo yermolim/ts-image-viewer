@@ -1,9 +1,9 @@
 import { Mat3, Vec2 } from "mathador";
+import { EventService, UUID } from "ts-viewers-core";
+
 import { AppearanceRenderResult, BBox } from "../drawing/utils";
-import { EventService } from "./event-service";
 import { AnnotEditRequestEvent, AnnotEvent } from "./events";
 import { ImageInfo } from "./image-info";
-import { getRandomUuid } from "./uuid";
 
 export interface AnnotationRenderResult {
   /**svg container with all the annotation rendered helpers (boxes, handles, etc.) */
@@ -157,7 +157,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
   //#endregion
 
   //#region render-related properties  
-  protected readonly _svgId = getRandomUuid();
+  protected readonly _svgId = UUID.getRandomUuid();
 
   /**rendered box showing the annotation dimensions */
   protected _renderedBox: SVGGraphicsElement;
@@ -188,7 +188,7 @@ export abstract class AnnotationBase implements RenderableAnnotation {
     
     this.eventService = eventService;
     this.type = dto?.annotationType || "none";
-    this.uuid = dto?.uuid || getRandomUuid();
+    this.uuid = dto?.uuid || UUID.getRandomUuid();
 
     this._imageUuid = dto?.imageUuid;
     

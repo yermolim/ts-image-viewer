@@ -1,14 +1,12 @@
 import { Mat3, Vec2 } from "mathador";
+import { EventService, SvgTempPath, Double } from "ts-viewers-core";
 
-import { Double } from "../../common/types";
 import { AppearanceRenderResult, BBox, buildLineEndingPath, getLineRenderHelpers, LineEndingType, 
   lineEndingTypes, LineRenderHelpers, LINE_CAPTION_FONT_RATIO, LINE_CAPTION_SIZE_RATIO, LINE_END_MIN_SIZE, 
   LINE_END_SIZE_RATIO, SELECTION_STROKE_WIDTH, SvgElementWithBlendMode } from "../../drawing/utils";
 
-import { EventService } from "../../common/event-service";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
-import { SvgTempPath } from "../../drawing/paths/svg-temp-path";
-import { buildTextDataAsync } from "../../common/text-data";
+import { TextData } from "../../common/text-data";
 
 export interface LineAnnotationDto extends GeometricAnnotationDto {  
   vertices: [Double, Double];
@@ -198,7 +196,7 @@ export class LineAnnotation extends GeometricAnnotation {
         const maxTextWidth = alignedEnd.getMagnitude() - 2 * sidePadding;
         const textPivot = new Vec2(alignedEnd.getMagnitude() / 2, - captionHeight / 2 - sw / 2);
         if (maxTextWidth > 0) {
-          const textData = await buildTextDataAsync(this._caption, {
+          const textData = await TextData.buildAsync(this._caption, {
             maxWidth: maxTextWidth,
             fontSize: fontSize,
             strokeWidth: sw,

@@ -1,5 +1,6 @@
-import { EventService } from "../../common/event-service";
-import { ImageCoords, ImageInfo, ImageInfoView } from "../../common/image-info";
+import { EventService } from "ts-viewers-core";
+
+import { ImageCoords, ImageInfo, ImageInfoView } from "../common/image-info";
 import { ImageAnnotationView } from "./image-annotation-view";
 
 export class ImageView implements ImageInfoView { 

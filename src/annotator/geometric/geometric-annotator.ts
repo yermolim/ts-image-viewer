@@ -1,7 +1,7 @@
-import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
-import { Quadruple } from "../../common/types";
-import { ImageService } from "../../services/image-service";
+import { Quadruple } from "ts-viewers-core";
 
+import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
+import { ImageService } from "../../services/image-service";
 
 export interface GeometricAnnotatorOptions {
   strokeWidth?: number;  

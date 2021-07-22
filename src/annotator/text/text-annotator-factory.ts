@@ -1,4 +1,4 @@
-import { Quadruple } from "../../common/types";
+import { Quadruple } from "ts-viewers-core";
 
 import { ImageService } from "../../services/image-service";
 import { Viewer } from "../../components/viewer";

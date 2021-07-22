@@ -1,6 +1,6 @@
 import { getDistance2D, Vec2 } from "mathador";
 
-import { getRandomUuid } from "../../common/uuid";
+import { UUID} from "ts-viewers-core";
 import { CustomStampCreationInfo, StandardStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
 
 import { ImageService } from "../../services/image-service";
@@ -93,7 +93,7 @@ export class StampAnnotator extends Annotator {
     const nowString = new Date().toISOString();    
     const stampData: StandardStampCreationInfo = standardStampCreationInfos[type];
     const dto: StampAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "stamp",
       imageUuid: null,
 
@@ -121,7 +121,7 @@ export class StampAnnotator extends Annotator {
     userName?: string): StampAnnotation {
     const nowString = new Date().toISOString();
     const dto: StampAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "stamp",
       imageUuid: null,
 

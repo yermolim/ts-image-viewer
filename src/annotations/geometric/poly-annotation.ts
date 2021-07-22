@@ -1,7 +1,5 @@
 import { Vec2 } from "mathador";
-
-import { Double } from "../../common/types";
-import { EventService } from "../../common/event-service";
+import { EventService, Double } from "ts-viewers-core";
 
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 

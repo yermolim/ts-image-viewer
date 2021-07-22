@@ -1,15 +1,21 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { ExecutedAsyncCommand } from "../common/types";
-import { loadImageAsync } from "../common/dom";
+import { DomUtils, EventService } from "ts-viewers-core";
+
 import { ImageInfo, ImageLoadInfo, ImageInfoView } from "../common/image-info";
 import { AnnotationBase, AnnotationDto } from "../common/annotation";
 import { ScaleChangedEvent, annotSelectionRequestEvent, 
   annotFocusRequestEvent, ImageEvent, ImageServiceStateChangeEvent, 
-  AnnotSelectionRequestEvent, AnnotEvent, AnnotEditRequestEvent, annotEditRequestEvent} from "../common/events";
-import { EventService } from "../common/event-service";
+  AnnotSelectionRequestEvent, AnnotEvent, 
+  AnnotEditRequestEvent, annotEditRequestEvent} from "../common/events";
 
-import { ImageView } from "../components/image/image-view";
+import { ImageView } from "../components/image-view";
 import { PenAnnotation, PenAnnotationDto } from "../annotations/pen-annotation";
+  
+interface ExecutedAsyncCommand {
+  timestamp: number;  
+  undo(): Promise<void>;
+  redo?(): Promise<void>;
+}
 
 export interface ImageServiceOptions {
   previewWidth?: number;
@@ -122,21 +128,21 @@ export class ImageService {
           if (this._lazyLoadImages) {
             imageSource = info.data;
           } else {
-            imageSource = await loadImageAsync(info.data as string);
+            imageSource = await DomUtils.loadImageAsync(info.data as string);
           }
           break;
         case "Base64":
           if (typeof info.data !== "string") {
             throw new Error(`Invalid data type: ${typeof info.data} (must be string)`);
           }
-          imageSource = await loadImageAsync(info.data as string);
+          imageSource = await DomUtils.loadImageAsync(info.data as string);
           break;
         case "Blob":
           if (!(info.data instanceof Blob)) {            
             throw new Error("Invalid data type: must be Blob");
           }
           imageUrl = URL.createObjectURL(info.data);
-          imageSource = await loadImageAsync(imageUrl, true);
+          imageSource = await DomUtils.loadImageAsync(imageUrl, true);
           break;
 
         case "ByteArray":
@@ -151,7 +157,7 @@ export class ImageService {
             type: "application/octet-binary",
           });
           imageUrl = URL.createObjectURL(blob);
-          imageSource = await loadImageAsync(imageUrl, true);
+          imageSource = await DomUtils.loadImageAsync(imageUrl, true);
           break;
 
         default:

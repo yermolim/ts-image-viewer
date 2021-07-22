@@ -1,8 +1,8 @@
-import { clamp, Vec2, getDistance2D } from "mathador";
+import { Vec2, getDistance2D } from "mathador";
+import { DomUtils } from "ts-viewers-core";
 
 import { textDialogHtml } from "../assets/index.html";
 
-import { htmlToElements } from "../common/dom";
 import { imageChangeEvent, ImageEvent } from "../common/events";
 import { ImageInfoView } from "../common/image-info";
 import { ImageService } from "../services/image-service";
@@ -128,7 +128,7 @@ export class Viewer {
       return;
     }
 
-    const dialog = htmlToElements(textDialogHtml)[0];
+    const dialog = DomUtils.htmlToElements(textDialogHtml)[0];
     dialog.style.top = this._container.scrollTop + "px";
     dialog.style.left = this._container.scrollLeft + "px";
 

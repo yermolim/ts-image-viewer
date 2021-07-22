@@ -1,9 +1,7 @@
 import { Vec2 } from "mathador";
+import { DomUtils, EventService, UUID } from "ts-viewers-core";
 
-import { getRandomUuid } from "./uuid";
-import { loadImageAsync } from "./dom";
 import { AnnotationBase } from "./annotation";
-import { EventService } from "./event-service";
 
 export class ImageInfo {
   protected readonly _uuid: string;
@@ -58,7 +56,7 @@ export class ImageInfo {
    * @returns 
    */
   constructor(source: HTMLImageElement | string, uuid?: string) {
-    this._uuid = uuid || getRandomUuid();
+    this._uuid = uuid || UUID.getRandomUuid();
 
     if (source instanceof HTMLImageElement) {
       if (!source || !source.complete) {
@@ -82,7 +80,7 @@ export class ImageInfo {
       throw new Error("No image or image url found");
     }
 
-    const image = await loadImageAsync(this._url);
+    const image = await DomUtils.loadImageAsync(this._url);
     if (image) {      
       this._dimensions.set(image.naturalWidth, image.naturalHeight);
     }

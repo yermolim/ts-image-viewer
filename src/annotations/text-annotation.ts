@@ -1,13 +1,11 @@
 import { Mat3, Vec2 } from "mathador";
+import { SvgTempPath, EventService, Double, Quadruple } from "ts-viewers-core";
 
-import { Double, Quadruple } from "../common/types";
-import { EventService } from "../common/event-service";
 import { AnnotationBase, AnnotationDto } from "../common/annotation";
 import { AppearanceRenderResult, BBox, buildLineEndingPath, JustificationType, justificationTypes, 
   LineEndingType, lineEndingTypes, LINE_END_MIN_SIZE, LINE_END_SIZE_RATIO, 
   SELECTION_STROKE_WIDTH, SvgElementWithBlendMode, TEXT_FONT_RATIO } from "../drawing/utils";
-import { SvgTempPath } from "../drawing/paths/svg-temp-path";
-import { buildTextDataAsync } from "../common/text-data";
+import { TextData } from "../common/text-data";
 
 export interface TextAnnotPointsDto {
   /**text box bottom-left corner */
@@ -464,7 +462,7 @@ export class TextAnnotation extends AnnotationBase {
         const maxTextWidth = textRectWidth - 2 * sidePadding;
         const textPivot = new Vec2(alignedPoints.bl.x + sidePadding, alignedPoints.bl.y + sidePadding);
         if (maxTextWidth > 0) {
-          const textData = await buildTextDataAsync(this._textContent, {
+          const textData = await TextData.buildAsync(this._textContent, {
             maxWidth: maxTextWidth,
             fontSize: fontSize,
             strokeWidth: sw,

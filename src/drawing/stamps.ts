@@ -1,4 +1,4 @@
-import { Quadruple } from "../common/types";
+import { Quadruple } from "ts-viewers-core";
 
 const standardStampColors = {  
   redColor: [205, 0, 0, 1],

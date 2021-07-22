@@ -1,7 +1,6 @@
 import { Vec2 } from "mathador";
 
-import { getRandomUuid } from "../../common/uuid";
-import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
+import { UUID, CloudCurveData } from "ts-viewers-core";
 import { CLOUD_ARC_RATIO } from "../../drawing/utils";
 
 import { ImageService } from "../../services/image-service";
@@ -94,7 +93,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
       path.setAttribute("stroke-linecap", "round");      
       path.setAttribute("stroke-linejoin", "round");   
       
-      const curveData = buildCloudCurveFromPolyline([
+      const curveData = CloudCurveData.buildFromPolyline([
         new Vec2(min.x, min.y),
         new Vec2(max.x, min.y),
         new Vec2(max.x, max.y),
@@ -189,7 +188,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   protected buildAnnotationDto(): SquareAnnotationDto {
     const nowString = new Date().toISOString();
     const dto: SquareAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "square",
       imageUuid: null,
 

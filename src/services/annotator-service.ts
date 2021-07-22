@@ -1,16 +1,14 @@
 import { Vec2 } from "mathador";
+import { ContextMenu, DomUtils, Quadruple } from "ts-viewers-core";
 
 import { geometricIcons, lineTypeIcons, textIcons, 
   stampContextButtonsHtml } from "../assets/index.html";
 
-import { Quadruple } from "../common/types";
-import { htmlToElements } from "../common/dom";
 import { imageChangeEvent, ImageEvent } from "../common/events";
 
 import { CustomStampCreationInfo } from "../drawing/stamps";
 
 import { Viewer } from "../components/viewer";
-import { ContextMenu } from "../components/context-menu";
 
 import { Annotator } from "../annotator/annotator";
 import { PenAnnotator } from "../annotator/pen/pen-annotator";
@@ -212,7 +210,7 @@ export class AnnotatorService {
   }  
 
   private buildCustomStampButtons(): HTMLElement {    
-    const buttonsContainer = htmlToElements(stampContextButtonsHtml)[0];
+    const buttonsContainer = DomUtils.htmlToElements(stampContextButtonsHtml)[0];
     buttonsContainer.querySelector(".stamp-load-image").addEventListener("click", () => {
       this._customStampService.startLoadingImage();
     });

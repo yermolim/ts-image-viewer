@@ -1,11 +1,10 @@
 import { Mat3, Vec2 } from "mathador";
+import { EventService, CloudCurveData } from "ts-viewers-core";
 
 import { AppearanceRenderResult, SELECTION_STROKE_WIDTH, 
   SvgElementWithBlendMode } from "../../drawing/utils";
 
-import { EventService } from "../../common/event-service";
 import { PolyAnnotation, PolyAnnotationDto } from "./poly-annotation";
-import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
 
 export interface PolygonAnnotationDto extends PolyAnnotationDto {  
   cloud: boolean;
@@ -121,7 +120,7 @@ export class PolygonAnnotation extends PolyAnnotation {
         
         const vertices: Vec2[] = [...this._vertices];
         vertices.push(this._vertices[0]); // close the polygon
-        const curveData = buildCloudCurveFromPolyline(vertices, this._cloudArcSize);
+        const curveData = CloudCurveData.buildFromPolyline(vertices, this._cloudArcSize);
   
         d = `M${curveData.start.x},${curveData.start.y}`;
         curveData.curves.forEach(x => {

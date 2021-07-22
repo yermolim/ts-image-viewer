@@ -1,9 +1,9 @@
-import { clamp, Mat3, Vec2 } from "mathador";
+import { Mat3, Vec2 } from "mathador";
+import { EventService, Quadruple, Double } from "ts-viewers-core";
 
 import { AnnotationBase, AnnotationDto } from "../common/annotation";
-import { EventService } from "../common/event-service";
-import { Quadruple, Double } from "../common/types";
-import { AppearanceRenderResult, SELECTION_STROKE_WIDTH, SvgElementWithBlendMode } from "../drawing/utils";
+import { AppearanceRenderResult, SELECTION_STROKE_WIDTH, 
+  SvgElementWithBlendMode } from "../drawing/utils";
 
 export interface PenAnnotationDto extends AnnotationDto {
   pathList: number[][];

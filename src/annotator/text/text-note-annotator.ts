@@ -1,6 +1,5 @@
 import { getDistance2D, Vec2 } from "mathador";
-
-import { getRandomUuid } from "../../common/uuid";
+import { UUID } from "ts-viewers-core";
 
 import { Viewer } from "../../components/viewer";
 import { ImageService } from "../../services/image-service";
@@ -69,7 +68,7 @@ export class TextNoteAnnotator extends TextAnnotator {
     const nowString = new Date().toISOString();
     const size = (this._imageService.currentImageView?.imageInfo?.dimensions?.x ?? 2000) / 20;
     const dto: NoteAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "note",
       imageUuid: null,
 

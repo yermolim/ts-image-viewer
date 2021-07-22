@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
+import { DomUtils, EventService, Loader } from "ts-viewers-core";
+
 import { mainHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { downloadFile } from "./common/dom";
 import { AnnotationDto } from "./common/annotation";
 import { ImageLoadInfo } from "./common/image-info";
-import { EventService } from "./common/event-service";
 import { AnnotEventDetail, AnnotEvent,
   imageChangeEvent, imageServiceStateChangeEvent, annotChangeEvent, 
   ImageEvent, ImageServiceStateChangeEvent } from "./common/events";
@@ -14,9 +14,9 @@ import { CustomStampCreationInfo } from "./drawing/stamps";
 
 import { AnnotatorService } from "./services/annotator-service";
 import { ImageService } from "./services/image-service";
-import { CustomStampEvent, customStampEvent, CustomStampEventDetail, CustomStampService } from "./services/custom-stamp-service";
+import { CustomStampEvent, customStampEvent, CustomStampEventDetail, 
+  CustomStampService } from "./services/custom-stamp-service";
   
-import { Loader } from "./components/loader";
 import { Previewer } from "./components/previewer";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
@@ -402,7 +402,7 @@ export class TsImageViewer {
       return;
     }
 
-    downloadFile(blob, `img_${new Date().toISOString()}.png`);
+    DomUtils.downloadFile(blob, `img_${new Date().toISOString()}.png`);
   };
   
   private onCloseFileButtonClick = () => {

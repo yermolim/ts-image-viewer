@@ -1,8 +1,7 @@
 import { Mat3, Vec2 } from "mathador";
+import { EventService, Double } from "ts-viewers-core";
 
-import { Double } from "../common/types";
 import { AnnotationBase, AnnotationDto } from "../common/annotation";
-import { EventService } from "../common/event-service";
 
 import { AppearanceRenderResult, BBox, SELECTION_STROKE_WIDTH, 
   SvgElementWithBlendMode } from "../drawing/utils";

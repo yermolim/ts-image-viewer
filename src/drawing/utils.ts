@@ -3,8 +3,6 @@ import { Mat3, Vec2 } from "mathador";
 export type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
 | "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
 
-export type VecMinMax = readonly [min: Vec2, max: Vec2];
-
 /**width (in image units) of the transparent lines rendered to simplify annotation selection */
 export const SELECTION_STROKE_WIDTH = 20;
 
@@ -201,45 +199,6 @@ export function buildLineEndingPath(point: Vec2, type: LineEndingType,
     default:
       return "";
   }
-}
-
-export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): Vec2[] {
-  if (!start || !end) {
-    // endpoints are not defined
-    return null;
-  }
-  if (isNaN(maxWaveSize) || maxWaveSize <= 0) {
-    throw new Error(`Invalid maximal squiggle size ${maxWaveSize}`);
-  }
-  
-  const lineLength = Vec2.subtract(start, end).getMagnitude();
-  if (!lineLength) {
-    // the line has a zero length
-    return null;
-  }
-  
-  const resultPoints: Vec2[] = [start.clone()];
-
-  const zeroVec = new Vec2();
-  const lengthVec = new Vec2(lineLength, 0);
-  // get the matrix to transform the 'cloudy' line to the same position the source line has
-  const matrix = Mat3.from4Vec2(zeroVec, lengthVec, start, end);    
-  
-  const waveCount = Math.ceil(lineLength / maxWaveSize);
-  const waveSize = lineLength / waveCount;
-  const halfWaveSize = waveSize / 2;
-  for (let i = 0; i < waveCount; i++) {
-    resultPoints.push(
-      new Vec2(i * waveSize + halfWaveSize, -halfWaveSize).applyMat3(matrix).truncate(2), // top point
-      new Vec2((i + 1) * waveSize, 0).applyMat3(matrix).truncate(2), // bottom point
-    );
-  }
-
-  return resultPoints;
-}
-
-export function getDistance(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.hypot(x2 - x1, y2 - y1);
 }
   
 export function getLineRenderHelpers(start: Vec2, end: Vec2): LineRenderHelpers {

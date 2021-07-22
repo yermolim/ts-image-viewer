@@ -1,12 +1,10 @@
 import { Vec2 } from "mathador";
-import { Quadruple } from "../../common/types";
-import { getRandomUuid } from "../../common/uuid";
+import { SvgSmoothPath, UUID, Quadruple } from "ts-viewers-core";
 
 import { ImageService } from "../../services/image-service";
 
-import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
-import { SvgSmoothPath } from "../../drawing/paths/svg-smooth-path";
 import { PenAnnotation, PenAnnotationDto } from "../../annotations/pen-annotation";
+import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 
 export interface PenAnnotatorOptions {
   strokeWidth?: number;  
@@ -206,7 +204,7 @@ export class PenAnnotator extends Annotator {
 
     const nowString = new Date().toISOString();
     const dto: PenAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "pen",
       imageUuid: null,
 

@@ -1,6 +1,6 @@
 import { Vec2 } from "mathador";
 
-import { getRandomUuid } from "../../common/uuid";
+import { UUID} from "ts-viewers-core";
 import { lineEndingTypes } from "../../drawing/utils";
 
 import { ImageService } from "../../services/image-service";
@@ -162,7 +162,7 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
   protected buildAnnotationDto(): PolylineAnnotationDto {    
     const nowString = new Date().toISOString();
     const dto: PolylineAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "polyline",
       imageUuid: null,
 

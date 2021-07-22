@@ -1,7 +1,6 @@
 import { Mat3, Vec2 } from "mathador";
-import { EventService } from "../../common/event-service";
-import { Double } from "../../common/types";
-import { buildCloudCurveFromEllipse } from "../../drawing/clouds";
+import { EventService, CloudCurveData, Double } from "ts-viewers-core";
+
 import { AppearanceRenderResult, BBox, BEZIER_CONSTANT, SELECTION_STROKE_WIDTH, 
   SvgElementWithBlendMode } from "../../drawing/utils";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
@@ -164,7 +163,7 @@ export class CircleAnnotation extends GeometricAnnotation {
         path.setAttribute("stroke-linecap", "round");      
         path.setAttribute("stroke-linejoin", "round");   
 
-        const curveData = buildCloudCurveFromEllipse(rx, ry, this._cloudArcSize, new Mat3()); 
+        const curveData = CloudCurveData.buildFromEllipse(rx, ry, this._cloudArcSize, new Mat3()); 
         d += `M${curveData.start.x},${curveData.start.y}`;
         curveData.curves.forEach(x => {
           d += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;

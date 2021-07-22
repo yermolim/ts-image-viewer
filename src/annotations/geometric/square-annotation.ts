@@ -1,7 +1,6 @@
 import { Mat3, Vec2 } from "mathador";
-import { EventService } from "../../common/event-service";
-import { Double } from "../../common/types";
-import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
+import { EventService, CloudCurveData, Double } from "ts-viewers-core";
+
 import { AppearanceRenderResult, BBox, SELECTION_STROKE_WIDTH, 
   SvgElementWithBlendMode } from "../../drawing/utils";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
@@ -165,7 +164,7 @@ export class SquareAnnotation extends GeometricAnnotation {
         path.setAttribute("stroke-linecap", "round");      
         path.setAttribute("stroke-linejoin", "round");   
              
-        const curveData = buildCloudCurveFromPolyline([
+        const curveData = CloudCurveData.buildFromPolyline([
           bl.clone(),
           br.clone(),
           tr.clone(),

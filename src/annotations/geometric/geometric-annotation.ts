@@ -1,6 +1,6 @@
+import { EventService, Double, Quadruple } from "ts-viewers-core";
+
 import { AnnotationBase, AnnotationDto } from "../../common/annotation";
-import { EventService } from "../../common/event-service";
-import { Double, Quadruple } from "../../common/types";
 
 export interface GeometricAnnotationDto extends AnnotationDto {
   strokeColor: Quadruple;

@@ -1,9 +1,10 @@
-import { ImageInfo } from "../../common/image-info";
-import { AnnotationRenderResult, RenderableAnnotation } from "../../common/annotation";
+import { EventService } from "ts-viewers-core";
+
+import { ImageInfo } from "../common/image-info";
+import { AnnotationRenderResult, RenderableAnnotation } from "../common/annotation";
 import { AnnotSelectionRequestEvent, 
-  annotChangeEvent, AnnotFocusRequestEvent } from "../../common/events";
-import { EventService } from "../../common/event-service";
-import { AnnotEvent } from "../../ts-image-viewer";
+  annotChangeEvent, AnnotFocusRequestEvent } from "../common/events";
+import { AnnotEvent } from "../ts-image-viewer";
 
 export class ImageAnnotationView {
   private readonly _eventService: EventService;

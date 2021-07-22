@@ -1,7 +1,6 @@
 import { Vec2 } from "mathador";
+import { UUID, Quadruple } from "ts-viewers-core";
 
-import { getRandomUuid } from "../../common/uuid";
-import { Quadruple } from "../../common/types";
 import { justificationTypes, lineEndingTypes } from "../../drawing/utils";
 
 import { Viewer } from "../../components/viewer";
@@ -201,7 +200,7 @@ export class FreeTextAnnotator extends TextAnnotator {
     };
 
     const dto: TextAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "text",
       imageUuid: null,
 

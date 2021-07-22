@@ -1,7 +1,6 @@
 import { Mat3, Vec2 } from "mathador";
 
-import { getRandomUuid } from "../../common/uuid";
-import { buildCloudCurveFromEllipse } from "../../drawing/clouds";
+import { UUID, CloudCurveData } from "ts-viewers-core";
 import { BEZIER_CONSTANT, CLOUD_ARC_RATIO } from "../../drawing/utils";
 
 import { ImageService } from "../../services/image-service";
@@ -93,7 +92,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     this._cloudArcSize = this._imageService.currentImageView.imageInfo.dimensions.x * CLOUD_ARC_RATIO;
 
     if (this._cloudMode) {
-      const curveData = buildCloudCurveFromEllipse(rx, ry, this._cloudArcSize, 
+      const curveData = CloudCurveData.buildFromEllipse(rx, ry, this._cloudArcSize, 
         new Mat3().applyTranslation(center.x, center.y));    
   
       pathString = "M" + curveData.start.x + "," + curveData.start.y;
@@ -184,7 +183,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
   protected buildAnnotationDto(): CircleAnnotationDto {
     const nowString = new Date().toISOString();
     const dto: CircleAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "circle",
       imageUuid: null,
 
