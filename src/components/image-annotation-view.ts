@@ -29,10 +29,10 @@ export class ImageAnnotationView {
     this._imageInfo = imageInfo;
 
     this._container = document.createElement("div");
-    this._container.classList.add("image-annotations");
+    this._container.classList.add("page-annotations");
 
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    this._svg.classList.add("image-annotations-controls");
+    this._svg.classList.add("page-annotations-controls");
     this._svg.setAttribute("data-image-uuid", imageInfo.uuid + "");
     this._svg.setAttribute("viewBox", `0 0 ${imageInfo.dimensions.x} ${imageInfo.dimensions.y}`);
     // handle annotation selection

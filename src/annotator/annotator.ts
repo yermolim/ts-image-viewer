@@ -140,7 +140,7 @@ export abstract class Annotator {
       }
       record.addedNodes.forEach(x => {
         const element = x as HTMLElement;
-        if (element.classList.contains("image")) {
+        if (element.classList.contains("page")) {
           parentRObserver.observe(x as HTMLElement);
         }
       });
@@ -196,9 +196,9 @@ export abstract class Annotator {
     const imageCoords = this._imageService
       .currentImageView?.getImageCoordsUnderPointer(clientX, clientY);
     if (!imageCoords) {
-      this._svgGroup.classList.add("annotation-out-of-image");
+      this._svgGroup.classList.add("annotation-out-of-page");
     } else {      
-      this._svgGroup.classList.remove("annotation-out-of-image");
+      this._svgGroup.classList.remove("annotation-out-of-page");
     }   
 
     this._pointerCoordsInImageCS = imageCoords;

@@ -90,7 +90,7 @@ export const mainHtml = /*html*/`
         <div id="zoom-fit-viewer" class="panel-button">
           <img src="${Icons.icon_fit_viewer}"/>
         </div>
-        <div id="zoom-fit-image" class="panel-button">
+        <div id="zoom-fit-page" class="panel-button">
           <img src="${Icons.icon_fit_page}"/>
         </div>
       </div>

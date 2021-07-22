@@ -92,16 +92,16 @@ export class ImageView implements ImageInfoView {
     this._previewWidth = previewWidth;
 
     this._previewContainer = document.createElement("div");
-    this._previewContainer.classList.add("image-preview");    
-    this._previewContainer.setAttribute("data-image-index", this.index + 1 + "");
+    this._previewContainer.classList.add("page-preview");    
+    this._previewContainer.setAttribute("data-page-number", this.index + 1 + "");
 
     this._viewInnerContainer = document.createElement("div");
-    this._viewInnerContainer.classList.add("image");
-    this._viewInnerContainer.setAttribute("data-image-index", this.index + "");
+    this._viewInnerContainer.classList.add("page");
+    this._viewInnerContainer.setAttribute("data-page-number", this.index + "");
 
     this._viewOuterContainer = document.createElement("div");
-    this._viewOuterContainer.classList.add("image-container");
-    this._viewOuterContainer.setAttribute("data-image-index", this.index + "");
+    this._viewOuterContainer.classList.add("page-container");
+    this._viewOuterContainer.setAttribute("data-page-number", this.index + "");
     this._viewOuterContainer.append(this._viewInnerContainer);    
     
     this.refreshDimensions();
@@ -289,7 +289,7 @@ export class ImageView implements ImageInfoView {
 
   private createPreviewCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
-    canvas.classList.add("image-canvas");  
+    canvas.classList.add("page-canvas");  
     const dpr = window.devicePixelRatio;
     const {previewWidth: width, previewHeight: height} = this._dimensions;  
     canvas.style.width = width + "px";
@@ -301,7 +301,7 @@ export class ImageView implements ImageInfoView {
 
   private createViewCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
-    canvas.classList.add("image-canvas"); 
+    canvas.classList.add("page-canvas"); 
     canvas.style.width = this._dimensions.scaledWidth + "px";
     canvas.style.height = this._dimensions.scaledHeight + "px";
     canvas.width = this._dimensions.width;

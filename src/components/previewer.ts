@@ -144,7 +144,7 @@ export class Previewer {
     let target = <HTMLElement>e.target;
     let imageNumber: number;
     while (target && !imageNumber) {
-      const data = target.dataset["imageIndex"];
+      const data = target.dataset["pageNumber"];
       if (data) {
         imageNumber = +data;
       } else {

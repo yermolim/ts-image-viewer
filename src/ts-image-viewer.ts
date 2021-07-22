@@ -337,7 +337,7 @@ export class TsImageViewer {
       .addEventListener("click", this.onZoomInClick);
     this._shadowRoot.querySelector("#zoom-fit-viewer")
       .addEventListener("click", this.onZoomFitViewerClick);
-    this._shadowRoot.querySelector("#zoom-fit-image")
+    this._shadowRoot.querySelector("#zoom-fit-page")
       .addEventListener("click", this.onZoomFitImageClick);
 
     this._shadowRoot.querySelector("#toggle-previewer")
