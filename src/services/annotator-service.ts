@@ -1,9 +1,8 @@
 import { Vec2 } from "mathador";
-import { ContextMenu, DomUtils, Quadruple, 
+import { ContextMenu, DomUtils, Quadruple, Icons,
   CustomStampCreationInfo, CustomStampService } from "ts-viewers-core";
 
-import { geometricIcons, lineTypeIcons, textIcons, 
-  stampContextButtonsHtml } from "../assets/index.html";
+import { stampContextButtonsHtml } from "../assets/index.html";
 
 import { imageChangeEvent, ImageEvent } from "../common/events";
 
@@ -269,7 +268,7 @@ export class AnnotatorService {
         this._geometricSubmode = x;
         this.setMode();
       });
-      item.innerHTML = geometricIcons[x];
+      item.innerHTML = Icons.geometricIcons[x];
       submodePicker.append(item);
     });
     return submodePicker;
@@ -288,7 +287,7 @@ export class AnnotatorService {
         this._textSubmode = x;
         this.setMode();
       });
-      item.innerHTML = textIcons[x];
+      item.innerHTML = Icons.textIcons[x];
       submodePicker.append(item);
     });
     return submodePicker;
@@ -338,7 +337,7 @@ export class AnnotatorService {
         this.setMode();
       });
     }
-    cloudyLineButton.innerHTML = lineTypeIcons.cloudy;
+    cloudyLineButton.innerHTML = Icons.lineTypeIcons.cloudy;
     div.append(cloudyLineButton);
     
     const straightLineButton = document.createElement("div");
@@ -354,7 +353,7 @@ export class AnnotatorService {
         this.setMode();
       });
     }
-    straightLineButton.innerHTML = lineTypeIcons.straight;
+    straightLineButton.innerHTML = Icons.lineTypeIcons.straight;
     div.append(straightLineButton);
 
     const slider = document.createElement("input");
