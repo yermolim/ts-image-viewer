@@ -1,8 +1,6 @@
 import { Vec2 } from "mathador";
-import { ContextMenu, DomUtils, Quadruple, Icons,
+import { ContextMenu, DomUtils, Quadruple, Icons, HtmlTemplates,
   CustomStampCreationInfo, CustomStampService } from "ts-viewers-core";
-
-import { stampContextButtonsHtml } from "../assets/index.html";
 
 import { imageChangeEvent, ImageEvent } from "../common/events";
 
@@ -207,7 +205,7 @@ export class AnnotatorService {
   }  
 
   private buildCustomStampButtons(): HTMLElement {    
-    const buttonsContainer = DomUtils.htmlToElements(stampContextButtonsHtml)[0];
+    const buttonsContainer = DomUtils.htmlToElements(HtmlTemplates.stampContextButtonsHtml)[0];
     buttonsContainer.querySelector(".stamp-load-image").addEventListener("click", () => {
       this._customStampService.startLoadingImage();
     });
