@@ -241,12 +241,12 @@ declare global {
     }
 }
 
-declare type FileButtons = "open" | "save" | "close";
 declare global {
     interface HTMLElementEventMap {
         [customStampEvent]: CustomStampEvent;
     }
 }
+declare type FileButtons = "open" | "save" | "close";
 interface TsImageViewerOptions {
     containerSelector: string;
     userName?: string;
@@ -260,7 +260,6 @@ interface TsImageViewerOptions {
     lazyLoadImages?: boolean;
     previewWidth?: number;
 }
-
 declare class TsImageViewer {
     private readonly _userName;
     private _outerContainer;
@@ -338,4 +337,4 @@ declare class TsImageViewer {
     private onMainContainerPointerMove;
 }
 
-export { AnnotEvent, AnnotEventDetail, AnnotationDto, ImageLoadInfo, TsImageViewer, TsImageViewerOptions };
+export { AnnotEvent, AnnotEventDetail, AnnotationDto, FileButtons, ImageLoadInfo, TsImageViewer, TsImageViewerOptions };

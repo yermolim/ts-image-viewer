@@ -20,14 +20,15 @@ import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
   annotatorTypes } from "./annotator/annotator";
 
-type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
-type FileButtons = "open" | "save" | "close";
-
 declare global {
   interface HTMLElementEventMap {
     [customStampEvent]: CustomStampEvent;
   }
 }
+
+type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
+
+export type FileButtons = "open" | "save" | "close";
 
 export interface TsImageViewerOptions {
   /**parent container CSS selector */
@@ -79,9 +80,6 @@ export interface TsImageViewerOptions {
   /**image preview canvas width in px */
   previewWidth?: number;
 }
-
-export {AnnotationDto, AnnotEvent, AnnotEventDetail, ImageLoadInfo,
-  CustomStampCreationInfo, CustomStampEventDetail};
 
 export class TsImageViewer {
   //#region private fields
@@ -803,3 +801,6 @@ export class TsImageViewer {
   };
   //#endregion
 }
+
+export {AnnotationDto, AnnotEvent, AnnotEventDetail, ImageLoadInfo,
+  CustomStampCreationInfo, CustomStampEventDetail};
