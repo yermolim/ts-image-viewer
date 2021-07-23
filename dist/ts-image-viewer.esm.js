@@ -8883,7 +8883,7 @@ class ImageAnnotationView {
         this._rendered = new Set();
         this.onAnnotationSelectionChange = (e) => {
             var _a;
-            if (e.detail.type === "select") {
+            if (!this._destroyed && e.detail.type === "select") {
                 if ((_a = e.detail.annotations) === null || _a === void 0 ? void 0 : _a.length) {
                     this._container.style.touchAction = "none";
                 }
@@ -8913,9 +8913,10 @@ class ImageAnnotationView {
         });
     }
     destroy() {
+        this._destroyed = true;
         this.remove();
         this._container = null;
-        this._destroyed = true;
+        this._rendered.clear();
     }
     remove() {
         var _a;
@@ -8923,18 +8924,25 @@ class ImageAnnotationView {
         this._eventService.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
     appendAsync(parent) {
+        var _a;
         return __awaiter$5(this, void 0, void 0, function* () {
             if (this._destroyed) {
                 return;
             }
-            yield this.renderAnnotationsAsync();
             parent.append(this._container);
+            const renderResult = yield this.renderAnnotationsAsync();
+            if (!renderResult) {
+                (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
+                return;
+            }
             this._eventService.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
         });
     }
     renderAnnotationsAsync() {
-        var _a, _b;
         return __awaiter$5(this, void 0, void 0, function* () {
+            if (this._destroyed) {
+                return false;
+            }
             this.clear();
             const annotations = this._imageInfo.annotations || [];
             for (let i = 0; i < annotations.length || 0; i++) {
@@ -8963,9 +8971,15 @@ class ImageAnnotationView {
                 }
                 this._rendered.add(annotation);
                 this._svg.append(renderResult.controls);
-                (_a = this._container) === null || _a === void 0 ? void 0 : _a.append(renderResult.content);
+                if (this._destroyed) {
+                    return false;
+                }
+                this._container.append(renderResult.content);
             }
-            (_b = this._container) === null || _b === void 0 ? void 0 : _b.append(this._svg);
+            if (this._destroyed) {
+                return false;
+            }
+            this._container.append(this._svg);
             return true;
         });
     }

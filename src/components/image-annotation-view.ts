@@ -45,9 +45,11 @@ export class ImageAnnotationView {
   
   /**free the object resources to let GC clean them to avoid memory leak */
   destroy() {
+    this._destroyed = true;
+
     this.remove();
     this._container = null;
-    this._destroyed = true;
+    this._rendered.clear();
   }
 
   /**remove from DOM */
@@ -61,13 +63,23 @@ export class ImageAnnotationView {
     if (this._destroyed) {
       return;
     }
-    
-    await this.renderAnnotationsAsync();
+
     parent.append(this._container);
+    
+    const renderResult = await this.renderAnnotationsAsync();
+    if (!renderResult) {
+      this._container?.remove();
+      return;
+    }
+    
     this._eventService.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
+    if (this._destroyed) {
+      return false;
+    }
+
     this.clear();
 
     const annotations = this._imageInfo.annotations || [];
@@ -101,10 +113,17 @@ export class ImageAnnotationView {
 
       this._rendered.add(annotation);
       this._svg.append(renderResult.controls);
-      this._container?.append(renderResult.content);
+
+      if (this._destroyed) {
+        return false;
+      }
+      this._container.append(renderResult.content);
     }
 
-    this._container?.append(this._svg);
+    if (this._destroyed) {
+      return false;
+    }
+    this._container.append(this._svg);
     return true;
   }
 
@@ -114,7 +133,7 @@ export class ImageAnnotationView {
   }
 
   private onAnnotationSelectionChange = (e: AnnotEvent) => {
-    if (e.detail.type === "select") {
+    if (!this._destroyed && e.detail.type === "select") {
       // toggle "touchAction" to prevent default gestures from interfering with the annotation edit logic
       if (e.detail.annotations?.length) {
         this._container.style.touchAction = "none";
