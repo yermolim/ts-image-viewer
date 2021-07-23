@@ -80,7 +80,8 @@ export interface TsImageViewerOptions {
   previewWidth?: number;
 }
 
-export {AnnotationDto, AnnotEvent, AnnotEventDetail, ImageLoadInfo};
+export {AnnotationDto, AnnotEvent, AnnotEventDetail, ImageLoadInfo,
+  CustomStampEvent, CustomStampEventDetail};
 
 export class TsImageViewer {
   //#region private fields

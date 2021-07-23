@@ -1,5 +1,5 @@
 /**
- * Browser image viewer with basic annotationing support
+ * ts-image-viewer (Browser image viewer with basic annotationing support written in TypeScript)
  * Copyright (C) 2021-present Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -22,6 +22,7 @@
  */
 
 import { Icons, getCommonStyles, UUID, SvgSmoothPath, CloudCurveData, DomUtils, SvgTempPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
+export { CustomStampEvent } from 'ts-viewers-core';
 import { Vec2, Mat3, getDistance2D } from 'mathador';
 
 const mainHtml = `

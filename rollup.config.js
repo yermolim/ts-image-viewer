@@ -3,6 +3,7 @@ import { nodeResolve } from "@rollup/plugin-node-resolve";
 import image from "@rollup/plugin-image";
 import commonjs from "@rollup/plugin-commonjs";
 import externals from "rollup-plugin-node-externals";
+import dts from "rollup-plugin-dts";
 // import { terser } from "rollup-plugin-terser";
 // import css from "rollup-plugin-css-porter";
 
@@ -18,7 +19,7 @@ export default [
     plugins: [
       license({
         banner: `
-          Browser image viewer with basic annotationing support
+          ts-image-viewer (Browser image viewer with basic annotationing support written in TypeScript)          
           Copyright (C) 2021-present Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
       
           This program is free software: you can redistribute it and/or modify
@@ -49,6 +50,15 @@ export default [
       //   raw: "dist/styles.css",
       //   minified: "dist/styles.min.css",
       // }),
+    ],
+  },
+  {
+    input: "tsc/src/ts-image-viewer.d.ts",
+    output: [
+      { file: "dist/ts-image-viewer.d.ts", format: "esm" },
+    ],
+    plugins: [
+      dts(),
     ],
   },
   // demo build
