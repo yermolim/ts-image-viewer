@@ -22,7 +22,6 @@
  */
 
 import { Icons, getCommonStyles, UUID, SvgSmoothPath, CloudCurveData, DomUtils, SvgTempPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
-export { CustomStampEvent } from 'ts-viewers-core';
 import { Vec2, Mat3, getDistance2D } from 'mathador';
 
 const mainHtml = `

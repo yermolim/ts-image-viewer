@@ -1,5 +1,5 @@
 import { EventService, customStampEvent, CustomStampEvent, CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core';
-export { CustomStampEvent, CustomStampEventDetail } from 'ts-viewers-core';
+export { CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core';
 import { Vec2, Mat3 } from 'mathador';
 
 declare type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" | "color-dodge" | "color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";

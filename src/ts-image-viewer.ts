@@ -81,7 +81,7 @@ export interface TsImageViewerOptions {
 }
 
 export {AnnotationDto, AnnotEvent, AnnotEventDetail, ImageLoadInfo,
-  CustomStampEvent, CustomStampEventDetail};
+  CustomStampCreationInfo, CustomStampEventDetail};
 
 export class TsImageViewer {
   //#region private fields
