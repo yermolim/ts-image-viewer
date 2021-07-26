@@ -21,7 +21,7 @@
  * disclosing the source code of your own applications.
  */
 
-import { Icons, getCommonStyles, UUID, SvgSmoothPath, CloudCurveData, DomUtils, SvgTempPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
+import { Icons, getCommonStyles, UUID, SvgSmoothPath, CloudCurveData, DomUtils, SvgTempPath, ContextMenu, HtmlTemplates, Thumbs, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
 import { Vec2, Mat3, getDistance2D } from 'mathador';
 
 const mainHtml = `
@@ -9081,17 +9081,31 @@ class ImageView {
             if (!force && this._previewRendered) {
                 return;
             }
-            const image = yield this.imageInfo.getImageAsync();
-            const { x: imgW, y: imgH } = this.imageInfo.dimensions;
-            this.refreshDimensions();
-            const canvas = this.createPreviewCanvas();
-            const ctx = canvas.getContext("2d");
-            if (image) {
-                ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+            if (this._previewRenderPromise) {
+                yield this._previewRenderPromise;
             }
-            this._previewContainer.innerHTML = "";
-            this._previewContainer.append(canvas);
-            this._previewRendered = true;
+            else {
+                this._previewRenderPromise = new Promise((resolve, reject) => __awaiter$4(this, void 0, void 0, function* () {
+                    const image = yield this.imageInfo.getImageAsync();
+                    const { x: imgW, y: imgH } = this.imageInfo.dimensions;
+                    this.refreshDimensions();
+                    const canvas = this.createPreviewCanvas();
+                    const ctx = canvas.getContext("2d");
+                    if (image) {
+                        ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+                    }
+                    else {
+                        const placeholder = yield DomUtils.loadImageAsync(Thumbs.thumb_error, true);
+                        ctx.drawImage(placeholder, 0, 0, placeholder.naturalWidth, placeholder.naturalHeight, 0, 0, canvas.width, canvas.height);
+                    }
+                    this._previewContainer.innerHTML = "";
+                    this._previewContainer.append(canvas);
+                    this._previewRendered = true;
+                    resolve();
+                }));
+                yield this._previewRenderPromise;
+                this._previewRenderPromise = null;
+            }
         });
     }
     renderViewAsync(force = false) {
@@ -9216,7 +9230,8 @@ class ImageView {
         const canvas = document.createElement("canvas");
         canvas.classList.add("page-canvas");
         const dpr = window.devicePixelRatio;
-        const { previewWidth: width, previewHeight: height } = this._dimensions;
+        const width = this._dimensions.previewWidth || this._previewWidth;
+        const height = this._dimensions.previewHeight || this._previewWidth * 0.75;
         canvas.style.width = width + "px";
         canvas.style.height = height + "px";
         canvas.width = width * dpr;
@@ -9236,7 +9251,7 @@ class ImageView {
         var _a;
         const { x: width, y: height } = this.imageInfo.dimensions;
         const previewWidth = Math.max((_a = this._previewWidth) !== null && _a !== void 0 ? _a : 0, 50);
-        const previewHeight = previewWidth * (height / width);
+        const previewHeight = previewWidth * (height / width) || previewWidth * 0.75;
         this._dimensions.width = width;
         this._dimensions.height = height;
         this._dimensions.previewWidth = previewWidth;

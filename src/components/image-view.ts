@@ -1,4 +1,4 @@
-import { EventService } from "ts-viewers-core";
+import { DomUtils, EventService, Thumbs } from "ts-viewers-core";
 
 import { ImageCoords, ImageInfo, ImageInfoView } from "../common/image-info";
 import { ImageAnnotationView } from "./image-annotation-view";
@@ -23,6 +23,7 @@ export class ImageView implements ImageInfoView {
     return this._previewContainer;
   }
   private _previewRendered: boolean;
+  private _previewRenderPromise: Promise<void>;
 
   private _viewOuterContainer: HTMLDivElement;
   /**relatively positioned image view outer container */
@@ -117,20 +118,35 @@ export class ImageView implements ImageInfoView {
     if (!force && this._previewRendered) {
       return;
     }
+
+    if (this._previewRenderPromise) {
+      await this._previewRenderPromise;
+    } else {
+      this._previewRenderPromise = new Promise<void>(async (resolve, reject) => {
+        const image = await this.imageInfo.getImageAsync();
+        const {x: imgW, y: imgH} = this.imageInfo.dimensions;
+        this.refreshDimensions();
     
-    const image = await this.imageInfo.getImageAsync();
-    const {x: imgW, y: imgH} = this.imageInfo.dimensions;
-    this.refreshDimensions();
-
-    const canvas = this.createPreviewCanvas();
-    const ctx = canvas.getContext("2d");
-    if (image) {
-      ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+        const canvas = this.createPreviewCanvas();
+        const ctx = canvas.getContext("2d");
+        if (image) {
+          ctx.drawImage(image, 0, 0, imgW, imgH, 0, 0, canvas.width, canvas.height);
+        } else {      
+          // the image failed to load. replace it with placeholder
+          const placeholder = await DomUtils.loadImageAsync(Thumbs.thumb_error, true);
+          ctx.drawImage(placeholder, 
+            0, 0, placeholder.naturalWidth, placeholder.naturalHeight, 
+            0, 0, canvas.width, canvas.height);
+        }
+    
+        this._previewContainer.innerHTML = "";
+        this._previewContainer.append(canvas);
+        this._previewRendered = true;
+        resolve();
+      });
+      await this._previewRenderPromise;
+      this._previewRenderPromise = null;  
     }
-
-    this._previewContainer.innerHTML = "";
-    this._previewContainer.append(canvas);
-    this._previewRendered = true;
   }
   
   async renderViewAsync(force = false) {
@@ -291,7 +307,8 @@ export class ImageView implements ImageInfoView {
     const canvas = document.createElement("canvas");
     canvas.classList.add("page-canvas");  
     const dpr = window.devicePixelRatio;
-    const {previewWidth: width, previewHeight: height} = this._dimensions;  
+    const width = this._dimensions.previewWidth || this._previewWidth;
+    const height = this._dimensions.previewHeight || this._previewWidth * 0.75;
     canvas.style.width = width + "px";
     canvas.style.height = height + "px";
     canvas.width = width * dpr;
@@ -312,7 +329,8 @@ export class ImageView implements ImageInfoView {
   private refreshDimensions() {
     const {x: width, y: height} = this.imageInfo.dimensions;
     const previewWidth = Math.max(this._previewWidth ?? 0, 50);
-    const previewHeight = previewWidth * (height / width);
+    const previewHeight = previewWidth * (height / width) || previewWidth * 0.75;
+    
     this._dimensions.width = width;
     this._dimensions.height = height;
     this._dimensions.previewWidth = previewWidth;
