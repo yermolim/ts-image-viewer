@@ -9405,13 +9405,16 @@ class ImageService {
             this.setFocusedAnnotation(null);
         });
     }
-    addImagesAsync(loadInfos) {
+    addImagesAsync(loadInfos, selectedIndex) {
         var _a;
         return __awaiter$3(this, void 0, void 0, function* () {
             if (!(loadInfos === null || loadInfos === void 0 ? void 0 : loadInfos.length)) {
                 return;
             }
-            for (const info of loadInfos) {
+            selectedIndex !== null && selectedIndex !== void 0 ? selectedIndex : (selectedIndex = 0);
+            let imageToSelect;
+            for (let i = 0; i < loadInfos.length; i++) {
+                const info = loadInfos[i];
                 if (!info || !info.type || !info.data) {
                     console.log("Empty image load info");
                     continue;
@@ -9466,14 +9469,15 @@ class ImageService {
                 const imageInfo = new ImageInfo(imageSource, info.uuid);
                 const view = new ImageView(this._eventService, imageInfo, this._imageViews.length, this._previewWidth);
                 this._imageViews.push(view);
+                if (i === selectedIndex) {
+                    imageToSelect = view;
+                }
             }
             this._eventService.dispatchEvent(new ImageEvent({
                 type: "open",
                 imageViews: [...this._imageViews],
             }));
-            if (!this._currentImageView) {
-                this.setImageAtIndexAsCurrent(0);
-            }
+            this.setImageAsCurrent(imageToSelect);
         });
     }
     clearImages() {
@@ -9488,6 +9492,16 @@ class ImageService {
     }
     getImage(index) {
         return this._imageViews[index];
+    }
+    setImageAsCurrent(image) {
+        if (!image) {
+            return;
+        }
+        const imageIndex = this._imageViews.findIndex(x => x === image);
+        if (imageIndex === -1) {
+            return;
+        }
+        this.setImageAtIndexAsCurrent(imageIndex);
     }
     setImageAtIndexAsCurrent(index) {
         var _a;
@@ -10478,10 +10492,10 @@ class TsImageViewer {
         this._eventService.destroy();
         this._shadowRoot.innerHTML = "";
     }
-    openImagesAsync(loadInfos) {
+    openImagesAsync(loadInfos, selectedIndex) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield this._imageService.addImagesAsync(loadInfos);
+                yield this._imageService.addImagesAsync(loadInfos, selectedIndex);
             }
             catch (e) {
                 throw new Error(`Cannot load file data: ${e.message}`);

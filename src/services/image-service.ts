@@ -107,12 +107,15 @@ export class ImageService {
   }
 
 
-  async addImagesAsync(loadInfos: ImageLoadInfo[]) {
+  async addImagesAsync(loadInfos: ImageLoadInfo[], selectedIndex?: number) {
     if (!loadInfos?.length) {
       return;
     }
 
-    for (const info of loadInfos) {
+    selectedIndex ??= 0;
+    let imageToSelect: ImageView;
+    for (let i = 0; i < loadInfos.length; i++) {
+      const info = loadInfos[i];
       if (!info || !info.type || !info.data) {
         console.log("Empty image load info");
         continue;
@@ -172,7 +175,11 @@ export class ImageService {
       const imageInfo = new ImageInfo(imageSource, info.uuid);
       const view = new ImageView(this._eventService, imageInfo, 
         this._imageViews.length, this._previewWidth);
-      this._imageViews.push(view);     
+      this._imageViews.push(view);   
+      
+      if (i === selectedIndex) {
+        imageToSelect = view;
+      }
     }    
 
     this._eventService.dispatchEvent(new ImageEvent({   
@@ -180,9 +187,7 @@ export class ImageService {
       imageViews: [...this._imageViews],
     }));
 
-    if (!this._currentImageView) {
-      this.setImageAtIndexAsCurrent(0);
-    }
+    this.setImageAsCurrent(imageToSelect);
   }
 
   /**
@@ -204,6 +209,18 @@ export class ImageService {
   
   getImage(index: number): ImageView {
     return this._imageViews[index];
+  }
+  
+  setImageAsCurrent(image: ImageView) {
+    if (!image) {
+      return;
+    }
+    const imageIndex = this._imageViews.findIndex(x => x === image);
+    if (imageIndex === -1) {
+      return;
+    }
+
+    this.setImageAtIndexAsCurrent(imageIndex);
   }
 
   setImageAtIndexAsCurrent(index: number) {

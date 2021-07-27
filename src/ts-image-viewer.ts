@@ -203,9 +203,9 @@ export class TsImageViewer {
    * 
    * @param loadInfos array of objects with an information about files being loaded
    */
-  async openImagesAsync(loadInfos: ImageLoadInfo[]): Promise<void> {
+  async openImagesAsync(loadInfos: ImageLoadInfo[], selectedIndex?: number): Promise<void> {
     try {
-      await this._imageService.addImagesAsync(loadInfos);
+      await this._imageService.addImagesAsync(loadInfos, selectedIndex);
     } catch (e) {
       throw new Error(`Cannot load file data: ${e.message}`);
     }

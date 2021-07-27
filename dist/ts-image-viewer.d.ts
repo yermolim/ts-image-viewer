@@ -284,7 +284,7 @@ declare class TsImageViewer {
     private _timers;
     constructor(options: TsImageViewerOptions);
     destroy(): void;
-    openImagesAsync(loadInfos: ImageLoadInfo[]): Promise<void>;
+    openImagesAsync(loadInfos: ImageLoadInfo[], selectedIndex?: number): Promise<void>;
     closeImages(): void;
     importAnnotations(dtos: AnnotationDto[]): void;
     importAnnotationsFromJson(json: string): void;
