@@ -9525,8 +9525,8 @@ class ImageService {
     setNextImageAsCurrent() {
         this.setImageAtIndexAsCurrent(this._currentImageView.index + 1);
     }
-    appendAnnotationToImage(imageUuid, annotation, undoable = true) {
-        this.appendAnnotation(imageUuid, annotation, undoable);
+    appendAnnotationToImage(imageUuid, annotation, undoable = true, raiseEvent = true) {
+        this.appendAnnotation(imageUuid, annotation, undoable, raiseEvent);
     }
     appendSerializedAnnotationsAsync(dtos) {
         return __awaiter$3(this, void 0, void 0, function* () {
@@ -9563,7 +9563,7 @@ class ImageService {
                     default:
                         throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
                 }
-                this.appendAnnotationToImage(dto.imageUuid, annotation, false);
+                this.appendAnnotationToImage(dto.imageUuid, annotation, false, false);
                 yield new Promise((resolve, reject) => {
                     setTimeout(() => {
                         resolve();
@@ -9702,7 +9702,7 @@ class ImageService {
             this.emitStateChanged();
         });
     }
-    appendAnnotation(imageUuid, annotation, undoable) {
+    appendAnnotation(imageUuid, annotation, undoable, raiseEvent) {
         if (!annotation) {
             throw new Error("Annotation is not defined");
         }
@@ -9727,10 +9727,12 @@ class ImageService {
                 })
             });
         }
-        this._eventService.dispatchEvent(new AnnotEvent({
-            type: "add",
-            annotations: [annotation.toDto()],
-        }));
+        if (raiseEvent) {
+            this._eventService.dispatchEvent(new AnnotEvent({
+                type: "add",
+                annotations: [annotation.toDto()],
+            }));
+        }
     }
     removeAnnotation(annotation, undoable) {
         if (!annotation) {
@@ -9742,7 +9744,7 @@ class ImageService {
             this.pushCommand({
                 timestamp: Date.now(),
                 undo: () => __awaiter$3(this, void 0, void 0, function* () {
-                    this.appendAnnotation(annotation.imageUuid, annotation, false);
+                    this.appendAnnotation(annotation.imageUuid, annotation, false, true);
                 })
             });
         }
