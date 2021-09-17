@@ -9528,42 +9528,49 @@ class ImageService {
     appendAnnotationToImage(imageUuid, annotation, undoable = true) {
         this.appendAnnotation(imageUuid, annotation, undoable);
     }
-    appendSerializedAnnotations(dtos) {
-        let annotation;
-        for (const dto of dtos) {
-            switch (dto.annotationType) {
-                case "pen":
-                    annotation = new PenAnnotation(this._eventService, dto);
-                    break;
-                case "stamp":
-                    annotation = new StampAnnotation(this._eventService, dto);
-                    break;
-                case "note":
-                    annotation = new NoteAnnotation(this._eventService, dto);
-                    break;
-                case "text":
-                    annotation = new TextAnnotation(this._eventService, dto);
-                    break;
-                case "circle":
-                    annotation = new CircleAnnotation(this._eventService, dto);
-                    break;
-                case "square":
-                    annotation = new SquareAnnotation(this._eventService, dto);
-                    break;
-                case "line":
-                    annotation = new LineAnnotation(this._eventService, dto);
-                    break;
-                case "polyline":
-                    annotation = new PolylineAnnotation(this._eventService, dto);
-                    break;
-                case "polygon":
-                    annotation = new PolygonAnnotation(this._eventService, dto);
-                    break;
-                default:
-                    throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
+    appendSerializedAnnotationsAsync(dtos) {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            let annotation;
+            for (const dto of dtos) {
+                switch (dto.annotationType) {
+                    case "pen":
+                        annotation = new PenAnnotation(this._eventService, dto);
+                        break;
+                    case "stamp":
+                        annotation = new StampAnnotation(this._eventService, dto);
+                        break;
+                    case "note":
+                        annotation = new NoteAnnotation(this._eventService, dto);
+                        break;
+                    case "text":
+                        annotation = new TextAnnotation(this._eventService, dto);
+                        break;
+                    case "circle":
+                        annotation = new CircleAnnotation(this._eventService, dto);
+                        break;
+                    case "square":
+                        annotation = new SquareAnnotation(this._eventService, dto);
+                        break;
+                    case "line":
+                        annotation = new LineAnnotation(this._eventService, dto);
+                        break;
+                    case "polyline":
+                        annotation = new PolylineAnnotation(this._eventService, dto);
+                        break;
+                    case "polygon":
+                        annotation = new PolygonAnnotation(this._eventService, dto);
+                        break;
+                    default:
+                        throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
+                }
+                this.appendAnnotationToImage(dto.imageUuid, annotation, false);
+                yield new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        resolve();
+                    }, 10);
+                });
             }
-            this.appendAnnotationToImage(dto.imageUuid, annotation, false);
-        }
+        });
     }
     deleteAnnotation(annotation) {
         this.removeAnnotation(annotation, true);
@@ -10531,22 +10538,26 @@ class TsImageViewer {
     closeImages() {
         this._imageService.clearImages();
     }
-    importAnnotations(dtos) {
-        try {
-            this._imageService.appendSerializedAnnotations(dtos);
-        }
-        catch (e) {
-            console.log(`Error while importing annotations: ${e.message}`);
-        }
+    importAnnotationsAsync(dtos) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this._imageService.appendSerializedAnnotationsAsync(dtos);
+            }
+            catch (e) {
+                console.log(`Error while importing annotations: ${e.message}`);
+            }
+        });
     }
-    importAnnotationsFromJson(json) {
-        try {
-            const dtos = JSON.parse(json);
-            this._imageService.appendSerializedAnnotations(dtos);
-        }
-        catch (e) {
-            console.log(`Error while importing annotations: ${e.message}`);
-        }
+    importAnnotationsFromJsonAsync(json) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const dtos = JSON.parse(json);
+                yield this._imageService.appendSerializedAnnotationsAsync(dtos);
+            }
+            catch (e) {
+                console.log(`Error while importing annotations: ${e.message}`);
+            }
+        });
     }
     exportAnnotations(imageUuid) {
         const dtos = this._imageService.serializeAnnotations(imageUuid);

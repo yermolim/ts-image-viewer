@@ -221,9 +221,9 @@ export class TsImageViewer {
    * import previously exported TsImage annotations
    * @param dtos annotation data transfer objects
    */
-  importAnnotations(dtos: AnnotationDto[]) {
+  async importAnnotationsAsync(dtos: AnnotationDto[]) {
     try {
-      this._imageService.appendSerializedAnnotations(dtos);
+      await this._imageService.appendSerializedAnnotationsAsync(dtos);
     } catch (e) {
       console.log(`Error while importing annotations: ${e.message}`);      
     }
@@ -233,10 +233,10 @@ export class TsImageViewer {
    * import previously exported serialized TsImage annotations
    * @param json serialized annotation data transfer objects
    */
-  importAnnotationsFromJson(json: string) {
+  async importAnnotationsFromJsonAsync(json: string) {
     try {
       const dtos: AnnotationDto[] = JSON.parse(json);
-      this._imageService.appendSerializedAnnotations(dtos);
+      await this._imageService.appendSerializedAnnotationsAsync(dtos);
     } catch (e) {
       console.log(`Error while importing annotations: ${e.message}`);      
     }

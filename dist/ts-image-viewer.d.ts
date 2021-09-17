@@ -286,8 +286,8 @@ declare class TsImageViewer {
     destroy(): void;
     openImagesAsync(loadInfos: ImageLoadInfo[], selectedIndex?: number): Promise<void>;
     closeImages(): void;
-    importAnnotations(dtos: AnnotationDto[]): void;
-    importAnnotationsFromJson(json: string): void;
+    importAnnotationsAsync(dtos: AnnotationDto[]): Promise<void>;
+    importAnnotationsFromJsonAsync(json: string): Promise<void>;
     exportAnnotations(imageUuid?: string): AnnotationDto[];
     exportAnnotationsToJson(imageUuid?: string): string;
     importCustomStamps(customStamps: CustomStampCreationInfo[]): void;

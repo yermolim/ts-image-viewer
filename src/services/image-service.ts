@@ -269,8 +269,8 @@ export class ImageService {
    * append previously exported annotations
    * @param dtos annotation data transfer objects
    */
-  appendSerializedAnnotations(dtos: AnnotationDto[]) {
-    let annotation: AnnotationBase;
+  async appendSerializedAnnotationsAsync(dtos: AnnotationDto[]) {
+    let annotation: AnnotationBase;    
     for (const dto of dtos) {
       switch (dto.annotationType) {
         case "pen":
@@ -304,6 +304,11 @@ export class ImageService {
           throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
       }
       this.appendAnnotationToImage(dto.imageUuid, annotation, false);
+      await new Promise<void>((resolve, reject) => {
+        setTimeout(() => {
+          resolve();
+        }, 10);
+      });
     }
   }
 
