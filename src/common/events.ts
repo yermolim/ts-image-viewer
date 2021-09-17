@@ -27,7 +27,7 @@ export interface AnnotEditRequestEventDetail {
   undoAction: () => Promise<void>;
 }
 export interface AnnotEventDetail {
-  type: "focus" | "select" | "add" | "edit" | "delete" | "render";
+  type: "focus" | "select" | "add" | "edit" | "delete" | "render" | "import";
   annotations: AnnotationDto[];
 }
 export interface ImageServiceStateChangeEventDetail {

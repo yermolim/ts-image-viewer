@@ -262,7 +262,7 @@ export class ImageService {
   }
 
   appendAnnotationToImage(imageUuid: string, annotation: AnnotationBase, 
-    undoable = true, raiseEvent = true) {
+    undoable = true, raiseEvent: "add" | "import" = "add") {
     this.appendAnnotation(imageUuid, annotation, undoable, raiseEvent);
   }
   
@@ -304,7 +304,7 @@ export class ImageService {
         default:
           throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
       }
-      this.appendAnnotationToImage(dto.imageUuid, annotation, false, false);
+      this.appendAnnotationToImage(dto.imageUuid, annotation, false, "import");
       await new Promise<void>((resolve, reject) => {
         setTimeout(() => {
           resolve();
@@ -469,7 +469,7 @@ export class ImageService {
 
   
   protected appendAnnotation(imageUuid: string, annotation: AnnotationBase, 
-    undoable: boolean, raiseEvent: boolean) {
+    undoable: boolean, raiseEvent: "add" | "import") {
     if (!annotation) {
       throw new Error("Annotation is not defined");
     }
@@ -502,12 +502,10 @@ export class ImageService {
       });
     }
 
-    if (raiseEvent) {
-      this._eventService.dispatchEvent(new AnnotEvent({   
-        type: "add",   
-        annotations: [annotation.toDto()],
-      }));
-    }
+    this._eventService.dispatchEvent(new AnnotEvent({   
+      type: raiseEvent,   
+      annotations: [annotation.toDto()],
+    }));
   } 
   
   /**mark an annotation as deleted */
@@ -523,7 +521,7 @@ export class ImageService {
       this.pushCommand({
         timestamp: Date.now(),
         undo: async () => {
-          this.appendAnnotation(annotation.imageUuid, annotation, false, true);
+          this.appendAnnotation(annotation.imageUuid, annotation, false, "add");
         }
       });
     }

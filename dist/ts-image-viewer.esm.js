@@ -9525,7 +9525,7 @@ class ImageService {
     setNextImageAsCurrent() {
         this.setImageAtIndexAsCurrent(this._currentImageView.index + 1);
     }
-    appendAnnotationToImage(imageUuid, annotation, undoable = true, raiseEvent = true) {
+    appendAnnotationToImage(imageUuid, annotation, undoable = true, raiseEvent = "add") {
         this.appendAnnotation(imageUuid, annotation, undoable, raiseEvent);
     }
     appendSerializedAnnotationsAsync(dtos) {
@@ -9563,7 +9563,7 @@ class ImageService {
                     default:
                         throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
                 }
-                this.appendAnnotationToImage(dto.imageUuid, annotation, false, false);
+                this.appendAnnotationToImage(dto.imageUuid, annotation, false, "import");
                 yield new Promise((resolve, reject) => {
                     setTimeout(() => {
                         resolve();
@@ -9727,12 +9727,10 @@ class ImageService {
                 })
             });
         }
-        if (raiseEvent) {
-            this._eventService.dispatchEvent(new AnnotEvent({
-                type: "add",
-                annotations: [annotation.toDto()],
-            }));
-        }
+        this._eventService.dispatchEvent(new AnnotEvent({
+            type: raiseEvent,
+            annotations: [annotation.toDto()],
+        }));
     }
     removeAnnotation(annotation, undoable) {
         if (!annotation) {
@@ -9744,7 +9742,7 @@ class ImageService {
             this.pushCommand({
                 timestamp: Date.now(),
                 undo: () => __awaiter$3(this, void 0, void 0, function* () {
-                    this.appendAnnotation(annotation.imageUuid, annotation, false, true);
+                    this.appendAnnotation(annotation.imageUuid, annotation, false, "add");
                 })
             });
         }
@@ -10351,6 +10349,7 @@ class TsImageViewer {
                 case "add":
                 case "delete":
                 case "render":
+                case "import":
                     if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
                         const imageUuidSet = new Set(annotations.map(x => x.imageUuid));
                         if (this._imageService.currentImageView

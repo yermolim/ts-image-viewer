@@ -201,7 +201,7 @@ interface AnnotEditRequestEventDetail {
     undoAction: () => Promise<void>;
 }
 interface AnnotEventDetail {
-    type: "focus" | "select" | "add" | "edit" | "delete" | "render";
+    type: "focus" | "select" | "add" | "edit" | "delete" | "render" | "import";
     annotations: AnnotationDto[];
 }
 interface ImageServiceStateChangeEventDetail {

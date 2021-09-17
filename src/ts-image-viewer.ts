@@ -609,6 +609,7 @@ export class TsImageViewer {
       case "add":
       case "delete":
       case "render":
+      case "import":
         // rerender current image if affected
         if (annotations?.length) {
           const imageUuidSet = new Set<string>(annotations.map(x => x.imageUuid));
