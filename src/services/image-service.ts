@@ -10,6 +10,14 @@ import { ScaleChangedEvent, annotSelectionRequestEvent,
 
 import { ImageView } from "../components/image-view";
 import { PenAnnotation, PenAnnotationDto } from "../annotations/pen-annotation";
+import { StampAnnotation, StampAnnotationDto } from "../annotations/stamp-annotation";
+import { NoteAnnotation, NoteAnnotationDto } from "../annotations/note-annotation";
+import { TextAnnotation, TextAnnotationDto } from "../annotations/text-annotation";
+import { CircleAnnotation, CircleAnnotationDto } from "../annotations/geometric/circle-annotation";
+import { SquareAnnotation, SquareAnnotationDto } from "../annotations/geometric/square-annotation";
+import { LineAnnotation, LineAnnotationDto } from "../annotations/geometric/line-annotation";
+import { PolylineAnnotation, PolylineAnnotationDto } from "../annotations/geometric/polyline-annotation";
+import { PolygonAnnotation, PolygonAnnotationDto } from "../annotations/geometric/polygon-annotation";
   
 interface ExecutedAsyncCommand {
   timestamp: number;  
@@ -204,6 +212,9 @@ export class ImageService {
     }));
     
     this._imageViews.length = 0;
+
+    this._lastCommands.length = 0;
+    this.emitStateChanged();
   }
 
   
@@ -250,8 +261,8 @@ export class ImageService {
     this.setImageAtIndexAsCurrent(this._currentImageView.index + 1);
   }
 
-  appendAnnotationToImage(imageUuid: string, annotation: AnnotationBase) {
-    this.appendAnnotation(imageUuid, annotation, true);
+  appendAnnotationToImage(imageUuid: string, annotation: AnnotationBase, undoable = true) {
+    this.appendAnnotation(imageUuid, annotation, undoable);
   }
   
   /**
@@ -265,10 +276,34 @@ export class ImageService {
         case "pen":
           annotation = new PenAnnotation(this._eventService, dto as PenAnnotationDto);
           break;
+        case "stamp":
+          annotation = new StampAnnotation(this._eventService, dto as StampAnnotationDto);
+          break;
+        case "note":
+          annotation = new NoteAnnotation(this._eventService, dto as NoteAnnotationDto);
+          break;
+        case "text":
+          annotation = new TextAnnotation(this._eventService, dto as TextAnnotationDto);
+          break;
+        case "circle":
+          annotation = new CircleAnnotation(this._eventService, dto as CircleAnnotationDto);
+          break;
+        case "square":
+          annotation = new SquareAnnotation(this._eventService, dto as SquareAnnotationDto);
+          break;
+        case "line":
+          annotation = new LineAnnotation(this._eventService, dto as LineAnnotationDto);
+          break;
+        case "polyline":
+          annotation = new PolylineAnnotation(this._eventService, dto as PolylineAnnotationDto);
+          break;
+        case "polygon":
+          annotation = new PolygonAnnotation(this._eventService, dto as PolygonAnnotationDto);
+          break;
         default:
           throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
       }
-      this.appendAnnotationToImage(dto.imageUuid, annotation);
+      this.appendAnnotationToImage(dto.imageUuid, annotation, false);
     }
   }
 

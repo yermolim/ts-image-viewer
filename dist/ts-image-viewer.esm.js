@@ -9489,6 +9489,8 @@ class ImageService {
             imageViews: [...this._imageViews],
         }));
         this._imageViews.length = 0;
+        this._lastCommands.length = 0;
+        this.emitStateChanged();
     }
     getImage(index) {
         return this._imageViews[index];
@@ -9523,8 +9525,8 @@ class ImageService {
     setNextImageAsCurrent() {
         this.setImageAtIndexAsCurrent(this._currentImageView.index + 1);
     }
-    appendAnnotationToImage(imageUuid, annotation) {
-        this.appendAnnotation(imageUuid, annotation, true);
+    appendAnnotationToImage(imageUuid, annotation, undoable = true) {
+        this.appendAnnotation(imageUuid, annotation, undoable);
     }
     appendSerializedAnnotations(dtos) {
         let annotation;
@@ -9533,10 +9535,34 @@ class ImageService {
                 case "pen":
                     annotation = new PenAnnotation(this._eventService, dto);
                     break;
+                case "stamp":
+                    annotation = new StampAnnotation(this._eventService, dto);
+                    break;
+                case "note":
+                    annotation = new NoteAnnotation(this._eventService, dto);
+                    break;
+                case "text":
+                    annotation = new TextAnnotation(this._eventService, dto);
+                    break;
+                case "circle":
+                    annotation = new CircleAnnotation(this._eventService, dto);
+                    break;
+                case "square":
+                    annotation = new SquareAnnotation(this._eventService, dto);
+                    break;
+                case "line":
+                    annotation = new LineAnnotation(this._eventService, dto);
+                    break;
+                case "polyline":
+                    annotation = new PolylineAnnotation(this._eventService, dto);
+                    break;
+                case "polygon":
+                    annotation = new PolygonAnnotation(this._eventService, dto);
+                    break;
                 default:
                     throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
             }
-            this.appendAnnotationToImage(dto.imageUuid, annotation);
+            this.appendAnnotationToImage(dto.imageUuid, annotation, false);
         }
     }
     deleteAnnotation(annotation) {
