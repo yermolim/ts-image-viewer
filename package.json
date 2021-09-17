@@ -1,6 +1,6 @@
 {
   "name": "ts-image-viewer",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "browser image viewer with basic painting support",
   "module": "dist/ts-image-viewer.esm.js",
   "types": "dist/ts-image-viewer.d.ts",
