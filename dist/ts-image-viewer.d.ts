@@ -272,6 +272,7 @@ declare class TsImageViewer {
     private readonly _loader;
     private readonly _viewer;
     private readonly _previewer;
+    private _fileButtons;
     private _fileOpenAction;
     private _fileSaveAction;
     private _fileCloseAction;
@@ -312,6 +313,8 @@ declare class TsImageViewer {
     private onZoomFitImageClick;
     private onRotateCounterClockwiseClick;
     private onRotateClockwiseClick;
+    private rotateCounterClockwise;
+    private rotateClockwise;
     private onPaginatorPrevClick;
     private onPaginatorNextClick;
     private annotatorUndo;
@@ -328,13 +331,16 @@ declare class TsImageViewer {
     private onAnnotatorPenModeButtonClick;
     private onAnnotatorGeometricModeButtonClick;
     private onAnnotatorTextModeButtonClick;
+    private onMainContainerPointerMove;
+    private hidePanels;
+    private showPanels;
     private imageServiceUndo;
     private onImageChange;
     private onImageServiceStateChange;
     private showPreviewer;
     private refreshImages;
     private onPreviewerToggleClick;
-    private onMainContainerPointerMove;
+    private onViewerKeyDown;
 }
 
 export { AnnotEvent, AnnotEventDetail, AnnotationDto, FileButtons, ImageLoadInfo, TsImageViewer, TsImageViewerOptions };

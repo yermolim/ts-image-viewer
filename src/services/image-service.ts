@@ -88,7 +88,7 @@ export class ImageService {
     } 
     this._eventService = eventService;
   
-    this._userName = options?.userName || "guest";
+    this._userName = options?.userName || "Guest";
     this._previewWidth = options?.previewWidth || 100;
     this._lazyLoadImages = options?.lazyLoadImages ?? true;
 
@@ -254,10 +254,16 @@ export class ImageService {
   }
   
   setPreviousImageAsCurrent() {
+    if (!this._currentImageView) {
+      return;
+    }
     this.setImageAtIndexAsCurrent(this._currentImageView.index - 1);
   }
 
   setNextImageAsCurrent() {
+    if (!this._currentImageView) {
+      return;
+    }
     this.setImageAtIndexAsCurrent(this._currentImageView.index + 1);
   }
 

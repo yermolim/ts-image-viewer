@@ -98,6 +98,8 @@ export class TsImageViewer {
   private readonly _viewer: Viewer;
   private readonly _previewer: Previewer;  
   
+  private _fileButtons: FileButtons[];
+  
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
   private _fileCloseAction: () => void;
@@ -131,7 +133,8 @@ export class TsImageViewer {
       this._outerContainer = container;
     }
 
-    this._userName = options.userName || "guest";
+    this._userName = options.userName || "Guest";
+    this._fileButtons = options.fileButtons || [];
     this._fileOpenAction = options.fileOpenAction;
     this._fileSaveAction = options.fileSaveAction;
     this._fileCloseAction = options.fileCloseAction;
@@ -165,7 +168,7 @@ export class TsImageViewer {
 
     this.initMainContainerEventHandlers();
     this.initViewControls();
-    this.initFileButtons(options.fileButtons || []);
+    this.initFileButtons();
     this.initModeSwitchButtons();
     this.initAnnotationButtons();
     
@@ -174,6 +177,8 @@ export class TsImageViewer {
     this._eventService.addListener(annotChangeEvent, this.onAnnotatorChange);
     this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
     this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
+    
+    this._mainContainer.addEventListener("keydown", this.onViewerKeyDown);
   }
 
   /**free the object resources to let GC clean them to avoid memory leak */
@@ -214,6 +219,7 @@ export class TsImageViewer {
   /**close all opened images */
   closeImages(): void {
     this._imageService.clearImages();
+    this.showPanels();
   }
   
   //#region annotations
@@ -347,12 +353,12 @@ export class TsImageViewer {
       .addEventListener("click", this.onPreviewerToggleClick);   
   }
 
-  private initFileButtons(fileButtons: FileButtons[]) {
+  private initFileButtons() {
     const openButton = this._shadowRoot.querySelector("#button-open-file");
     const saveButton = this._shadowRoot.querySelector("#button-save-file");
     const closeButton = this._shadowRoot.querySelector("#button-close-file");
 
-    if (fileButtons.includes("open")) {
+    if (this._fileButtons.includes("open")) {
       this._fileInput = this._shadowRoot.getElementById("open-file-input") as HTMLInputElement;
       this._fileInput.addEventListener("change", this.onFileInput);
       openButton.addEventListener("click", this._fileOpenAction || this.onOpenFileButtonClick);
@@ -360,13 +366,13 @@ export class TsImageViewer {
       openButton.remove();
     }
 
-    if (fileButtons.includes("save")) {
+    if (this._fileButtons.includes("save")) {
       saveButton.addEventListener("click", this._fileSaveAction || this.onSaveFileButtonClick);
     } else {
       saveButton.remove();
     }
     
-    if (fileButtons.includes("close")) {
+    if (this._fileButtons.includes("close")) {
       closeButton.addEventListener("click", this._fileCloseAction || this.onCloseFileButtonClick);
     } else {
       closeButton.remove();
@@ -523,14 +529,22 @@ export class TsImageViewer {
 
   //#region image rotation
   private onRotateCounterClockwiseClick = () => {
-    this._imageService.currentImageView?.rotateCounterClockwise();
-    this.setAnnotatorMode(this._annotatorService.mode);
+    this.rotateCounterClockwise();
   };
   
   private onRotateClockwiseClick = () => {
+    this.rotateClockwise();
+  };
+
+  private rotateCounterClockwise() {
+    this._imageService.currentImageView?.rotateCounterClockwise();
+    this.setAnnotatorMode(this._annotatorService.mode);
+  }
+
+  private rotateClockwise() {
     this._imageService.currentImageView?.rotateClockwise();
     this.setAnnotatorMode(this._annotatorService.mode);
-  };
+  }
   //#endregion
 
 
@@ -696,6 +710,52 @@ export class TsImageViewer {
   };
   //#endregion
 
+  
+  //#region show/hide panels
+  private onMainContainerPointerMove = (event: PointerEvent) => {
+    const {clientX, clientY} = event;
+    const {x: rectX, y: rectY, width, height} = this._mainContainer.getBoundingClientRect();
+
+    const l = clientX - rectX;
+    const t = clientY - rectY;
+    const r = width - l;
+    const b = height - t;
+
+    if (Math.min(l, r, t, b) > 150) {
+      // hide panels if pointer is far from the container edges
+      this.hidePanels();
+    } else {
+      // show panels otherwise
+      this.showPanels();
+    }
+  };
+
+  private hidePanels() {
+    if (!this._panelsHidden && !this._timers.hidePanels) {
+      this._timers.hidePanels = setTimeout(() => {
+        if (!this._imageService?.currentImageView) {
+          return; // hide panels only if any image is open
+        }
+        this._mainContainer.classList.add("hide-panels");
+        this._panelsHidden = true;
+        this._timers.hidePanels = null;
+      }, 5000);
+    }      
+  }
+
+  private showPanels() {
+    if (this._timers.hidePanels) {
+      clearTimeout(this._timers.hidePanels);
+      this._timers.hidePanels = null;
+    }
+    if (this._panelsHidden) {        
+      this._mainContainer.classList.remove("hide-panels");
+      this._panelsHidden = false;
+    }
+  }
+  //#endregion
+
+
   //#region  misc
   private imageServiceUndo = () => {
     this._imageService?.undoAsync();
@@ -766,38 +826,107 @@ export class TsImageViewer {
   private onPreviewerToggleClick = () => {
     this.showPreviewer(this._previewer.hidden);
   };
-  
-  private onMainContainerPointerMove = (event: PointerEvent) => {
-    const {clientX, clientY} = event;
-    const {x: rectX, y: rectY, width, height} = this._mainContainer.getBoundingClientRect();
 
-    const l = clientX - rectX;
-    const t = clientY - rectY;
-    const r = width - l;
-    const b = height - t;
-
-    if (Math.min(l, r, t, b) > 150) {
-      // hide panels if pointer is far from the container edges
-      if (!this._panelsHidden && !this._timers.hidePanels) {
-        this._timers.hidePanels = setTimeout(() => {
-          if (!this._imageService.currentImageView) {
-            return; // hide panels only if any image is open
+  private onViewerKeyDown = (event: KeyboardEvent) => {
+    switch (event.code) {
+      case "KeyO":
+        if (event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          if (this._fileButtons.includes("open")) {
+            if (this._fileOpenAction) {
+              this._fileOpenAction();
+            } else if (this.onOpenFileButtonClick) {
+              this.onOpenFileButtonClick();
+            }
           }
-          this._mainContainer.classList.add("hide-panels");
-          this._panelsHidden = true;
-          this._timers.hidePanels = null;
-        }, 5000);
-      }      
-    } else {
-      // show panels otherwise
-      if (this._timers.hidePanels) {
-        clearTimeout(this._timers.hidePanels);
-        this._timers.hidePanels = null;
-      }
-      if (this._panelsHidden) {        
-        this._mainContainer.classList.remove("hide-panels");
-        this._panelsHidden = false;
-      }
+        }
+        break;
+      case "KeyS":
+        if (this._imageService?.currentImageView && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          if (this._fileButtons.includes("save")) {
+            if (this._fileSaveAction) {
+              this._fileSaveAction();
+            } else if (this.onSaveFileButtonClick) {
+              this.onSaveFileButtonClick();
+            }
+          }
+        }
+        break;
+      case "KeyX":
+        if (this._imageService?.currentImageView && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          if (this._fileButtons.includes("close")) {
+            if (this._fileCloseAction) {
+              this._fileCloseAction();
+            } else if (this.onCloseFileButtonClick) {
+              this.onCloseFileButtonClick();
+            }
+          }
+        }
+        break;
+      case "KeyT":
+        if (this._imageService?.currentImageView && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.showPreviewer(this._previewer.hidden);
+        }
+        break;
+      case "Digit2":
+        if (this._imageService?.currentImageView && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.setViewerMode("hand");
+        }
+        break;
+      case "Digit3":
+        if (this._imageService?.currentImageView && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.setViewerMode("annotation");
+        }
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        this._imageService.setPreviousImageAsCurrent();
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        this._imageService.setNextImageAsCurrent();
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        this._viewer.zoomIn();
+        break;
+      case "ArrowDown":
+        event.preventDefault();
+        this._viewer.zoomOut();
+        break;
+      case "Comma":
+        event.preventDefault();
+        this.rotateCounterClockwise();
+        break;
+      case "Period":
+        event.preventDefault();
+        this.rotateClockwise();
+        break;
+      case "Escape":
+        event.preventDefault();
+        this._annotatorService.annotator?.clear();
+        break;
+      case "Backspace":
+        event.preventDefault();
+        this._annotatorService.annotator?.undo();
+        break;
+      case "Enter":
+        event.preventDefault();
+        this._annotatorService.annotator?.saveAnnotationAsync();
+        break;
+      case "KeyZ":
+        if (event.ctrlKey) {
+          event.preventDefault();
+          this._imageService?.undoAsync();
+        }
+        break;
+      default:
+        return;
     }
   };
   //#endregion

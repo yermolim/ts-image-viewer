@@ -80,10 +80,30 @@ To apply a custom color scheme to the viewer, assign color values to the followi
 }
 ```
 
+### Keyboard shortcuts
+<ul>
+    <li>alt + ctrl + o => open image (if the corresponding button is allowed in options)</li>
+    <li>alt + ctrl + s => save current image (if the corresponding button is allowed in options)</li>
+    <li>alt + ctrl + x => close opened images (if the corresponding button is allowed in options)</li>
+    <li>alt + ctrl + t => toggle preview panel visibility</li>
+    <li>alt + ctrl + 2 => hand drag mode</li>
+    <li>alt + ctrl + 3 => annotation mode</li>
+    <li>escape => clear annotation (in annotation add mode)</li>
+    <li>backspace => undo last action (in annotation add mode)</li>
+    <li>enter => save annotation (in annotation add mode)</li>
+    <li>ctrz + z => undo last annotation edit</li>
+    <li>↑ => zoom in</li>
+    <li>↓ => zoom out</li>
+    <li>← => previous image</li>
+    <li>→ => next image</li>
+    <li>&lt; => rotate left</li>
+    <li>&gt; => rotate right</li>
+</ul>
+
 ## TODO list
 <ul>
     <li>add loading animation</li>
-    <li>add keyboard shortcuts</li>
+    <li><del>add keyboard shortcuts</del> added in 0.4.0</li>
     <li>add more annotation options</li>
     <li>add tooltips to buttons</li>
     <li>add localizations</li>
